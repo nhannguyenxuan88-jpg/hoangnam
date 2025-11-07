@@ -1,0 +1,203 @@
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Helper functions for common operations
+export const supabaseHelpers = {
+  // Customers
+  async getCustomers() {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async createCustomer(customer: any) {
+    const { data, error } = await supabase
+      .from('customers')
+      .insert([customer])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async updateCustomer(id: string, updates: any) {
+    const { data, error } = await supabase
+      .from('customers')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Parts
+  async getParts() {
+    const { data, error } = await supabase
+      .from('parts')
+      .select('*')
+      .order('name');
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async createPart(part: any) {
+    const { data, error } = await supabase
+      .from('parts')
+      .insert([part])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async updatePart(id: string, updates: any) {
+    const { data, error } = await supabase
+      .from('parts')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Work Orders
+  async getWorkOrders() {
+    const { data, error } = await supabase
+      .from('work_orders')
+      .select('*')
+      .order('creationDate', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async createWorkOrder(workOrder: any) {
+    const { data, error } = await supabase
+      .from('work_orders')
+      .insert([workOrder])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async updateWorkOrder(id: string, updates: any) {
+    const { data, error } = await supabase
+      .from('work_orders')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Sales
+  async getSales() {
+    const { data, error } = await supabase
+      .from('sales')
+      .select('*')
+      .order('date', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async createSale(sale: any) {
+    const { data, error } = await supabase
+      .from('sales')
+      .insert([sale])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Cash Transactions
+  async getCashTransactions() {
+    const { data, error } = await supabase
+      .from('cash_transactions')
+      .select('*')
+      .order('date', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async createCashTransaction(transaction: any) {
+    const { data, error } = await supabase
+      .from('cash_transactions')
+      .insert([transaction])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Payment Sources
+  async getPaymentSources() {
+    const { data, error } = await supabase
+      .from('payment_sources')
+      .select('*');
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async updatePaymentSource(id: string, updates: any) {
+    const { data, error } = await supabase
+      .from('payment_sources')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  // Inventory Transactions
+  async getInventoryTransactions() {
+    const { data, error } = await supabase
+      .from('inventory_transactions')
+      .select('*')
+      .order('date', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async createInventoryTransaction(transaction: any) {
+    const { data, error } = await supabase
+      .from('inventory_transactions')
+      .insert([transaction])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+};
