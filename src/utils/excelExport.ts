@@ -47,7 +47,7 @@ export const exportRevenueReport = (
   XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng quan");
 
   // 2. Detailed Sales Sheet
-  const salesData = [
+  const salesData: (string | number)[][] = [
     [
       "Mã đơn",
       "Ngày",
@@ -124,7 +124,7 @@ export const exportCashflowReport = (
   XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng quan");
 
   // 2. Detailed transactions
-  const transData = [
+  const transData: (string | number)[][] = [
     [
       "Ngày",
       "Loại",
@@ -166,7 +166,9 @@ export const exportCashflowReport = (
     }
   });
 
-  const categoryData = [["Danh mục", "Thu", "Chi", "Chênh lệch"]];
+  const categoryData: (string | number)[][] = [
+    ["Danh mục", "Thu", "Chi", "Chênh lệch"],
+  ];
   Object.entries(categoryMap).forEach(([cat, amounts]) => {
     categoryData.push([
       cat,
@@ -216,7 +218,7 @@ export const exportInventoryReport = (
   XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng quan");
 
   // 2. Detailed inventory
-  const inventoryData = [
+  const inventoryData: (string | number)[][] = [
     [
       "Mã SKU",
       "Tên sản phẩm",
@@ -254,7 +256,9 @@ export const exportInventoryReport = (
   // 3. Low stock warnings
   const lowStock = parts.filter((p) => (p.stock[branchId] || 0) < 10);
   if (lowStock.length > 0) {
-    const warningData = [["Mã SKU", "Tên sản phẩm", "Tồn kho", "Ghi chú"]];
+    const warningData: (string | number)[][] = [
+      ["Mã SKU", "Tên sản phẩm", "Tồn kho", "Ghi chú"],
+    ];
 
     lowStock.forEach((p) => {
       warningData.push([
@@ -304,7 +308,7 @@ export const exportPayrollReport = (
   XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng quan");
 
   // 2. Detailed payroll
-  const payrollData = [
+  const payrollData: (string | number)[][] = [
     [
       "Nhân viên",
       "Tháng",
@@ -358,7 +362,7 @@ export const exportPayrollReport = (
     employeeMap[p.employeeName].months += 1;
   });
 
-  const employeeData = [
+  const employeeData: (string | number)[][] = [
     [
       "Nhân viên",
       "Số tháng",

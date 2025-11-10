@@ -1,1 +1,2 @@
-export { default } from "../../../MotoCarePro-Pin-main/standalone/AppMotocare";
+// Local wrapper to use the in-repo App as the standalone entry
+export { default } from "../App";
