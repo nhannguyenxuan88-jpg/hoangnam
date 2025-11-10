@@ -8,6 +8,9 @@ import {
   useLocation,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { showToast } from "./utils/toast";
+import ErrorBoundary from "./components/common/ErrorBoundary";
+import TopProgressBar from "./components/common/TopProgressBar";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AppProvider } from "./contexts/AppContext";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
@@ -393,14 +396,17 @@ function useFakeAuth() {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 2 * 60 * 1000, // 2 minutes default
-      gcTime: 5 * 60 * 1000, // 5 minutes default
-      refetchOnWindowFocus: false, // Prevent refetch when window regains focus
-      refetchOnReconnect: "always", // Refetch when network reconnects
-      retry: 2, // Retry failed queries twice
+      staleTime: 2 * 60 * 1000,
+      gcTime: 5 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: "always",
+      retry: 2,
     },
   },
 });
+
+// Attach global error handlers using built-in callbacks by extending QueryCache/MutationCache
+// Simplified: we rely on per-query onError via a wrapper helper if needed; fallback here is noop.
 
 export default function App() {
   const { ready } = useFakeAuth();
@@ -412,68 +418,89 @@ export default function App() {
         <AuthProvider>
           <AppProvider>
             <HashRouter>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={<LoginPage />} />
+              <ErrorBoundary>
+                <TopProgressBar />
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/login" element={<LoginPage />} />
 
-                {/* Protected Routes */}
-                <Route
-                  path="/*"
-                  element={
-                    <ProtectedRoute>
-                      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
-                        <Nav />
-                        <main className="max-w-[1600px] mx-auto p-6">
-                          <Routes>
-                            <Route
-                              path="/"
-                              element={<Navigate to="/dashboard" replace />}
-                            />
-                            <Route path="/dashboard" element={<Dashboard />} />
-                            <Route path="/sales" element={<Sales />} />
-                            <Route path="/inventory" element={<Inventory />} />
-                            <Route
-                              path="/categories"
-                              element={<CategoriesPage />}
-                            />
-                            <Route path="/lookup" element={<LookupPage />} />
-                            <Route path="/service" element={<Service />} />
-                            <Route
-                              path="/service-history"
-                              element={<ServiceHistoryPage />}
-                            />
-                            <Route path="/customers" element={<Customers />} />
-                            <Route path="/debt" element={<Debt />} />
-                            <Route
-                              path="/cashbook"
-                              element={<CashBookPage />}
-                            />
-                            <Route path="/loans" element={<LoansPage />} />
-                            <Route path="/payroll" element={<PayrollPage />} />
-                            <Route
-                              path="/employees"
-                              element={<EmployeesPage />}
-                            />
-                            <Route path="/finance" element={<FinancePage />} />
-                            <Route
-                              path="/analytics"
-                              element={<AnalyticsPage />}
-                            />
-                            <Route path="/reports" element={<ReportsPage />} />
-                            <Route
-                              path="/settings"
-                              element={<SettingsPage />}
-                            />
-                          </Routes>
-                        </main>
-                      </div>
-                    </ProtectedRoute>
-                  }
-                />
-              </Routes>
-              <ReactQueryDevtools initialIsOpen={false} />
-              {/* Dev-only repository error panel */}
-              {import.meta.env.DEV && <RepoErrorPanel />}
+                  {/* Protected Routes */}
+                  <Route
+                    path="/*"
+                    element={
+                      <ProtectedRoute>
+                        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
+                          <Nav />
+                          <main className="max-w-[1600px] mx-auto p-6">
+                            <Routes>
+                              <Route
+                                path="/"
+                                element={<Navigate to="/dashboard" replace />}
+                              />
+                              <Route
+                                path="/dashboard"
+                                element={<Dashboard />}
+                              />
+                              <Route path="/sales" element={<Sales />} />
+                              <Route
+                                path="/inventory"
+                                element={<Inventory />}
+                              />
+                              <Route
+                                path="/categories"
+                                element={<CategoriesPage />}
+                              />
+                              <Route path="/lookup" element={<LookupPage />} />
+                              <Route path="/service" element={<Service />} />
+                              <Route
+                                path="/service-history"
+                                element={<ServiceHistoryPage />}
+                              />
+                              <Route
+                                path="/customers"
+                                element={<Customers />}
+                              />
+                              <Route path="/debt" element={<Debt />} />
+                              <Route
+                                path="/cashbook"
+                                element={<CashBookPage />}
+                              />
+                              <Route path="/loans" element={<LoansPage />} />
+                              <Route
+                                path="/payroll"
+                                element={<PayrollPage />}
+                              />
+                              <Route
+                                path="/employees"
+                                element={<EmployeesPage />}
+                              />
+                              <Route
+                                path="/finance"
+                                element={<FinancePage />}
+                              />
+                              <Route
+                                path="/analytics"
+                                element={<AnalyticsPage />}
+                              />
+                              <Route
+                                path="/reports"
+                                element={<ReportsPage />}
+                              />
+                              <Route
+                                path="/settings"
+                                element={<SettingsPage />}
+                              />
+                            </Routes>
+                          </main>
+                        </div>
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+                <ReactQueryDevtools initialIsOpen={false} />
+                {/* Dev-only repository error panel */}
+                {import.meta.env.DEV && <RepoErrorPanel />}
+              </ErrorBoundary>
             </HashRouter>
           </AppProvider>
         </AuthProvider>

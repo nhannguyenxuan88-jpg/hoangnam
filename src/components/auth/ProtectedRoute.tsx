@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import { Ban } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../common/LoadingSpinner";
+import { showToast } from "../../utils/toast";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,10 +13,13 @@ export const ProtectedRoute = ({
   children,
   requiredRoles,
 }: ProtectedRouteProps) => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, error } = useAuth();
 
-  // Show a loading state while we're fetching initial auth/session or profile data
-  // This prevents an early redirect before the profile finishes loading right after sign in.
+  // Show toast if auth/profile errored
+  if (error) {
+    showToast.error(error);
+  }
+  // Loading state while fetching initial auth/session or profile
   if (loading || (user && !profile)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">

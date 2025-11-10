@@ -19,6 +19,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   session: Session | null;
   loading: boolean;
+  error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   hasRole: (roles: UserRole[]) => boolean;
@@ -39,6 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Get initial session
@@ -105,6 +107,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error("Error loading user profile:", error);
       setProfile(null);
+      setError("Không thể tải hồ sơ người dùng");
     } finally {
       setLoading(false);
     }
@@ -116,11 +119,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       password,
     });
     if (error) throw error;
+    setError(null);
   };
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    setError(null);
   };
 
   const hasRole = (roles: UserRole[]): boolean => {
@@ -133,6 +138,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     profile,
     session,
     loading,
+    error,
     signIn,
     signOut,
     hasRole,
