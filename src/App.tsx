@@ -82,6 +82,15 @@ function Nav() {
   const [showSettings, setShowSettings] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { profile, signOut } = useAuth();
+  const role = profile?.role;
+  const can = {
+    viewFinance: role === "owner" || role === "manager",
+    viewPayroll: role === "owner" || role === "manager",
+    viewAnalytics: role === "owner" || role === "manager",
+    viewDebt: role === "owner" || role === "manager",
+    viewEmployees: role === "owner" || role === "manager",
+    viewSettings: role === "owner" || role === "manager",
+  } as const;
 
   return (
     <nav className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
@@ -183,17 +192,19 @@ function Nav() {
                       </span>
                     </button>
 
-                    {/* Go to system settings */}
-                    <Link
-                      to="/settings"
-                      onClick={() => setShowSettings(false)}
-                      className="block w-full px-4 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-200"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Cog className="w-4 h-4" />
-                        <span>Cài đặt hệ thống</span>
-                      </span>
-                    </Link>
+                    {/* Go to system settings (restricted) */}
+                    {can.viewSettings && (
+                      <Link
+                        to="/settings"
+                        onClick={() => setShowSettings(false)}
+                        className="block w-full px-4 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-200"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Cog className="w-4 h-4" />
+                          <span>Cài đặt hệ thống</span>
+                        </span>
+                      </Link>
+                    )}
 
                     {/* Logout */}
                     {profile && (
@@ -252,30 +263,38 @@ function Nav() {
               icon={<Users className="w-5 h-5" />}
               label="Khách hàng"
             />
-            <NavLink
-              to="/employees"
-              colorKey="indigo"
-              icon={<BriefcaseBusiness className="w-5 h-5" />}
-              label="Nhân viên"
-            />
-            <NavLink
-              to="/finance"
-              colorKey="rose"
-              icon={<Landmark className="w-5 h-5" />}
-              label="Tài chính"
-            />
-            <NavLink
-              to="/debt"
-              colorKey="orange"
-              icon={<HandCoins className="w-5 h-5" />}
-              label="Công nợ"
-            />
-            <NavLink
-              to="/analytics"
-              colorKey="teal"
-              icon={<BarChart3 className="w-5 h-5" />}
-              label="Phân tích"
-            />
+            {can.viewEmployees && (
+              <NavLink
+                to="/employees"
+                colorKey="indigo"
+                icon={<BriefcaseBusiness className="w-5 h-5" />}
+                label="Nhân viên"
+              />
+            )}
+            {can.viewFinance && (
+              <NavLink
+                to="/finance"
+                colorKey="rose"
+                icon={<Landmark className="w-5 h-5" />}
+                label="Tài chính"
+              />
+            )}
+            {can.viewDebt && (
+              <NavLink
+                to="/debt"
+                colorKey="orange"
+                icon={<HandCoins className="w-5 h-5" />}
+                label="Công nợ"
+              />
+            )}
+            {can.viewAnalytics && (
+              <NavLink
+                to="/analytics"
+                colorKey="teal"
+                icon={<BarChart3 className="w-5 h-5" />}
+                label="Phân tích"
+              />
+            )}
             <NavLink
               to="/reports"
               colorKey="fuchsia"
@@ -460,27 +479,75 @@ export default function App() {
                                 path="/customers"
                                 element={<Customers />}
                               />
-                              <Route path="/debt" element={<Debt />} />
+                              <Route
+                                path="/debt"
+                                element={
+                                  <ProtectedRoute
+                                    requiredRoles={["owner", "manager"]}
+                                  >
+                                    <Debt />
+                                  </ProtectedRoute>
+                                }
+                              />
                               <Route
                                 path="/cashbook"
-                                element={<CashBookPage />}
+                                element={
+                                  <ProtectedRoute
+                                    requiredRoles={["owner", "manager"]}
+                                  >
+                                    <CashBookPage />
+                                  </ProtectedRoute>
+                                }
                               />
-                              <Route path="/loans" element={<LoansPage />} />
+                              <Route
+                                path="/loans"
+                                element={
+                                  <ProtectedRoute
+                                    requiredRoles={["owner", "manager"]}
+                                  >
+                                    <LoansPage />
+                                  </ProtectedRoute>
+                                }
+                              />
                               <Route
                                 path="/payroll"
-                                element={<PayrollPage />}
+                                element={
+                                  <ProtectedRoute
+                                    requiredRoles={["owner", "manager"]}
+                                  >
+                                    <PayrollPage />
+                                  </ProtectedRoute>
+                                }
                               />
                               <Route
                                 path="/employees"
-                                element={<EmployeesPage />}
+                                element={
+                                  <ProtectedRoute
+                                    requiredRoles={["owner", "manager"]}
+                                  >
+                                    <EmployeesPage />
+                                  </ProtectedRoute>
+                                }
                               />
                               <Route
                                 path="/finance"
-                                element={<FinancePage />}
+                                element={
+                                  <ProtectedRoute
+                                    requiredRoles={["owner", "manager"]}
+                                  >
+                                    <FinancePage />
+                                  </ProtectedRoute>
+                                }
                               />
                               <Route
                                 path="/analytics"
-                                element={<AnalyticsPage />}
+                                element={
+                                  <ProtectedRoute
+                                    requiredRoles={["owner", "manager"]}
+                                  >
+                                    <AnalyticsPage />
+                                  </ProtectedRoute>
+                                }
                               />
                               <Route
                                 path="/reports"
@@ -488,7 +555,13 @@ export default function App() {
                               />
                               <Route
                                 path="/settings"
-                                element={<SettingsPage />}
+                                element={
+                                  <ProtectedRoute
+                                    requiredRoles={["owner", "manager"]}
+                                  >
+                                    <SettingsPage />
+                                  </ProtectedRoute>
+                                }
                               />
                             </Routes>
                           </main>

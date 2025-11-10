@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import { canDo } from "../../utils/permissions";
 import { Boxes, Package, Search, FileText } from "lucide-react";
 import { useAppContext } from "../../contexts/AppContext";
 import {
@@ -342,7 +344,12 @@ const GoodsReceiptModal: React.FC<{
     return Math.max(0, subtotal - discount);
   }, [subtotal, discount]);
 
+  const { profile } = useAuth();
   const handleSave = () => {
+    if (!canDo(profile?.role, "part.update_price")) {
+      showToast.error("Bạn không có quyền cập nhật giá");
+      return;
+    }
     if (receiptItems.length === 0) {
       showToast.warning("Vui lòng chọn sản phẩm nhập kho");
       return;

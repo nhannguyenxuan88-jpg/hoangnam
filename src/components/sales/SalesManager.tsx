@@ -1,4 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import { canDo } from "../../utils/permissions";
 import {
   BarChart3,
   Boxes,
@@ -736,16 +738,19 @@ const SalesManager: React.FC = () => {
   };
 
   // Handle delete sale
+  const { profile } = useAuth();
   const handleDeleteSale = (saleId: string) => {
+    if (!canDo(profile?.role, "sale.delete")) {
+      showToast.error("Bạn không có quyền xóa hóa đơn");
+      return;
+    }
     if (
       !confirm("Xác nhận xóa hóa đơn này? Hành động này không thể hoàn tác.")
     ) {
       return;
     }
-
-    // Delete using context function
     deleteSale(saleId);
-    alert("Đã xóa hóa đơn thành công!");
+    showToast.success("Đã xóa hóa đơn thành công!");
   };
 
   // Handle edit sale (reopen in cart)
