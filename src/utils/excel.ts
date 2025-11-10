@@ -117,37 +117,84 @@ export const importPartsFromExcel = (
         // Convert to JSON
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        // Parse and validate data
-        const parts = jsonData.map((row: any) => {
-          // Support multiple column name formats
-          const name =
-            row["Tên sản phẩm"] || row["Ten san pham"] || row["name"] || "";
-          const sku = row["SKU"] || row["sku"] || "";
-          const category =
-            row["Danh mục"] || row["Danh muc"] || row["category"] || undefined;
-          const quantity =
-            parseInt(
-              row["Số lượng nhập"] ||
-                row["So luong nhap"] ||
-                row["quantity"] ||
-                "0"
-            ) || 0;
-          const retailPrice =
-            parseFloat(
-              row["Giá bán lẻ"] ||
-                row["Gia ban le"] ||
-                row["retailPrice"] ||
-                "0"
-            ) || 0;
-          const wholesalePrice =
-            parseFloat(
-              row["Giá bán sỉ"] ||
-                row["Gia ban si"] ||
-                row["wholesalePrice"] ||
-                "0"
-            ) || 0;
-          const description =
-            row["Mô tả"] || row["Mo ta"] || row["description"] || undefined;
+        // Helpers: normalize keys and parse numbers robustly
+        const stripDiacritics = (s: string) =>
+          s
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, "")
+            .replace(/đ/gi, (m) => (m === "đ" ? "d" : "D"));
+        const norm = (s: string) =>
+          stripDiacritics(String(s).toLowerCase().trim()).replace(
+            /[^a-z0-9]+/g,
+            ""
+          );
+        const parseNum = (v: any) => {
+          if (v == null || v === "") return 0;
+          if (typeof v === "number") return v;
+          let t = String(v).trim();
+          // remove spaces
+          t = t.replace(/\s+/g, "");
+          // if both dot and comma exist, assume dot is thousands and comma decimal
+          if (t.includes(".") && t.includes(",")) {
+            t = t.replace(/\./g, "").replace(/,/g, ".");
+          } else if (t.includes(",") && !t.includes(".")) {
+            // only comma present -> treat comma as decimal
+            t = t.replace(/,/g, ".");
+          } else {
+            // only dot or none -> remove thousands commas just in case
+            t = t.replace(/,/g, "");
+          }
+          const n = parseFloat(t);
+          return isNaN(n) ? 0 : n;
+        };
+
+        // Build a per-row accessor that tolerates various header names
+        const synonyms: Record<string, string[]> = {
+          name: [
+            "tensanpham",
+            "ten",
+            "productname",
+            "name",
+            "tenhang",
+            "tenmh",
+          ],
+          sku: ["sku", "mahang", "mah", "code", "ma", "masp", "mavt"],
+          category: ["danhmuc", "nhom", "loai", "category"],
+          quantity: ["soluongnhap", "soluong", "ton", "tonkho", "sl", "qty"],
+          retailPrice: [
+            "giabanle",
+            "giale",
+            "giaban",
+            "gia",
+            "retailprice",
+            "giabanra",
+          ],
+          wholesalePrice: ["giabansi", "giasi", "wholesaleprice", "giabuon"],
+          description: ["mota", "ghichu", "note", "description"],
+        };
+
+        const parts = jsonData.map((rowAny: any) => {
+          const row: Record<string, any> = rowAny || {};
+          // Create a lookup map of normalized header -> value
+          const dict: Record<string, any> = {};
+          Object.keys(row).forEach((k) => {
+            dict[norm(k)] = row[k];
+          });
+          const get = (key: keyof typeof synonyms, fallback?: any) => {
+            for (const alias of synonyms[key]) {
+              const v = dict[alias];
+              if (v != null && v !== "") return v;
+            }
+            return fallback;
+          };
+
+          const name = String(get("name", "")).trim();
+          const sku = String(get("sku", "")).trim();
+          const category = get("category");
+          const quantity = parseNum(get("quantity", 0));
+          const retailPrice = parseNum(get("retailPrice", 0));
+          const wholesalePrice = parseNum(get("wholesalePrice", 0));
+          const description = get("description");
 
           if (!name || !sku) {
             throw new Error(
@@ -168,7 +215,10 @@ export const importPartsFromExcel = (
 
         resolve(parts);
       } catch (error) {
-        reject(error);
+        // Surface helpful message
+        const msg =
+          error instanceof Error ? error.message : "Không đọc được dữ liệu";
+        reject(new Error(msg));
       }
     };
 
