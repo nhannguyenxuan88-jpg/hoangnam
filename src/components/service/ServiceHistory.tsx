@@ -863,31 +863,39 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
                     {/* Column 4: All Price Details */}
                     <div className="w-56">
                       <div className="space-y-1 text-xs text-right mb-3">
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Phí dịch vụ:</span>
-                          <span className="text-slate-300">
-                            {formatCurrency(serviceFee)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Tiền phụ tùng:</span>
-                          <span className="text-blue-400 font-medium">
-                            {formatCurrency(partsCost)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">
-                            Giá công/Đặt hàng:
-                          </span>
-                          <span className="text-slate-300">
-                            {formatCurrency(laborCost)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between pt-2 border-t border-slate-700">
+                        {serviceFee > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Phí dịch vụ:</span>
+                            <span className="text-slate-300">
+                              {formatCurrency(serviceFee)}
+                            </span>
+                          </div>
+                        )}
+                        {partsCost > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">
+                              Tiền phụ tùng:
+                            </span>
+                            <span className="text-blue-400 font-medium">
+                              {formatCurrency(partsCost)}
+                            </span>
+                          </div>
+                        )}
+                        {laborCost > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">
+                              Giá công/Đặt hàng:
+                            </span>
+                            <span className="text-slate-300">
+                              {formatCurrency(laborCost)}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between pt-2 border-t border-slate-700 text-sm">
                           <span className="text-slate-300 font-bold">
                             Tổng cộng:
                           </span>
-                          <span className="text-blue-400 font-bold text-base">
+                          <span className="text-blue-400 font-bold text-sm">
                             {formatCurrency(order.total)}
                           </span>
                         </div>
@@ -908,20 +916,21 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
                               </span>
                             </div>
                           )}
-                        {order.remainingAmount !== undefined && (
-                          <div className="flex justify-between text-right text-xs mt-1">
-                            <span>Còn phải thu:</span>
-                            <span
-                              className={`font-bold ${
-                                order.remainingAmount > 0
-                                  ? "text-red-500"
-                                  : "text-green-500"
-                              }`}
-                            >
-                              {formatCurrency(order.remainingAmount)}
-                            </span>
-                          </div>
-                        )}
+                        {order.remainingAmount !== undefined &&
+                          order.remainingAmount > 0 && (
+                            <div className="flex justify-between text-right text-xs mt-1">
+                              <span>Còn phải thu:</span>
+                              <span
+                                className={`font-bold ${
+                                  order.remainingAmount > 0
+                                    ? "text-red-500"
+                                    : "text-green-500"
+                                }`}
+                              >
+                                {formatCurrency(order.remainingAmount)}
+                              </span>
+                            </div>
+                          )}
                       </div>
 
                       <div className="mt-2">

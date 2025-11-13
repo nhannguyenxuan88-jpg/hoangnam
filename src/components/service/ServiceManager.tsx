@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   FileText,
   Wrench,
@@ -104,6 +104,22 @@ export default function ServiceManager() {
   const [refundingOrder, setRefundingOrder] = useState<WorkOrder | null>(null);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [refundReason, setRefundReason] = useState("");
+
+  // Open modal automatically if navigated from elsewhere with editOrder state
+  const location = useLocation();
+  useEffect(() => {
+    const state = (location && (location as any).state) as { editOrder?: WorkOrder } | null;
+    console.log("[ServiceManager] location.state:", state);
+    if (state && state.editOrder) {
+      setEditingOrder(state.editOrder);
+      setShowModal(true);
+      try {
+        window.history.replaceState({}, document.title);
+      } catch (e) {
+        // ignore when not allowed
+      }
+    }
+  }, [location]);
 
   // Fetch store settings on mount
   useEffect(() => {
@@ -711,15 +727,27 @@ export default function ServiceManager() {
                         <div className="space-y-1 min-w-[160px] text-xs">
                           {/* Compact summary - inline to save space */}
                           <div className="text-xs text-slate-400 dark:text-slate-500">
-                            DV: {formatCurrency(serviceFee)} • P/tùng:{" "}
-                            {formatCurrency(partsCost)} • Công:{" "}
-                            {formatCurrency(laborCost)}
+                            {serviceFee > 0 && (
+                              <span className="mr-2">
+                                DV: {formatCurrency(serviceFee)}
+                              </span>
+                            )}
+                            {partsCost > 0 && (
+                              <span className="mr-2">
+                                P/tùng: {formatCurrency(partsCost)}
+                              </span>
+                            )}
+                            {laborCost > 0 && (
+                              <span className="mr-2">
+                                Công: {formatCurrency(laborCost)}
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center justify-between pt-1.5 mt-1.5 border-t border-slate-200 dark:border-slate-600">
-                            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                               Tổng cộng:
                             </span>
-                            <span className="text-base font-bold text-blue-500 dark:text-blue-400 tabular-nums">
+                            <span className="text-sm font-semibold text-blue-500 dark:text-blue-400 tabular-nums">
                               {formatCurrency(order.total).replace("₫", "")} đ
                             </span>
                           </div>
@@ -746,20 +774,21 @@ export default function ServiceManager() {
                             )}
 
                           {/* Số tiền còn phải thu */}
-                          {order.remainingAmount !== undefined && (
-                            <div className="flex items-center justify-between text-xs mt-1">
-                              <span>Còn phải thu:</span>
-                              <span
-                                className={`font-bold tabular-nums ${
-                                  order.remainingAmount > 0
-                                    ? "text-red-500"
-                                    : "text-green-500"
-                                }`}
-                              >
-                                {formatCurrency(order.remainingAmount)} đ
-                              </span>
-                            </div>
-                          )}
+                          {order.remainingAmount !== undefined &&
+                            order.remainingAmount > 0 && (
+                              <div className="flex items-center justify-between text-xs mt-1">
+                                <span>Còn phải thu:</span>
+                                <span
+                                  className={`font-bold tabular-nums ${
+                                    order.remainingAmount > 0
+                                      ? "text-red-500"
+                                      : "text-green-500"
+                                  }`}
+                                >
+                                  {formatCurrency(order.remainingAmount)} đ
+                                </span>
+                              </div>
+                            )}
 
                           {/* Trạng thái badge */}
                           <div className="pt-2">
