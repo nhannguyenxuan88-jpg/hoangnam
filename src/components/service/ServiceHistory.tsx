@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useAppContext } from "../../contexts/AppContext";
 import { formatCurrency, formatDate } from "../../utils/format";
-import { Calendar, Search, Download, Printer } from "lucide-react";
+import { Calendar, Search, Download, Printer, Edit2 } from "lucide-react";
 import { printElementById } from "../../utils/print";
 import { supabase } from "../../supabaseClient";
 import type { WorkOrder } from "../../types";
+import { useNavigate } from "react-router-dom";
 
 interface StoreSettings {
   store_name?: string;
@@ -27,6 +28,7 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
   currentBranchId,
 }) => {
   const { workOrders } = useAppContext();
+  const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -394,6 +396,12 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
   const handlePrintOrder = (order: WorkOrder) => {
     setPrintOrder(order);
     setShowPrintPreview(true);
+  };
+
+  // Handle edit work order - navigate to service page with order data
+  const handleEditOrder = (order: WorkOrder) => {
+    // Navigate to service manager with order ID in state
+    navigate("/service", { state: { editOrder: order } });
   };
 
   // Handle actual print
@@ -883,6 +891,37 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
                             {formatCurrency(order.total)}
                           </span>
                         </div>
+                        {order.discount && order.discount > 0 && (
+                          <div className="flex justify-between text-right text-xs">
+                            <span className="text-red-500">Giảm giá:</span>
+                            <span className="text-red-500">
+                              {formatCurrency(order.discount)}
+                            </span>
+                          </div>
+                        )}
+                        {order.additionalPayment &&
+                          order.additionalPayment > 0 && (
+                            <div className="flex justify-between text-right text-xs text-green-500">
+                              <span>Thanh toán thêm:</span>
+                              <span>
+                                -{formatCurrency(order.additionalPayment)}
+                              </span>
+                            </div>
+                          )}
+                        {order.remainingAmount !== undefined && (
+                          <div className="flex justify-between text-right text-xs mt-1">
+                            <span>Còn phải thu:</span>
+                            <span
+                              className={`font-bold ${
+                                order.remainingAmount > 0
+                                  ? "text-red-500"
+                                  : "text-green-500"
+                              }`}
+                            >
+                              {formatCurrency(order.remainingAmount)}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="mt-2">
@@ -892,6 +931,14 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
 
                     {/* Column 5: Actions */}
                     <div className="w-24 flex flex-col items-center gap-2">
+                      <button
+                        onClick={() => handleEditOrder(order)}
+                        className="px-4 py-1.5 bg-cyan-500 hover:bg-cyan-600 text-white text-sm rounded-md transition-colors min-w-[70px] flex items-center justify-center gap-1"
+                        title="Chỉnh sửa phiếu"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>Sửa</span>
+                      </button>
                       <button
                         onClick={() => handlePrintOrder(order)}
                         className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-md transition-colors min-w-[70px] flex items-center justify-center gap-1"

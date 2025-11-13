@@ -99,14 +99,14 @@ export const useRefundWorkOrderRepo = () => {
       orderId: string;
       refundReason: string;
     }) => refundWorkOrder(orderId, refundReason),
-    onSuccess: (data) => {
+    onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["workOrdersRepo"] });
       qc.invalidateQueries({ queryKey: ["partsRepo"] }); // Refresh for restored stock
       showToast.success("Đã hoàn tiền phiếu sửa chữa");
-      if (data?.refundAmount) {
+      if (result.ok && (result.data as any).refundAmount) {
         showToast.info(
           `Hoàn tiền: ${new Intl.NumberFormat("vi-VN").format(
-            data.refundAmount
+            (result.data as any).refundAmount
           )}đ`
         );
       }

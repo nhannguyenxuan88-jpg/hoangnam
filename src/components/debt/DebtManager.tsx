@@ -1,24 +1,42 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useAppContext } from "../../contexts/AppContext";
 import { formatCurrency, formatDate } from "../../utils/format";
 import { showToast } from "../../utils/toast";
 import { PlusIcon } from "../Icons";
 import type { CustomerDebt, SupplierDebt } from "../../types";
+import {
+  useCustomerDebtsRepo,
+  useCreateCustomerDebtRepo,
+  useUpdateCustomerDebtRepo,
+  useDeleteCustomerDebtRepo,
+  useSupplierDebtsRepo,
+  useCreateSupplierDebtRepo,
+  useUpdateSupplierDebtRepo,
+  useDeleteSupplierDebtRepo,
+} from "../../hooks/useDebtsRepository";
 
 const DebtManager: React.FC = () => {
   const {
     customers,
     suppliers,
-    customerDebts,
-    supplierDebts,
     currentBranchId,
     setCashTransactions,
     cashTransactions,
     setPaymentSources,
     paymentSources,
-    payCustomerDebts,
-    paySupplierDebts,
   } = useAppContext();
+
+  // Fetch debts from Supabase
+  const { data: customerDebts = [], isLoading: loadingCustomerDebts } =
+    useCustomerDebtsRepo();
+  const { data: supplierDebts = [], isLoading: loadingSupplierDebts } =
+    useSupplierDebtsRepo();
+  const createCustomerDebt = useCreateCustomerDebtRepo();
+  const updateCustomerDebt = useUpdateCustomerDebtRepo();
+  const deleteCustomerDebt = useDeleteCustomerDebtRepo();
+  const createSupplierDebt = useCreateSupplierDebtRepo();
+  const updateSupplierDebt = useUpdateSupplierDebtRepo();
+  const deleteSupplierDebt = useDeleteSupplierDebtRepo();
   const [activeTab, setActiveTab] = useState<"customer" | "supplier">(
     "customer"
   );
@@ -49,6 +67,16 @@ const DebtManager: React.FC = () => {
         debt.licensePlate?.toLowerCase().includes(term)
     );
   }, [branchCustomerDebts, searchTerm]);
+
+  // Debug: log debts count by branch
+  useEffect(() => {
+    console.log(
+      "[DebtManager] branchCustomerDebts count:",
+      branchCustomerDebts.length,
+      "branchId:",
+      currentBranchId
+    );
+  }, [branchCustomerDebts, currentBranchId]);
 
   const filteredSupplierDebts = useMemo(() => {
     if (!searchTerm) return branchSupplierDebts;
@@ -144,68 +172,77 @@ const DebtManager: React.FC = () => {
 
       {/* Search and Actions Bar */}
       <div className="bg-primary-bg px-6 py-4 border-b border-primary-border">
-        <div className="flex items-center gap-4">
-          <div className="flex-1 relative">
-            <svg
-              className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-text"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder={
-                activeTab === "customer"
-                  ? "Tìm SĐT / Tên KH / Tên sản phẩm / IMEI"
-                  : "Tìm tên / SĐT nhà cung cấp"
-              }
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-primary-bg border border-secondary-border rounded-lg text-primary-text placeholder-tertiary-text focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-            />
-          </div>
-          <div className="text-secondary-text text-sm">
-            Tổng công nợ:{" "}
-            <span className="font-bold text-red-600 dark:text-red-400">
-              {formatCurrency(
-                activeTab === "customer" ? customerTotal : supplierTotal
-              )}
+        {loadingCustomerDebts || loadingSupplierDebts ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
+            <span className="ml-3 text-secondary-text">
+              Đang tải dữ liệu...
             </span>
           </div>
-          <button
-            onClick={() =>
-              activeTab === "customer"
-                ? setShowCollectModal(true)
-                : setShowPaymentModal(true)
-            }
-            className="flex items-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors"
-          >
-            <PlusIcon className="w-5 h-5" />
-            <span>{activeTab === "customer" ? "Thư nợ" : "Chi trả nợ"}</span>
-          </button>
-          <button className="p-2.5 text-secondary-text hover:text-primary-text transition-colors">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+        ) : (
+          <div className="flex items-center gap-4">
+            <div className="flex-1 relative">
+              <svg
+                className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-text"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder={
+                  activeTab === "customer"
+                    ? "Tìm SĐT / Tên KH / Tên sản phẩm / IMEI"
+                    : "Tìm tên / SĐT nhà cung cấp"
+                }
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-primary-bg border border-secondary-border rounded-lg text-primary-text placeholder-tertiary-text focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               />
-            </svg>
-          </button>
-        </div>
+            </div>
+            <div className="text-secondary-text text-sm">
+              Tổng công nợ:{" "}
+              <span className="font-bold text-red-600 dark:text-red-400">
+                {formatCurrency(
+                  activeTab === "customer" ? customerTotal : supplierTotal
+                )}
+              </span>
+            </div>
+            <button
+              onClick={() =>
+                activeTab === "customer"
+                  ? setShowCollectModal(true)
+                  : setShowPaymentModal(true)
+              }
+              className="flex items-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors"
+            >
+              <PlusIcon className="w-5 h-5" />
+              <span>{activeTab === "customer" ? "Thư nợ" : "Chi trả nợ"}</span>
+            </button>
+            <button className="p-2.5 text-secondary-text hover:text-primary-text transition-colors">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Content Area */}
@@ -537,26 +574,59 @@ const DebtManager: React.FC = () => {
               : selectedSupplierTotal
           }
           debtType={activeTab}
-          onConfirm={(paymentMethod, paymentTime) => {
-            // Process payment using context functions
-            if (activeTab === "customer") {
-              payCustomerDebts(selectedCustomerIds, paymentMethod, paymentTime);
-              setSelectedCustomerIds([]);
-            } else {
-              paySupplierDebts(selectedSupplierIds, paymentMethod, paymentTime);
-              setSelectedSupplierIds([]);
+          onConfirm={async (paymentMethod, paymentTime) => {
+            // TODO: Implement bulk payment with repository
+            // For now, just update individual debts
+            try {
+              if (activeTab === "customer") {
+                for (const customerId of selectedCustomerIds) {
+                  const debt = branchCustomerDebts.find(
+                    (d) => d.customerId === customerId
+                  );
+                  if (debt) {
+                    await updateCustomerDebt.mutateAsync({
+                      id: debt.id,
+                      updates: {
+                        paidAmount: debt.totalAmount,
+                        remainingAmount: 0,
+                      },
+                    });
+                  }
+                }
+                setSelectedCustomerIds([]);
+              } else {
+                for (const supplierId of selectedSupplierIds) {
+                  const debt = branchSupplierDebts.find(
+                    (d) => d.supplierId === supplierId
+                  );
+                  if (debt) {
+                    await updateSupplierDebt.mutateAsync({
+                      id: debt.id,
+                      updates: {
+                        paidAmount: debt.totalAmount,
+                        remainingAmount: 0,
+                      },
+                    });
+                  }
+                }
+                setSelectedSupplierIds([]);
+              }
+
+              setShowBulkPaymentModal(false);
+
+              // Show success message
+              showToast.success(
+                `Đã thanh toán thành công ${formatCurrency(
+                  activeTab === "customer"
+                    ? selectedCustomerTotal
+                    : selectedSupplierTotal
+                )} qua ${
+                  paymentMethod === "cash" ? "Tiền mặt" : "Chuyển khoản"
+                }`
+              );
+            } catch (error: any) {
+              showToast.error(error.message || "Không thể thanh toán");
             }
-
-            setShowBulkPaymentModal(false);
-
-            // Show success message
-            showToast.success(
-              `Đã thanh toán thành công ${formatCurrency(
-                activeTab === "customer"
-                  ? selectedCustomerTotal
-                  : selectedSupplierTotal
-              )} qua ${paymentMethod === "cash" ? "Tiền mặt" : "Chuyển khoản"}`
-            );
           }}
         />
       )}

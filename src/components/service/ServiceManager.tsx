@@ -25,6 +25,11 @@ import {
   useWorkOrdersRepo,
 } from "../../hooks/useWorkOrdersRepository";
 import { usePartsRepo } from "../../hooks/usePartsRepository";
+import { useEmployeesRepo } from "../../hooks/useEmployeesRepository";
+import {
+  useCreateCustomerDebtRepo,
+  useUpdateCustomerDebtRepo,
+} from "../../hooks/useDebtsRepository";
 import { showToast } from "../../utils/toast";
 import { printElementById } from "../../utils/print";
 import { supabase } from "../../supabaseClient";
@@ -331,6 +336,10 @@ export default function ServiceManager() {
 
   // 🔹 Handle refund work order
   const { mutateAsync: refundWorkOrderAsync } = useRefundWorkOrderRepo();
+
+  // 🔹 Handle create/update customer debts
+  const createCustomerDebt = useCreateCustomerDebtRepo();
+  const updateCustomerDebt = useUpdateCustomerDebtRepo();
 
   const handleRefundOrder = (order: WorkOrder) => {
     setRefundingOrder(order);
@@ -699,31 +708,12 @@ export default function ServiceManager() {
                       </td>
 
                       <td className="px-4 py-4 align-top">
-                        <div className="space-y-1 min-w-[160px]">
-                          {/* Chi phí chi tiết - theo đúng form "Tổng kết" */}
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-400 dark:text-slate-500">
-                              Phí dịch vụ:
-                            </span>
-                            <span className="font-medium text-slate-900 dark:text-slate-100 tabular-nums">
-                              {formatCurrency(serviceFee).replace("₫", "")} đ
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-400 dark:text-slate-500">
-                              Tiền phụ tùng:
-                            </span>
-                            <span className="font-medium text-slate-900 dark:text-slate-100 tabular-nums">
-                              {formatCurrency(partsCost).replace("₫", "")} đ
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-400 dark:text-slate-500">
-                              Giá công/Đặt hàng:
-                            </span>
-                            <span className="font-medium text-slate-900 dark:text-slate-100 tabular-nums">
-                              {formatCurrency(laborCost).replace("₫", "")} đ
-                            </span>
+                        <div className="space-y-1 min-w-[160px] text-xs">
+                          {/* Compact summary - inline to save space */}
+                          <div className="text-xs text-slate-400 dark:text-slate-500">
+                            DV: {formatCurrency(serviceFee)} • P/tùng:{" "}
+                            {formatCurrency(partsCost)} • Công:{" "}
+                            {formatCurrency(laborCost)}
                           </div>
                           <div className="flex items-center justify-between pt-1.5 mt-1.5 border-t border-slate-200 dark:border-slate-600">
                             <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
@@ -733,6 +723,43 @@ export default function ServiceManager() {
                               {formatCurrency(order.total).replace("₫", "")} đ
                             </span>
                           </div>
+
+                          {/* Optional discount */}
+                          {order.discount && order.discount > 0 && (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-red-500">Giảm giá:</span>
+                              <span className="font-medium text-red-500 tabular-nums">
+                                {formatCurrency(order.discount)} đ
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Thanh toán thêm (có thể là âm vì là khoản khách đã trả) */}
+                          {order.additionalPayment &&
+                            order.additionalPayment > 0 && (
+                              <div className="flex items-center justify-between text-xs text-green-500">
+                                <span>Thanh toán thêm:</span>
+                                <span className="font-medium tabular-nums">
+                                  -{formatCurrency(order.additionalPayment)} đ
+                                </span>
+                              </div>
+                            )}
+
+                          {/* Số tiền còn phải thu */}
+                          {order.remainingAmount !== undefined && (
+                            <div className="flex items-center justify-between text-xs mt-1">
+                              <span>Còn phải thu:</span>
+                              <span
+                                className={`font-bold tabular-nums ${
+                                  order.remainingAmount > 0
+                                    ? "text-red-500"
+                                    : "text-green-500"
+                                }`}
+                              >
+                                {formatCurrency(order.remainingAmount)} đ
+                              </span>
+                            </div>
+                          )}
 
                           {/* Trạng thái badge */}
                           <div className="pt-2">
@@ -2405,6 +2432,51 @@ const WorkOrderModal: React.FC<{
   const totalPaid = totalDeposit + totalAdditionalPayment;
   const remainingAmount = Math.max(0, total - totalPaid);
 
+  // Helper: Auto-create customer debt if there's remaining amount
+  const createCustomerDebt = useCreateCustomerDebtRepo();
+  const createCustomerDebtIfNeeded = async (
+    workOrder: WorkOrder,
+    remainingAmount: number
+  ) => {
+    if (remainingAmount <= 0) return;
+
+    try {
+      const safeCustomerId =
+        workOrder.customerPhone || workOrder.id || `CUST-ANON-${Date.now()}`;
+      const safeCustomerName =
+        workOrder.customerName?.trim() ||
+        workOrder.customerPhone ||
+        "Khách vãng lai";
+
+      const payload = {
+        customerId: safeCustomerId,
+        customerName: safeCustomerName,
+        phone: workOrder.customerPhone || null,
+        licensePlate: workOrder.licensePlate || null,
+        description: `Công nợ từ phiếu sửa chữa #${
+          workOrder.id?.toString().slice(-6) || ""
+        } - ${safeCustomerName} - Biển số: ${workOrder.licensePlate || ""}`,
+        totalAmount: remainingAmount,
+        paidAmount: 0,
+        remainingAmount: remainingAmount,
+        createdDate: new Date().toISOString().split("T")[0],
+        branchId: currentBranchId,
+      };
+
+      console.log("[ServiceManager] createCustomerDebt payload:", payload);
+      const result = await createCustomerDebt.mutateAsync(payload as any);
+      console.log("[ServiceManager] createCustomerDebt result:", result);
+      showToast.success(
+        `Đã tạo công nợ ${remainingAmount.toLocaleString()}đ cho khách hàng (ID: ${
+          result?.id
+        })`
+      );
+    } catch (error) {
+      console.error("Error creating customer debt:", error);
+      showToast.error("Không thể tạo công nợ tự động");
+    }
+  };
+
   const handleSave = async () => {
     // 🔹 VALIDATION FRONTEND
     // 1. Validate customer name & phone required
@@ -2618,6 +2690,11 @@ const WorkOrderModal: React.FC<{
 
         // Call onSave to update the workOrders state
         onSave(finalOrder);
+
+        // 🔹 Auto-create customer debt if there's remaining amount
+        if (remainingAmount > 0) {
+          await createCustomerDebtIfNeeded(finalOrder, remainingAmount);
+        }
       } catch (error: any) {
         console.error("Error creating work order (atomic):", error);
         // Error toast is already shown by the hook's onError
@@ -2741,6 +2818,10 @@ const WorkOrderModal: React.FC<{
         }
 
         onSave(finalOrder);
+
+        if (remainingAmount > 0) {
+          await createCustomerDebtIfNeeded(finalOrder, remainingAmount);
+        }
       } catch (error: any) {
         console.error("Error updating work order (atomic):", error);
       }
@@ -2863,6 +2944,10 @@ const WorkOrderModal: React.FC<{
     }
 
     onSave(finalOrder);
+
+    if (remainingAmount > 0) {
+      await createCustomerDebtIfNeeded(finalOrder, remainingAmount);
+    }
   };
 
   const handleAddPart = (part: Part) => {

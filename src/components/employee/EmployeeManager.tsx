@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Users,
   UserCheck,
@@ -20,18 +20,33 @@ import { Employee, AttendanceRecord } from "../../types";
 import { formatCurrency, formatDate } from "../../utils/format";
 import PayrollManager from "../payroll/PayrollManager";
 import { showToast } from "../../utils/toast";
+import {
+  useEmployeesRepo,
+  useCreateEmployeeRepo,
+  useUpdateEmployeeRepo,
+  useDeleteEmployeeRepo,
+} from "../../hooks/useEmployeesRepository";
 
 type Tab = "list" | "attendance" | "payroll" | "history";
 
 const EmployeeManager: React.FC = () => {
-  const { employees, upsertEmployee, setEmployees } = useAppContext();
+  const { employees: contextEmployees, setEmployees } = useAppContext();
 
-  // Helper wrappers
-  const addEmployee = (emp: Employee) => upsertEmployee(emp);
-  const updateEmployee = (emp: Employee) => upsertEmployee(emp);
-  const deleteEmployee = (id: string) => {
-    setEmployees((prev) => prev.filter((e) => e.id !== id));
-  };
+  // Fetch employees from Supabase
+  const { data: fetchedEmployees, isLoading } = useEmployeesRepo();
+  const { mutateAsync: createEmployeeAsync } = useCreateEmployeeRepo();
+  const { mutateAsync: updateEmployeeAsync } = useUpdateEmployeeRepo();
+  const { mutateAsync: deleteEmployeeAsync } = useDeleteEmployeeRepo();
+
+  // Use fetched employees or context as fallback
+  const employees = fetchedEmployees || contextEmployees;
+
+  // Sync to context
+  useEffect(() => {
+    if (fetchedEmployees) {
+      setEmployees(fetchedEmployees);
+    }
+  }, [fetchedEmployees, setEmployees]);
   const [activeTab, setActiveTab] = useState<Tab>("list");
   const [showForm, setShowForm] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
@@ -60,39 +75,29 @@ const EmployeeManager: React.FC = () => {
     );
   }, [employees, searchTerm]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.name || !formData.position || !formData.baseSalary) {
-      alert("Vui lòng điền đầy đủ thông tin bắt buộc!");
+      showToast.error("Vui lòng điền đầy đủ thông tin bắt buộc!");
       return;
     }
 
-    if (editingEmployee) {
-      updateEmployee({ ...editingEmployee, ...formData } as Employee);
-      showToast.success("Cập nhật nhân viên thành công!");
-    } else {
-      const newEmployee: Employee = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: formData.name!,
-        phone: formData.phone,
-        email: formData.email,
-        position: formData.position!,
-        department: formData.department,
-        baseSalary: formData.baseSalary!,
-        allowances: formData.allowances,
-        startDate: formData.startDate!,
-        status: formData.status as "active" | "inactive" | "terminated",
-        bankAccount: formData.bankAccount,
-        bankName: formData.bankName,
-        taxCode: formData.taxCode,
-        created_at: new Date().toISOString(),
-      };
-      addEmployee(newEmployee);
-      showToast.success("Thêm nhân viên thành công!");
+    try {
+      if (editingEmployee) {
+        await updateEmployeeAsync({
+          id: editingEmployee.id,
+          updates: formData,
+        });
+      } else {
+        await createEmployeeAsync(
+          formData as Omit<Employee, "id" | "created_at" | "updated_at">
+        );
+      }
+      resetForm();
+    } catch (error) {
+      // Error already handled by mutation
     }
-
-    resetForm();
   };
 
   const resetForm = () => {
@@ -117,10 +122,13 @@ const EmployeeManager: React.FC = () => {
     setShowForm(true);
   };
 
-  const handleDelete = (emp: Employee) => {
+  const handleDelete = async (emp: Employee) => {
     if (confirm(`Bạn có chắc muốn xóa nhân viên "${emp.name}" không?`)) {
-      deleteEmployee(emp.id);
-      showToast.success("Đã xóa nhân viên!");
+      try {
+        await deleteEmployeeAsync(emp.id);
+      } catch (error) {
+        // Error already handled by mutation
+      }
     }
   };
 

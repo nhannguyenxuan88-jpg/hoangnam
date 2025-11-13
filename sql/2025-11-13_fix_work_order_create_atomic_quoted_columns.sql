@@ -129,7 +129,7 @@ BEGIN
     issueDescription, technicianName, status, laborCost, discount,
     partsUsed, additionalServices, total, branchId, paymentStatus,
     paymentMethod, depositAmount, additionalPayment, totalPaid,
-    remainingAmount, creationDate
+    remainingAmount, creationDate, userId
   )
   VALUES (
     p_order_id, p_customer_name, p_customer_phone, p_vehicle_model, p_license_plate,
@@ -140,7 +140,8 @@ BEGIN
     CASE WHEN p_additional_payment > 0 THEN p_additional_payment ELSE NULL END,
     COALESCE(p_deposit_amount, 0) + COALESCE(p_additional_payment, 0),
     p_total - (COALESCE(p_deposit_amount, 0) + COALESCE(p_additional_payment, 0)),
-    v_creation_date
+    v_creation_date,
+    p_user_id
   );
 
   -- Create deposit transaction if applicable

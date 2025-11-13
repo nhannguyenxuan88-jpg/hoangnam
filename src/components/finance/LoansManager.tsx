@@ -3,18 +3,33 @@ import { useAppContext } from "../../contexts/AppContext";
 import { formatCurrency, formatDate } from "../../utils/format";
 import type { Loan, LoanPayment } from "../../types";
 import { PlusIcon } from "../Icons";
+import {
+  useLoansRepo,
+  useCreateLoanRepo,
+  useUpdateLoanRepo,
+  useDeleteLoanRepo,
+  useLoanPaymentsRepo,
+  useCreateLoanPaymentRepo,
+} from "../../hooks/useLoansRepository";
+import { showToast } from "../../utils/toast";
 
 const LoansManager: React.FC = () => {
   const {
-    loans,
-    upsertLoan,
-    upsertLoanPayment,
     currentBranchId,
     setCashTransactions,
     cashTransactions,
     setPaymentSources,
     paymentSources,
   } = useAppContext();
+
+  // Fetch loans from Supabase
+  const { data: loans = [], isLoading: loadingLoans } = useLoansRepo();
+  const { data: loanPayments = [], isLoading: loadingPayments } =
+    useLoanPaymentsRepo();
+  const createLoan = useCreateLoanRepo();
+  const updateLoan = useUpdateLoanRepo();
+  const deleteLoan = useDeleteLoanRepo();
+  const createLoanPayment = useCreateLoanPaymentRepo();
   const [showAddLoanModal, setShowAddLoanModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
@@ -73,118 +88,129 @@ const LoansManager: React.FC = () => {
 
       {/* Summary Cards */}
       <div className="p-6">
-        <div className="grid grid-cols-5 gap-4 mb-6">
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border-2 border-blue-200 dark:border-blue-800">
-            <div className="text-blue-600 dark:text-blue-400 text-sm font-medium mb-2">
-              Tổng vay
-            </div>
-            <div className="text-blue-900 dark:text-blue-100 text-2xl font-bold">
-              {formatCurrency(summary.totalLoans)}
-            </div>
+        {loadingLoans || loadingPayments ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
+            <span className="ml-3 text-secondary-text">
+              Đang tải dữ liệu...
+            </span>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-5 gap-4 mb-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border-2 border-blue-200 dark:border-blue-800">
+                <div className="text-blue-600 dark:text-blue-400 text-sm font-medium mb-2">
+                  Tổng vay
+                </div>
+                <div className="text-blue-900 dark:text-blue-100 text-2xl font-bold">
+                  {formatCurrency(summary.totalLoans)}
+                </div>
+              </div>
 
-          <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border-2 border-red-200 dark:border-red-800">
-            <div className="text-red-600 dark:text-red-400 text-sm font-medium mb-2">
-              Còn nợ
-            </div>
-            <div className="text-red-900 dark:text-red-100 text-2xl font-bold">
-              {formatCurrency(summary.totalRemaining)}
-            </div>
-          </div>
+              <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border-2 border-red-200 dark:border-red-800">
+                <div className="text-red-600 dark:text-red-400 text-sm font-medium mb-2">
+                  Còn nợ
+                </div>
+                <div className="text-red-900 dark:text-red-100 text-2xl font-bold">
+                  {formatCurrency(summary.totalRemaining)}
+                </div>
+              </div>
 
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border-2 border-green-200 dark:border-green-800">
-            <div className="text-green-600 dark:text-green-400 text-sm font-medium mb-2">
-              Đã trả
-            </div>
-            <div className="text-green-900 dark:text-green-100 text-2xl font-bold">
-              {formatCurrency(summary.totalPaid)}
-            </div>
-          </div>
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border-2 border-green-200 dark:border-green-800">
+                <div className="text-green-600 dark:text-green-400 text-sm font-medium mb-2">
+                  Đã trả
+                </div>
+                <div className="text-green-900 dark:text-green-100 text-2xl font-bold">
+                  {formatCurrency(summary.totalPaid)}
+                </div>
+              </div>
 
-          <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 border-2 border-amber-200 dark:border-amber-800">
-            <div className="text-amber-600 dark:text-amber-400 text-sm font-medium mb-2">
-              Đang vay
-            </div>
-            <div className="text-amber-900 dark:text-amber-100 text-2xl font-bold">
-              {summary.activeLoans}
-            </div>
-            <div className="text-amber-600 dark:text-amber-400 text-xs mt-1">
-              khoản
-            </div>
-          </div>
+              <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 border-2 border-amber-200 dark:border-amber-800">
+                <div className="text-amber-600 dark:text-amber-400 text-sm font-medium mb-2">
+                  Đang vay
+                </div>
+                <div className="text-amber-900 dark:text-amber-100 text-2xl font-bold">
+                  {summary.activeLoans}
+                </div>
+                <div className="text-amber-600 dark:text-amber-400 text-xs mt-1">
+                  khoản
+                </div>
+              </div>
 
-          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border-2 border-orange-200 dark:border-orange-800">
-            <div className="text-orange-600 dark:text-orange-400 text-sm font-medium mb-2">
-              Quá hạn
+              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border-2 border-orange-200 dark:border-orange-800">
+                <div className="text-orange-600 dark:text-orange-400 text-sm font-medium mb-2">
+                  Quá hạn
+                </div>
+                <div className="text-orange-900 dark:text-orange-100 text-2xl font-bold">
+                  {summary.overdueLoans}
+                </div>
+                <div className="text-orange-600 dark:text-orange-400 text-xs mt-1">
+                  khoản
+                </div>
+              </div>
             </div>
-            <div className="text-orange-900 dark:text-orange-100 text-2xl font-bold">
-              {summary.overdueLoans}
-            </div>
-            <div className="text-orange-600 dark:text-orange-400 text-xs mt-1">
-              khoản
-            </div>
-          </div>
-        </div>
 
-        {/* Active Loans */}
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-            Các khoản vay đang hoạt động
-          </h2>
-          {groupedLoans.active.length === 0 ? (
-            <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-8 text-center text-slate-500 dark:text-slate-400">
-              Không có khoản vay nào đang hoạt động
+            {/* Active Loans */}
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                Các khoản vay đang hoạt động
+              </h2>
+              {groupedLoans.active.length === 0 ? (
+                <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-8 text-center text-slate-500 dark:text-slate-400">
+                  Không có khoản vay nào đang hoạt động
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {groupedLoans.active.map((loan) => (
+                    <LoanCard
+                      key={loan.id}
+                      loan={loan}
+                      onPayment={() => {
+                        setSelectedLoan(loan);
+                        setShowPaymentModal(true);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="grid gap-4">
-              {groupedLoans.active.map((loan) => (
-                <LoanCard
-                  key={loan.id}
-                  loan={loan}
-                  onPayment={() => {
-                    setSelectedLoan(loan);
-                    setShowPaymentModal(true);
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
 
-        {/* Overdue Loans */}
-        {groupedLoans.overdue.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-orange-600 dark:text-orange-400 mb-4">
-              Các khoản vay quá hạn
-            </h2>
-            <div className="grid gap-4">
-              {groupedLoans.overdue.map((loan) => (
-                <LoanCard
-                  key={loan.id}
-                  loan={loan}
-                  onPayment={() => {
-                    setSelectedLoan(loan);
-                    setShowPaymentModal(true);
-                  }}
-                  isOverdue
-                />
-              ))}
-            </div>
-          </div>
-        )}
+            {/* Overdue Loans */}
+            {groupedLoans.overdue.length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-orange-600 dark:text-orange-400 mb-4">
+                  Các khoản vay quá hạn
+                </h2>
+                <div className="grid gap-4">
+                  {groupedLoans.overdue.map((loan) => (
+                    <LoanCard
+                      key={loan.id}
+                      loan={loan}
+                      onPayment={() => {
+                        setSelectedLoan(loan);
+                        setShowPaymentModal(true);
+                      }}
+                      isOverdue
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {/* Paid Loans */}
-        {groupedLoans.paid.length > 0 && (
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-              Các khoản vay đã thanh toán
-            </h2>
-            <div className="grid gap-4">
-              {groupedLoans.paid.map((loan) => (
-                <LoanCard key={loan.id} loan={loan} isPaid />
-              ))}
-            </div>
-          </div>
+            {/* Paid Loans */}
+            {groupedLoans.paid.length > 0 && (
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                  Các khoản vay đã thanh toán
+                </h2>
+                <div className="grid gap-4">
+                  {groupedLoans.paid.map((loan) => (
+                    <LoanCard key={loan.id} loan={loan} isPaid />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -192,9 +218,16 @@ const LoansManager: React.FC = () => {
       {showAddLoanModal && (
         <AddLoanModal
           onClose={() => setShowAddLoanModal(false)}
-          onSave={(loan) => {
-            upsertLoan(loan);
-            setShowAddLoanModal(false);
+          onSave={async (loan) => {
+            try {
+              await createLoan.mutateAsync(
+                loan as Omit<Loan, "id" | "created_at">
+              );
+              showToast.success("Đã thêm khoản vay thành công");
+              setShowAddLoanModal(false);
+            } catch (error: any) {
+              showToast.error(error.message || "Không thể thêm khoản vay");
+            }
           }}
         />
       )}
@@ -206,55 +239,67 @@ const LoansManager: React.FC = () => {
             setShowPaymentModal(false);
             setSelectedLoan(null);
           }}
-          onSave={(payment) => {
-            // Update loan remaining amount
-            upsertLoan({
-              ...selectedLoan,
-              remainingAmount: payment.remainingAmount,
-              status:
-                payment.remainingAmount === 0 ? "paid" : selectedLoan.status,
-            });
-            upsertLoanPayment(payment);
+          onSave={async (payment) => {
+            try {
+              // Update loan remaining amount
+              await updateLoan.mutateAsync({
+                id: selectedLoan.id,
+                updates: {
+                  remainingAmount: payment.remainingAmount,
+                  status:
+                    payment.remainingAmount === 0
+                      ? "paid"
+                      : selectedLoan.status,
+                },
+              });
 
-            // Tự động tạo giao dịch chi trong Sổ quỹ
-            const cashTxId = `CT-${Date.now()}`;
-            const cashTransaction = {
-              id: cashTxId,
-              type: "expense" as const,
-              date: payment.paymentDate,
-              amount: payment.totalAmount,
-              recipient: selectedLoan.lenderName,
-              notes: `Trả nợ vay - ${
-                selectedLoan.lenderName
-              } (Gốc: ${formatCurrency(
-                payment.principalAmount
-              )}, Lãi: ${formatCurrency(payment.interestAmount)})`,
-              paymentSourceId: payment.paymentMethod,
-              branchId: currentBranchId,
-              category: "loan_payment" as const,
-            };
+              // Create payment record
+              await createLoanPayment.mutateAsync(payment);
 
-            setCashTransactions([cashTransaction, ...cashTransactions]);
+              showToast.success("Đã ghi nhận thanh toán thành công");
 
-            // Cập nhật số dư nguồn tiền
-            setPaymentSources(
-              paymentSources.map((ps) =>
-                ps.id === payment.paymentMethod
-                  ? {
-                      ...ps,
-                      balance: {
-                        ...ps.balance,
-                        [currentBranchId]:
-                          (ps.balance[currentBranchId] || 0) -
-                          payment.totalAmount,
-                      },
-                    }
-                  : ps
-              )
-            );
+              // Tự động tạo giao dịch chi trong Sổ quỹ
+              const cashTxId = `CT-${Date.now()}`;
+              const cashTransaction = {
+                id: cashTxId,
+                type: "expense" as const,
+                date: payment.paymentDate,
+                amount: payment.totalAmount,
+                recipient: selectedLoan.lenderName,
+                notes: `Trả nợ vay - ${
+                  selectedLoan.lenderName
+                } (Gốc: ${formatCurrency(
+                  payment.principalAmount
+                )}, Lãi: ${formatCurrency(payment.interestAmount)})`,
+                paymentSourceId: payment.paymentMethod,
+                branchId: currentBranchId,
+                category: "loan_payment" as const,
+              };
 
-            setShowPaymentModal(false);
-            setSelectedLoan(null);
+              setCashTransactions([cashTransaction, ...cashTransactions]);
+
+              // Cập nhật số dư nguồn tiền
+              setPaymentSources(
+                paymentSources.map((ps) =>
+                  ps.id === payment.paymentMethod
+                    ? {
+                        ...ps,
+                        balance: {
+                          ...ps.balance,
+                          [currentBranchId]:
+                            (ps.balance[currentBranchId] || 0) -
+                            payment.totalAmount,
+                        },
+                      }
+                    : ps
+                )
+              );
+
+              setShowPaymentModal(false);
+              setSelectedLoan(null);
+            } catch (error: any) {
+              showToast.error(error.message || "Không thể ghi nhận thanh toán");
+            }
           }}
         />
       )}

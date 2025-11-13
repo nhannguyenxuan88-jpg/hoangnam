@@ -210,10 +210,11 @@ BEGIN
   IF p_deposit_amount > COALESCE(v_old_deposit, 0) AND p_payment_method IS NOT NULL THEN
     v_deposit_tx_id := gen_random_uuid()::text;
     INSERT INTO cash_transactions(
-      id, category, amount, date, description, branchId, paymentSource, reference
+      id, type, category, amount, date, description, branchId, paymentSource, reference
     )
     VALUES (
       v_deposit_tx_id,
+      'income',
       'service_deposit',
       p_deposit_amount - COALESCE(v_old_deposit, 0),
       NOW(),
@@ -228,10 +229,11 @@ BEGIN
   IF p_additional_payment > COALESCE(v_old_additional, 0) AND p_payment_method IS NOT NULL THEN
     v_payment_tx_id := gen_random_uuid()::text;
     INSERT INTO cash_transactions(
-      id, category, amount, date, description, branchId, paymentSource, reference
+      id, type, category, amount, date, description, branchId, paymentSource, reference
     )
     VALUES (
       v_payment_tx_id,
+      'income',
       'service_income',
       p_additional_payment - COALESCE(v_old_additional, 0),
       NOW(),
