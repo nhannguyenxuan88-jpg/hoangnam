@@ -1,6 +1,10 @@
 import React, { useState, useMemo } from "react";
 import { useAppContext } from "../../contexts/AppContext";
-import { formatCurrency, formatDate } from "../../utils/format";
+import {
+  formatCurrency,
+  formatDate,
+  formatWorkOrderId,
+} from "../../utils/format";
 import { Calendar, Search, Download, ChevronDown } from "lucide-react";
 
 interface ServiceHistoryProps {
@@ -24,7 +28,7 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
-    
+
     if (filter.includes("Tháng")) {
       // Extract month from filter like "Tháng 09/2025"
       const match = filter.match(/Tháng (\d+)\/(\d+)/);
@@ -36,7 +40,7 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
         return { start, end };
       }
     }
-    
+
     // Default to current month
     return {
       start: new Date(year, month, 1),
@@ -47,7 +51,7 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
   // Filter work orders
   const filteredOrders = useMemo(() => {
     const { start, end } = getDateRange(dateFilter);
-    
+
     return workOrders
       .filter((order) => {
         // Branch filter
@@ -72,13 +76,18 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
           return false;
 
         // Technician filter
-        if (technicianFilter !== "all" && order.technicianName !== technicianFilter)
+        if (
+          technicianFilter !== "all" &&
+          order.technicianName !== technicianFilter
+        )
           return false;
 
         // Payment filter
         if (paymentFilter !== "all") {
-          if (paymentFilter === "paid" && order.paymentStatus !== "paid") return false;
-          if (paymentFilter === "unpaid" && order.paymentStatus !== "unpaid") return false;
+          if (paymentFilter === "paid" && order.paymentStatus !== "paid")
+            return false;
+          if (paymentFilter === "unpaid" && order.paymentStatus !== "unpaid")
+            return false;
         }
 
         // Date range filter
@@ -105,7 +114,10 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
   ]);
 
   // Calculate total revenue
-  const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+  const totalRevenue = filteredOrders.reduce(
+    (sum, order) => sum + (order.total || 0),
+    0
+  );
 
   // Pagination removed - show all filtered orders
 
@@ -124,7 +136,11 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
       headers.join(","),
       ...filteredOrders.map((order) =>
         [
-          `#${order.id?.slice(-6) || ""}`,
+          `#${
+            formatWorkOrderId(order.id, storeSettings?.work_order_prefix)
+              ?.split("-")
+              .pop() || ""
+          }`,
           formatDate(order.creationDate, true),
           order.customerName || "",
           order.vehicleModel || "",
@@ -156,7 +172,10 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
     const statusConfig: Record<string, { icon: string; color: string }> = {
       "Tiếp nhận": { icon: "📋", color: "text-blue-600 dark:text-blue-400" },
       "Đang sửa": { icon: "🔧", color: "text-orange-600 dark:text-orange-400" },
-      "Đã sửa xong": { icon: "✓", color: "text-purple-600 dark:text-purple-400" },
+      "Đã sửa xong": {
+        icon: "✓",
+        color: "text-purple-600 dark:text-purple-400",
+      },
       "Trả máy": { icon: "✓", color: "text-green-600 dark:text-green-400" },
     };
 
@@ -307,7 +326,13 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
                     }`}
                   >
                     <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-100 font-medium">
-                      #{order.id?.slice(-6) || ""}
+                      #
+                      {formatWorkOrderId(
+                        order.id,
+                        storeSettings?.work_order_prefix
+                      )
+                        ?.split("-")
+                        .pop() || ""}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
                       {formatDate(order.creationDate, true)}

@@ -95,7 +95,8 @@ const SaleDetailModal: React.FC<SaleDetailModalProps> = ({
                 Mã đơn hàng
               </label>
               <div className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                {sale.id}
+                {formatAnyId(sale.id, storeSettings?.work_order_prefix) ||
+                  sale.id}
               </div>
             </div>
             <div>
@@ -482,7 +483,7 @@ const EditSaleModal: React.FC<EditSaleModalProps> = ({
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700">
           <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-            ✏️ [Chỉnh sửa] Đơn Xuất Bán {sale.id.slice(0, 8)}...
+            ✏️ [Chỉnh sửa] Đơn Xuất Bán {formatAnyId(sale.id)}
           </h2>
           <button
             onClick={onClose}
@@ -1892,7 +1893,10 @@ const SalesManager: React.FC = () => {
     if (!printSale) return;
 
     // Set receipt data for hidden element
-    setReceiptId(printSale.id);
+    setReceiptId(
+      formatAnyId(printSale.id, storeSettings?.work_order_prefix) ||
+        printSale.id
+    );
     setCustomerName(printSale.customer.name);
     setCustomerPhone(printSale.customer.phone || "");
 
@@ -3474,7 +3478,11 @@ const SalesManager: React.FC = () => {
                         marginTop: "0.5mm",
                       }}
                     >
-                      Mã: {printSale.id}
+                      Mã:{" "}
+                      {formatAnyId(
+                        printSale.id,
+                        storeSettings?.work_order_prefix
+                      ) || printSale.id}
                     </div>
                   </div>
 

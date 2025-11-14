@@ -17,7 +17,11 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { useAppContext } from "../../contexts/AppContext";
 import type { WorkOrder, Part, WorkOrderPart } from "../../types";
-import { formatCurrency, formatDate } from "../../utils/format";
+import {
+  formatCurrency,
+  formatDate,
+  formatWorkOrderId,
+} from "../../utils/format";
 import {
   useCreateWorkOrderAtomicRepo,
   useUpdateWorkOrderAtomicRepo,
@@ -45,6 +49,7 @@ interface StoreSettings {
   bank_account_number?: string;
   bank_account_holder?: string;
   bank_branch?: string;
+  work_order_prefix?: string;
 }
 
 type WorkOrderStatus = "Tiếp nhận" | "Đang sửa" | "Đã sửa xong" | "Trả máy";
@@ -130,7 +135,7 @@ export default function ServiceManager() {
         const { data, error } = await supabase
           .from("store_settings")
           .select(
-            "store_name, address, phone, email, logo_url, bank_qr_url, bank_name, bank_account_number, bank_account_holder, bank_branch"
+            "store_name, address, phone, email, logo_url, bank_qr_url, bank_name, bank_account_number, bank_account_holder, bank_branch, work_order_prefix"
           )
           .order("created_at", { ascending: false })
           .limit(1)
@@ -396,9 +401,14 @@ export default function ServiceManager() {
             category: "refund",
             amount: -refundAmount,
             date: new Date().toISOString(),
-            description: `Hoàn tiền hủy phiếu #${refundingOrder.id.slice(
-              -6
-            )} - ${refundReason}`,
+            description: `Hoàn tiền hủy phiếu #${(
+              formatWorkOrderId(
+                refundingOrder.id,
+                storeSettings?.work_order_prefix
+              ) || ""
+            )
+              .split("-")
+              .pop()} - ${refundReason}`,
             branchId: currentBranchId,
             paymentSource: refundingOrder.paymentMethod,
             reference: refundingOrder.id,
@@ -660,7 +670,14 @@ export default function ServiceManager() {
                             <Wrench className="w-5 h-5 text-slate-400" />
                           </div>
                           <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                            {order.id.slice(-3)}
+                            {(
+                              formatWorkOrderId(
+                                order.id,
+                                storeSettings?.work_order_prefix
+                              ) || ""
+                            )
+                              .split("-")
+                              .pop()}
                           </span>
                         </div>
                       </td>
@@ -969,7 +986,10 @@ export default function ServiceManager() {
               );
             } else {
               // Create new
-              const newOrder = { ...order, id: Date.now().toString() };
+              const newOrder = {
+                ...order,
+                id: `${storeSettings?.work_order_prefix || "SC"}-${Date.now()}`,
+              };
               setWorkOrders((prev) => [...prev, newOrder]);
             }
             setShowModal(false);
@@ -984,6 +1004,7 @@ export default function ServiceManager() {
           setPaymentSources={setPaymentSources}
           paymentSources={paymentSources}
           currentBranchId={currentBranchId}
+          storeSettings={storeSettings}
         />
       )}
 
@@ -1179,7 +1200,11 @@ export default function ServiceManager() {
                         )}
                       </div>
                       <div style={{ fontWeight: "bold" }}>
-                        Mã: {printOrder.id}
+                        Mã:{" "}
+                        {formatWorkOrderId(
+                          printOrder.id,
+                          storeSettings?.work_order_prefix
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1687,7 +1712,13 @@ export default function ServiceManager() {
                   minute: "2-digit",
                 })}
               </div>
-              <div>Mã phiếu: {printOrder.id}</div>
+              <div>
+                Mã phiếu:{" "}
+                {formatWorkOrderId(
+                  printOrder.id,
+                  storeSettings?.work_order_prefix
+                )}
+              </div>
             </div>
           </div>
 
@@ -2208,7 +2239,13 @@ export default function ServiceManager() {
                     Phiếu:
                   </span>
                   <span className="font-medium text-slate-900 dark:text-slate-100">
-                    #{refundingOrder.id.slice(-6)}
+                    #
+                    {formatWorkOrderId(
+                      refundingOrder.id,
+                      storeSettings?.work_order_prefix
+                    )
+                      .split("-")
+                      .pop()}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -2277,6 +2314,7 @@ const WorkOrderModal: React.FC<{
   setPaymentSources: (fn: (prev: any[]) => any[]) => void;
   paymentSources: any[];
   currentBranchId: string;
+  storeSettings?: StoreSettings | null;
 }> = ({
   order,
   onClose,
@@ -2290,6 +2328,7 @@ const WorkOrderModal: React.FC<{
   setPaymentSources,
   paymentSources,
   currentBranchId,
+  storeSettings,
 }) => {
   const { profile } = useAuth();
   const { mutateAsync: createWorkOrderAtomicAsync } =
@@ -2466,7 +2505,9 @@ const WorkOrderModal: React.FC<{
         phone: workOrder.customerPhone || null,
         licensePlate: workOrder.licensePlate || null,
         description: `Công nợ từ phiếu sửa chữa #${
-          workOrder.id?.toString().slice(-6) || ""
+          formatWorkOrderId(workOrder.id, storeSettings?.work_order_prefix)
+            .split("-")
+            .pop() || ""
         } - ${safeCustomerName} - Biển số: ${workOrder.licensePlate || ""}`,
         totalAmount: remainingAmount,
         paidAmount: 0,
@@ -2564,7 +2605,9 @@ const WorkOrderModal: React.FC<{
     // If this is a NEW work order with parts, use atomic RPC
     if (!order?.id && selectedParts.length > 0) {
       try {
-        const orderId = `WO-${Date.now()}`;
+        const orderId = `${
+          storeSettings?.work_order_prefix || "SC"
+        }-${Date.now()}`;
 
         const responseData = await createWorkOrderAtomicAsync({
           id: orderId,
@@ -2638,9 +2681,12 @@ const WorkOrderModal: React.FC<{
               category: "service_deposit",
               amount: depositAmount,
               date: new Date().toISOString(),
-              description: `Đặt cọc sửa chữa #${orderId.slice(-6)} - ${
-                formData.customerName
-              }`,
+              description: `Đặt cọc sửa chữa #${(
+                formatWorkOrderId(orderId, storeSettings?.work_order_prefix) ||
+                ""
+              )
+                .split("-")
+                .pop()} - ${formData.customerName}`,
               branchId: currentBranchId,
               paymentSource: formData.paymentMethod,
               reference: orderId,
@@ -2673,9 +2719,12 @@ const WorkOrderModal: React.FC<{
               category: "service_income",
               amount: totalAdditionalPayment,
               date: new Date().toISOString(),
-              description: `Thu tiền sửa chữa #${orderId.slice(-6)} - ${
-                formData.customerName
-              }`,
+              description: `Thu tiền sửa chữa #${(
+                formatWorkOrderId(orderId, storeSettings?.work_order_prefix) ||
+                ""
+              )
+                .split("-")
+                .pop()} - ${formData.customerName}`,
               branchId: currentBranchId,
               paymentSource: formData.paymentMethod,
               reference: orderId,
@@ -2763,9 +2812,12 @@ const WorkOrderModal: React.FC<{
               category: "service_deposit",
               amount: depositAmount - (order.depositAmount || 0),
               date: new Date().toISOString(),
-              description: `Đặt cọc bổ sung #${order.id.slice(-6)} - ${
-                formData.customerName
-              }`,
+              description: `Đặt cọc bổ sung #${(
+                formatWorkOrderId(order.id, storeSettings?.work_order_prefix) ||
+                ""
+              )
+                .split("-")
+                .pop()} - ${formData.customerName}`,
               branchId: currentBranchId,
               paymentSource: formData.paymentMethod,
               reference: order.id,
@@ -2802,9 +2854,12 @@ const WorkOrderModal: React.FC<{
               category: "service_income",
               amount: totalAdditionalPayment - (order.additionalPayment || 0),
               date: new Date().toISOString(),
-              description: `Thu tiền bổ sung #${order.id.slice(-6)} - ${
-                formData.customerName
-              }`,
+              description: `Thu tiền bổ sung #${(
+                formatWorkOrderId(order.id, storeSettings?.work_order_prefix) ||
+                ""
+              )
+                .split("-")
+                .pop()} - ${formData.customerName}`,
               branchId: currentBranchId,
               paymentSource: formData.paymentMethod,
               reference: order.id,
@@ -2842,7 +2897,9 @@ const WorkOrderModal: React.FC<{
 
     // Otherwise, use old logic for updates without parts
     const finalOrder: WorkOrder = {
-      id: formData.id || `WO-${Date.now()}`,
+      id:
+        formData.id ||
+        `${storeSettings?.work_order_prefix || "SC"}-${Date.now()}`,
       customerName: formData.customerName || "",
       customerPhone: formData.customerPhone || "",
       vehicleModel: formData.vehicleModel || "",
@@ -2887,9 +2944,14 @@ const WorkOrderModal: React.FC<{
           category: "service_deposit",
           amount: depositAmount,
           date: new Date().toISOString(),
-          description: `Đặt cọc sửa chữa #${finalOrder.id.slice(-6)} - ${
-            formData.customerName
-          }`,
+          description: `Đặt cọc sửa chữa #${(
+            formatWorkOrderId(
+              finalOrder.id,
+              storeSettings?.work_order_prefix
+            ) || ""
+          )
+            .split("-")
+            .pop()} - ${formData.customerName}`,
           branchId: currentBranchId,
           paymentSource: formData.paymentMethod,
           reference: finalOrder.id,
@@ -2926,9 +2988,14 @@ const WorkOrderModal: React.FC<{
           category: "service_income",
           amount: totalAdditionalPayment,
           date: new Date().toISOString(),
-          description: `Thu tiền sửa chữa #${finalOrder.id.slice(-6)} - ${
-            formData.customerName
-          }`,
+          description: `Thu tiền sửa chữa #${(
+            formatWorkOrderId(
+              finalOrder.id,
+              storeSettings?.work_order_prefix
+            ) || ""
+          )
+            .split("-")
+            .pop()} - ${formData.customerName}`,
           branchId: currentBranchId,
           paymentSource: formData.paymentMethod,
           reference: finalOrder.id,
@@ -3011,7 +3078,12 @@ const WorkOrderModal: React.FC<{
         {/* Header */}
         <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between rounded-t-xl flex-shrink-0">
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-            {formData.id ? "Chi tiết phiếu sửa chữa" : "Tạo phiếu sửa chữa mới"}
+            {formData.id
+              ? `Chi tiết phiếu sửa chữa - ${formatWorkOrderId(
+                  formData.id,
+                  storeSettings?.work_order_prefix
+                )}`
+              : "Tạo phiếu sửa chữa mới"}
           </h2>
           <button
             onClick={onClose}
@@ -3294,7 +3366,10 @@ const WorkOrderModal: React.FC<{
                         (emp) =>
                           emp.branchId === currentBranchId &&
                           emp.status === "active" &&
-                          emp.department === "Kỹ thuật"
+                          emp.department === "Kỹ thuật" &&
+                          ["Kỹ thuật viên", "Kỹ thuật trưởng"].includes(
+                            emp.position
+                          )
                       )
                       .map((emp) => (
                         <option key={emp.id} value={emp.name}>

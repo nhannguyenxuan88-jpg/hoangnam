@@ -7,7 +7,7 @@ import {
   Customer,
   Supplier,
 } from "../types";
-import { formatCurrency, formatDate } from "./format";
+import { formatCurrency, formatDate, formatAnyId } from "./format";
 
 // ==================== REVENUE REPORT ====================
 export const exportRevenueReport = (
@@ -66,7 +66,7 @@ export const exportRevenueReport = (
   sales.forEach((sale) => {
     sale.items.forEach((item, idx) => {
       salesData.push([
-        idx === 0 ? sale.id.slice(-8) : "",
+        idx === 0 ? formatAnyId(sale.id) : "",
         idx === 0 ? formatDate(sale.date) : "",
         idx === 0 ? sale.customer.name : "",
         idx === 0 ? sale.customer.phone || "" : "",

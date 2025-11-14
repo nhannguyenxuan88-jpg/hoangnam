@@ -1,6 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useAppContext } from "../../contexts/AppContext";
-import { formatCurrency, formatDate } from "../../utils/format";
+import {
+  formatCurrency,
+  formatDate,
+  formatWorkOrderId,
+} from "../../utils/format";
 import { Calendar, Search, Download, Printer, Edit2 } from "lucide-react";
 import { printElementById } from "../../utils/print";
 import { supabase } from "../../supabaseClient";
@@ -18,6 +22,7 @@ interface StoreSettings {
   bank_account_number?: string;
   bank_account_holder?: string;
   bank_branch?: string;
+  work_order_prefix?: string;
 }
 
 interface ServiceHistoryProps {
@@ -365,7 +370,7 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
       headers.join(","),
       ...filteredOrders.map((order) =>
         [
-          order.id || "",
+          formatWorkOrderId(order.id, storeSettings?.work_order_prefix) || "",
           formatDate(order.creationDate, true),
           order.customerName || "",
           order.vehicleModel || "",
@@ -1163,7 +1168,11 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
                         )}
                       </div>
                       <div style={{ fontWeight: "bold" }}>
-                        Mã: {printOrder.id}
+                        Mã:{" "}
+                        {formatWorkOrderId(
+                          printOrder.id,
+                          storeSettings?.work_order_prefix
+                        )}
                       </div>
                     </div>
                   </div>
