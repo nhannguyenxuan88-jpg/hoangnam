@@ -38,6 +38,7 @@ import {
   UserCog,
   User,
   X,
+  Menu,
 } from "lucide-react";
 import Dashboard from "./components/dashboard/Dashboard";
 
@@ -81,6 +82,7 @@ const SettingsPage = () => <SettingsManager />;
 
 function Nav() {
   const [showSettings, setShowSettings] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { profile, signOut } = useAuth();
   const role = profile?.role;
@@ -95,10 +97,19 @@ function Nav() {
 
   return (
     <nav className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
-      <div className="max-w-[1600px] mx-auto px-6 py-3">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-3">
         <div className="flex items-center justify-between">
           {/* Left: Brand and Branch Selector */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="md:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
+              aria-label="Menu"
+            >
+              <Menu className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+            </button>
+
             {/* Brand Logo acts as settings toggle */}
             <div className="relative">
               <button
@@ -109,9 +120,9 @@ function Nav() {
                 <img
                   src="/logo-smartcare.png"
                   alt="SmartCare Logo"
-                  className="w-14 h-14 rounded-xl shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 group-hover:shadow-md group-hover:ring-emerald-400/60 dark:group-hover:ring-emerald-500/60 transition"
+                  className="w-12 h-12 md:w-14 md:h-14 rounded-xl shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 group-hover:shadow-md group-hover:ring-emerald-400/60 dark:group-hover:ring-emerald-500/60 transition"
                 />
-                <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-emerald-600 to-blue-600 text-transparent bg-clip-text dark:from-emerald-400 dark:to-blue-400 hidden md:inline">
+                <span className="font-bold text-lg md:text-xl tracking-tight bg-gradient-to-r from-emerald-600 to-blue-600 text-transparent bg-clip-text dark:from-emerald-400 dark:to-blue-400 hidden lg:inline">
                   Nhạn Lâm SmartCare
                 </span>
               </button>
@@ -232,8 +243,8 @@ function Nav() {
             {/* Removed redundant brand title and branch selector as requested */}
           </div>
 
-          {/* Center: Main Navigation */}
-          <div className="flex items-center gap-2">
+          {/* Center: Main Navigation - Hidden on mobile */}
+          <div className="hidden md:flex items-center gap-2">
             <NavLink
               to="/dashboard"
               colorKey="blue"
@@ -307,6 +318,179 @@ function Nav() {
           {/* Right: empty (user menu integrated into settings) */}
           <div className="flex items-center" />
         </div>
+
+        {/* Mobile Menu Drawer - For Secondary Functions */}
+        {showMobileMenu && (
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              onClick={() => setShowMobileMenu(false)}
+            ></div>
+
+            {/* Menu Drawer - Redesigned with modern style */}
+            <div className="fixed inset-y-0 left-0 w-80 bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 z-50 shadow-2xl md:hidden overflow-y-auto animate-slide-in-left">
+              {/* Header with Profile */}
+              <div className="relative p-6 pb-8 bg-gradient-to-br from-blue-600 to-violet-600 dark:from-blue-700 dark:to-violet-800">
+                <button
+                  onClick={() => setShowMobileMenu(false)}
+                  className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg transition text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                {profile && (
+                  <div className="flex items-center gap-3 text-white mt-2">
+                    <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-full flex items-center justify-center text-xl font-bold border-2 border-white/30">
+                      {profile.full_name?.[0] || profile.email[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-base truncate">
+                        {profile.full_name || profile.email}
+                      </div>
+                      <div className="text-xs text-white/80 flex items-center gap-1 mt-0.5">
+                        {profile.role === "owner" && (
+                          <Crown className="w-3 h-3" />
+                        )}
+                        {profile.role === "manager" && (
+                          <UserCog className="w-3 h-3" />
+                        )}
+                        {profile.role === "staff" && (
+                          <User className="w-3 h-3" />
+                        )}
+                        <span>
+                          {profile.role === "owner"
+                            ? "Chủ cửa hàng"
+                            : profile.role === "manager"
+                            ? "Quản lý"
+                            : "Nhân viên"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Secondary Functions - Grouped by category */}
+              <div className="p-4 space-y-6">
+                {/* Management Section */}
+                <div>
+                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-3 mb-2">
+                    Quản lý
+                  </div>
+                  <div className="space-y-1">
+                    {can.viewEmployees && (
+                      <MobileDrawerLink
+                        to="/employees"
+                        icon={<BriefcaseBusiness className="w-5 h-5" />}
+                        label="Nhân viên"
+                        color="indigo"
+                        onClick={() => setShowMobileMenu(false)}
+                      />
+                    )}
+                    {can.viewDebt && (
+                      <MobileDrawerLink
+                        to="/debt"
+                        icon={<HandCoins className="w-5 h-5" />}
+                        label="Công nợ"
+                        color="orange"
+                        onClick={() => setShowMobileMenu(false)}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Finance & Reports Section */}
+                {(can.viewFinance || can.viewAnalytics) && (
+                  <div>
+                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-3 mb-2">
+                      Tài chính & Báo cáo
+                    </div>
+                    <div className="space-y-1">
+                      {can.viewFinance && (
+                        <MobileDrawerLink
+                          to="/finance"
+                          icon={<Landmark className="w-5 h-5" />}
+                          label="Tài chính"
+                          color="rose"
+                          onClick={() => setShowMobileMenu(false)}
+                        />
+                      )}
+                      {can.viewAnalytics && (
+                        <MobileDrawerLink
+                          to="/analytics"
+                          icon={<BarChart3 className="w-5 h-5" />}
+                          label="Phân tích"
+                          color="teal"
+                          onClick={() => setShowMobileMenu(false)}
+                        />
+                      )}
+                      <MobileDrawerLink
+                        to="/reports"
+                        icon={<FileText className="w-5 h-5" />}
+                        label="Báo cáo"
+                        color="fuchsia"
+                        onClick={() => setShowMobileMenu(false)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Settings Section */}
+                <div>
+                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-3 mb-2">
+                    Hệ thống
+                  </div>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => {
+                        toggleTheme();
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition text-slate-700 dark:text-slate-300"
+                    >
+                      {theme === "dark" ? (
+                        <Moon className="w-5 h-5" />
+                      ) : (
+                        <Sun className="w-5 h-5" />
+                      )}
+                      <span className="font-medium">
+                        Chế độ {theme === "dark" ? "tối" : "sáng"}
+                      </span>
+                    </button>
+
+                    {can.viewSettings && (
+                      <MobileDrawerLink
+                        to="/settings"
+                        icon={<Cog className="w-5 h-5" />}
+                        label="Cài đặt"
+                        color="slate"
+                        onClick={() => setShowMobileMenu(false)}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Logout Button - Fixed at bottom */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
+                <button
+                  onClick={async () => {
+                    try {
+                      await signOut();
+                    } finally {
+                      setShowMobileMenu(false);
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition shadow-lg shadow-red-500/20"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Đăng xuất</span>
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </nav>
   );
@@ -322,7 +506,8 @@ type ColorKey =
   | "rose"
   | "orange"
   | "teal"
-  | "fuchsia";
+  | "fuchsia"
+  | "slate";
 
 const NAV_COLORS: Record<
   ColorKey,
@@ -378,6 +563,63 @@ const NAV_COLORS: Record<
     bg: "bg-fuchsia-50 dark:bg-fuchsia-900/30",
     hoverBg: "hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20",
   },
+  slate: {
+    text: "text-slate-600 dark:text-slate-400",
+    bg: "bg-slate-50 dark:bg-slate-900/30",
+    hoverBg: "hover:bg-slate-50 dark:hover:bg-slate-900/20",
+  },
+};
+
+const MobileDrawerLink: React.FC<{
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+  color: ColorKey;
+  onClick?: () => void;
+}> = ({ to, icon, label, color, onClick }) => {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+  const colorConfig = NAV_COLORS[color as ColorKey] || NAV_COLORS.slate;
+
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${
+        isActive
+          ? `${colorConfig.bg} ${colorConfig.text} shadow-sm`
+          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"
+      }`}
+    >
+      <div className={`${isActive ? colorConfig.text : ""}`}>{icon}</div>
+      <span className="font-medium text-sm">{label}</span>
+    </Link>
+  );
+};
+
+const MobileNavLink: React.FC<{
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+}> = ({ to, icon, label, onClick }) => {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+        isActive
+          ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+          : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+      }`}
+    >
+      {icon}
+      <span className="font-medium">{label}</span>
+    </Link>
+  );
 };
 
 const NavLink: React.FC<{
@@ -401,6 +643,90 @@ const NavLink: React.FC<{
       <span className="flex items-center justify-center">{icon}</span>
       <span className="text-xs font-medium whitespace-nowrap">{label}</span>
     </Link>
+  );
+};
+
+// Bottom Navigation Bar for Mobile
+const BottomNav: React.FC = () => {
+  const location = useLocation();
+
+  const navItems = [
+    {
+      to: "/dashboard",
+      icon: <LayoutDashboard className="w-6 h-6" />,
+      label: "Tổng quan",
+      color: "blue",
+    },
+    {
+      to: "/service",
+      icon: <Wrench className="w-6 h-6" />,
+      label: "Sửa chữa",
+      color: "violet",
+    },
+    {
+      to: "/sales",
+      icon: <Cart className="w-6 h-6" />,
+      label: "Bán hàng",
+      color: "emerald",
+    },
+    {
+      to: "/inventory",
+      icon: <Boxes className="w-6 h-6" />,
+      label: "Kho",
+      color: "amber",
+    },
+    {
+      to: "/customers",
+      icon: <Users className="w-6 h-6" />,
+      label: "Khách hàng",
+      color: "cyan",
+    },
+  ];
+
+  return (
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 safe-area-bottom">
+      {/* Backdrop blur effect for modern look */}
+      <div className="absolute inset-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg -z-10"></div>
+
+      <div className="grid grid-cols-5 gap-1 px-2 py-2">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.to;
+          const colorKey = item.color as ColorKey;
+
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-all duration-200 ${
+                isActive
+                  ? `${NAV_COLORS[colorKey].bg} ${NAV_COLORS[colorKey].text} scale-105`
+                  : "text-slate-600 dark:text-slate-400 active:scale-95"
+              }`}
+            >
+              <div
+                className={`transition-transform ${
+                  isActive ? "scale-110" : ""
+                }`}
+              >
+                {item.icon}
+              </div>
+              <span
+                className={`text-[10px] font-medium truncate w-full text-center ${
+                  isActive ? "font-semibold" : ""
+                }`}
+              >
+                {item.label}
+              </span>
+              {isActive && (
+                <div
+                  className={`h-1 w-8 rounded-full ${NAV_COLORS[colorKey].bg} mt-0.5`}
+                ></div>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 
@@ -449,9 +775,9 @@ export default function App() {
                     path="/*"
                     element={
                       <ProtectedRoute>
-                        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
+                        <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors pb-20 md:pb-0">
                           <Nav />
-                          <main className="max-w-[1600px] mx-auto p-6">
+                          <main className="max-w-[1600px] mx-auto p-4 md:p-6">
                             <Routes>
                               <Route
                                 path="/"
@@ -574,6 +900,8 @@ export default function App() {
                               />
                             </Routes>
                           </main>
+                          {/* Bottom Navigation for Mobile */}
+                          <BottomNav />
                         </div>
                       </ProtectedRoute>
                     }

@@ -360,9 +360,9 @@ export default function ServiceManager() {
   ];
 
   const filteredOrders = useMemo(() => {
-    // Exclude "Trả máy" (shown in ServiceHistory) and "Đã hủy" (cancelled orders)
+    // Exclude "Trả máy" (shown in ServiceHistory) and refunded/cancelled orders
     let filtered = displayWorkOrders.filter(
-      (o) => o.status !== "Trả máy" && o.status !== "Đã hủy"
+      (o) => o.status !== "Trả máy" && !o.refunded
     );
 
     console.log(
@@ -3394,9 +3394,8 @@ const WorkOrderModal: React.FC<{
       }
 
       // Thông tin nhân viên tạo phiếu
-      description += `\n\nNV: ${
-        workOrder.createdByName || profile?.full_name || "N/A"
-      }`;
+      const createdByDisplay = profile?.full_name || "N/A";
+      description += `\n\nNV: ${createdByDisplay}`;
 
       // Thông tin nhân viên kỹ thuật
       if (workOrder.technicianName) {

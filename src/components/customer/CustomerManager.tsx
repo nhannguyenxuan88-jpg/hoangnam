@@ -51,7 +51,7 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
   const allVisitDates = [
     ...customerSales.map((s) => new Date(s.date).toDateString()),
     ...customerWorkOrders.map((wo) =>
-      new Date(wo.createdAt || wo.id).toDateString()
+      new Date(wo.creationDate || wo.id).toDateString()
     ),
   ];
   const uniqueVisitDates = new Set(allVisitDates);
@@ -209,69 +209,75 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
                   Chưa có phiếu sửa chữa nào
                 </div>
               ) : (
-                customerWorkOrders.map((wo) => (
-                  <div
-                    key={wo.id}
-                    className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <div className="font-bold text-green-600 dark:text-green-400">
-                          {formatAnyId(wo.id)}
-                        </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                          {wo.vehicleModel} - {wo.licensePlate}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                          {formatCurrency(wo.total)}
-                        </div>
-                        <div
-                          className={`text-xs px-2 py-1 rounded inline-block ${
-                            wo.status === "completed"
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-                              : wo.status === "in_progress"
-                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                              : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
-                          }`}
-                        >
-                          {wo.status === "completed"
-                            ? "Hoàn thành"
-                            : wo.status === "in_progress"
-                            ? "Đang SC"
-                            : "Chờ xử lý"}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-sm text-slate-700 dark:text-slate-300">
-                      <div className="mb-2">
-                        <span className="font-medium">Vấn đề:</span>{" "}
-                        {wo.issueDescription}
-                      </div>
-                      {wo.partsUsed && wo.partsUsed.length > 0 && (
+                customerWorkOrders.map((wo) => {
+                  const isCompleted =
+                    wo.status === "Trả máy" || wo.status === "Đã sửa xong";
+                  const isInProgress = wo.status === "Đang sửa";
+                  const statusClass = isCompleted
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                    : isInProgress
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                    : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300";
+                  const statusLabel = isCompleted
+                    ? "Hoàn thành"
+                    : isInProgress
+                    ? "Đang SC"
+                    : "Chờ xử lý";
+
+                  return (
+                    <div
+                      key={wo.id}
+                      className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between mb-3">
                         <div>
-                          <span className="font-medium">Phụ tùng:</span>
-                          <div className="ml-4 space-y-1 mt-1">
-                            {wo.partsUsed.map((part: any, idx: number) => (
-                              <div
-                                key={idx}
-                                className="text-xs flex justify-between"
-                              >
-                                <span>
-                                  {part.quantity} x {part.name}
-                                </span>
-                                <span>
-                                  {formatCurrency(part.price * part.quantity)}
-                                </span>
-                              </div>
-                            ))}
+                          <div className="font-bold text-green-600 dark:text-green-400">
+                            {formatAnyId(wo.id)}
+                          </div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400">
+                            {wo.vehicleModel} - {wo.licensePlate}
                           </div>
                         </div>
-                      )}
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                            {formatCurrency(wo.total)}
+                          </div>
+                          <div
+                            className={`text-xs px-2 py-1 rounded inline-block ${statusClass}`}
+                          >
+                            {statusLabel}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-sm text-slate-700 dark:text-slate-300">
+                        <div className="mb-2">
+                          <span className="font-medium">Vấn đề:</span>{" "}
+                          {wo.issueDescription}
+                        </div>
+                        {wo.partsUsed && wo.partsUsed.length > 0 && (
+                          <div>
+                            <span className="font-medium">Phụ tùng:</span>
+                            <div className="ml-4 space-y-1 mt-1">
+                              {wo.partsUsed.map((part: any, idx: number) => (
+                                <div
+                                  key={idx}
+                                  className="text-xs flex justify-between"
+                                >
+                                  <span>
+                                    {part.quantity} x {part.name}
+                                  </span>
+                                  <span>
+                                    {formatCurrency(part.price * part.quantity)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}

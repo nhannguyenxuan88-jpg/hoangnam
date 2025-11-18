@@ -893,7 +893,7 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
                                     key={idx}
                                     className="text-xs text-slate-300"
                                   >
-                                    • {svc.name} x{svc.quantity || 1}
+                                    • {svc.description} x{svc.quantity || 1}
                                   </div>
                                 ))}
                               </div>

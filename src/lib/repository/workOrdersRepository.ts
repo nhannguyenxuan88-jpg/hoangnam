@@ -210,7 +210,7 @@ export async function createWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
 
     // 🔹 FIX: RPC returns { success, orderId, depositTransactionId, paymentTransactionId }
     // Not { workOrder: {...} } format
-    const workOrderRow = (data as any).workOrder as WorkOrder | undefined;
+    const workOrderRow = (data as any).workOrder as any;
     const orderId = (data as any).orderId as string | undefined;
     const depositTransactionId = (data as any).depositTransactionId as
       | string
@@ -227,6 +227,33 @@ export async function createWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
       return failure({ code: "unknown", message: "Kết quả RPC không hợp lệ" });
     }
 
+    let normalizedWorkOrder: WorkOrder | null = null;
+    if (workOrderRow) {
+      normalizedWorkOrder = normalizeWorkOrder(workOrderRow);
+    } else if (orderId) {
+      const { data: fetchedRow, error: fetchError } = await supabase
+        .from(WORK_ORDERS_TABLE)
+        .select("*")
+        .eq("id", orderId)
+        .single();
+
+      if (fetchError) {
+        console.error("[createWorkOrderAtomic] Cannot fetch order by ID", {
+          orderId,
+          fetchError,
+        });
+      } else if (fetchedRow) {
+        normalizedWorkOrder = normalizeWorkOrder(fetchedRow);
+      }
+    }
+
+    if (!normalizedWorkOrder) {
+      return failure({
+        code: "supabase",
+        message: "Không thể tải dữ liệu phiếu sửa chữa vừa tạo",
+      });
+    }
+
     // Audit (best-effort)
     let userId: string | null = null;
     try {
@@ -234,20 +261,16 @@ export async function createWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
       userId = userData?.user?.id || null;
     } catch {}
 
-    // If we have full workOrder object, use it for audit
-    if (workOrderRow) {
-      await safeAudit(userId, {
-        action: "work_order.create",
-        tableName: WORK_ORDERS_TABLE,
-        recordId: (workOrderRow as any).id,
-        oldData: null,
-        newData: workOrderRow,
-      });
-    }
+    await safeAudit(userId, {
+      action: "work_order.create",
+      tableName: WORK_ORDERS_TABLE,
+      recordId: normalizedWorkOrder.id,
+      oldData: null,
+      newData: normalizedWorkOrder,
+    });
 
-    // Return either full workOrder or just the IDs from RPC
     return success({
-      ...(workOrderRow || { id: orderId }),
+      ...normalizedWorkOrder,
       depositTransactionId,
       paymentTransactionId,
       inventoryTxCount,
