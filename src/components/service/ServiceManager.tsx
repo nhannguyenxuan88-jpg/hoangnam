@@ -4672,15 +4672,15 @@ const WorkOrderModal: React.FC<{
                   </div>
                 )}
 
-                {/* Vehicle Selection Dropdown (for customers with multiple vehicles) */}
-                {currentCustomer && customerVehicles.length > 0 && (
+                {/* Vehicle Selection & Add Vehicle (for selected customer) */}
+                {currentCustomer && (
                   <div className="mt-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Chọn xe
-                        {hasMultipleVehicles && (
+                        {customerVehicles.length > 0 ? 'Chọn xe' : 'Xe của khách hàng'}
+                        {customerVehicles.length > 0 && (
                           <span className="text-xs text-slate-500 ml-1">
-                            (Khách có {customerVehicles.length} xe)
+                            ({customerVehicles.length} xe)
                           </span>
                         )}
                       </label>
@@ -4693,7 +4693,9 @@ const WorkOrderModal: React.FC<{
                         + Thêm xe
                       </button>
                     </div>
-                    <div className="space-y-2">
+                    
+                    {customerVehicles.length > 0 ? (
+                      <div className="space-y-2">
                       {customerVehicles.map((vehicle: Vehicle) => {
                         const isSelected = formData.vehicleId === vehicle.id;
                         const isPrimary = vehicle.isPrimary;
@@ -4744,6 +4746,13 @@ const WorkOrderModal: React.FC<{
                         );
                       })}
                     </div>
+                    ) : (
+                      <div className="text-center py-4 px-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-dashed border-slate-300 dark:border-slate-600">
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          Chưa có xe nào. Click "+ Thêm xe" để thêm.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
