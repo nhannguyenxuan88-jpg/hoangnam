@@ -37,6 +37,7 @@ import {
 import { showToast } from "../../utils/toast";
 import { printElementById } from "../../utils/print";
 import { supabase } from "../../supabaseClient";
+import { WorkOrderMobileModal } from "./WorkOrderMobileModal";
 
 interface StoreSettings {
   store_name?: string;
@@ -180,6 +181,7 @@ export default function ServiceManager() {
   }, [fetchedWorkOrders, setWorkOrders]);
 
   const [showModal, setShowModal] = useState(false);
+  const [showMobileModal, setShowMobileModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState<WorkOrder | undefined>(
     undefined
@@ -856,7 +858,14 @@ export default function ServiceManager() {
           </button>
 
           <button
-            onClick={() => handleOpenModal()}
+            onClick={() => {
+              // Mobile: open mobile modal, Desktop: open desktop modal
+              if (window.innerWidth < 768) {
+                setShowMobileModal(true);
+              } else {
+                handleOpenModal();
+              }
+            }}
             className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium flex items-center gap-2"
             aria-label="Tạo phiếu sửa chữa mới"
           >
@@ -1350,6 +1359,27 @@ export default function ServiceManager() {
           storeSettings={storeSettings}
         />
       )}
+
+      {/* Mobile Work Order Modal */}
+      <WorkOrderMobileModal
+        isOpen={showMobileModal}
+        onClose={() => {
+          setShowMobileModal(false);
+          setEditingOrder(undefined);
+        }}
+        onSave={(workOrderData) => {
+          // Handle save - similar to desktop modal
+          console.log("Mobile Work Order Data:", workOrderData);
+          // You can call createWorkOrder or updateWorkOrder here
+          setShowMobileModal(false);
+          setEditingOrder(undefined);
+        }}
+        workOrder={editingOrder}
+        customers={displayCustomers}
+        parts={fetchedParts || []}
+        employees={displayEmployees || []}
+        currentBranchId={currentBranchId}
+      />
 
       {/* Print Preview Modal */}
       {showPrintPreview && printOrder && (

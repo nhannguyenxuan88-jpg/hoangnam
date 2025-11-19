@@ -1,0 +1,1214 @@
+import React, { useState, useMemo } from "react";
+import { X, Plus, Minus, Check, ChevronDown, Search } from "lucide-react";
+import { formatCurrency } from "../../utils/format";
+import type { WorkOrder, Part, Customer, Vehicle, Employee } from "../../types";
+
+interface WorkOrderMobileModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (workOrderData: any) => void;
+  workOrder?: WorkOrder | null;
+  customers: Customer[];
+  parts: Part[];
+  employees: Employee[];
+  currentBranchId: string;
+}
+
+type WorkOrderStatus = "Tiếp nhận" | "Đang sửa" | "Chờ vật tư" | "Trả máy";
+
+export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+  workOrder,
+  customers,
+  parts,
+  employees,
+  currentBranchId,
+}) => {
+  // States
+  const [status, setStatus] = useState<WorkOrderStatus>(
+    (workOrder?.status as WorkOrderStatus) || "Tiếp nhận"
+  );
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState(
+    workOrder?.technicianId || ""
+  );
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    workOrder?.customer || null
+  );
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(
+    workOrder?.vehicle || null
+  );
+  const [currentKm, setCurrentKm] = useState(
+    workOrder?.currentKm?.toString() || ""
+  );
+  const [issueDescription, setIssueDescription] = useState(
+    workOrder?.issueDescription || ""
+  );
+  const [selectedParts, setSelectedParts] = useState<
+    Array<{
+      partId: string;
+      partName: string;
+      quantity: number;
+      sellingPrice: number;
+    }>
+  >(workOrder?.parts || []);
+  const [additionalServices, setAdditionalServices] = useState<
+    Array<{
+      id: string;
+      name: string;
+      costPrice: number;
+      sellingPrice: number;
+    }>
+  >(workOrder?.additionalServices || []);
+  const [laborCost, setLaborCost] = useState(workOrder?.laborCost || 0);
+  const [discount, setDiscount] = useState(workOrder?.discount || 0);
+  const [discountType, setDiscountType] = useState<"amount" | "percent">(
+    "amount"
+  );
+  const [isDeposit, setIsDeposit] = useState(false);
+  const [depositAmount, setDepositAmount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank">("cash");
+
+  // UI States
+  const [showCustomerSearch, setShowCustomerSearch] = useState(
+    !selectedCustomer
+  );
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [showPartSearch, setShowPartSearch] = useState(false);
+  const [partSearchTerm, setPartSearchTerm] = useState("");
+  const [showAddService, setShowAddService] = useState(false);
+  const [newServiceName, setNewServiceName] = useState("");
+  const [newServiceCost, setNewServiceCost] = useState(0);
+  const [newServicePrice, setNewServicePrice] = useState(0);
+  const [newServiceQuantity, setNewServiceQuantity] = useState(1);
+  const [showAddVehicle, setShowAddVehicle] = useState(false);
+  const [newVehiclePlate, setNewVehiclePlate] = useState("");
+  const [newVehicleName, setNewVehicleName] = useState("");
+
+  // Helper functions for number formatting
+  const formatNumberWithDots = (value: number | string): string => {
+    if (value === 0 || value === "0") return "0";
+    if (!value) return "";
+    const numStr = value.toString().replace(/\D/g, "");
+    if (!numStr) return "";
+    return numStr.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const parseFormattedNumber = (value: string): number => {
+    const cleaned = value.replace(/\./g, "");
+    return cleaned ? Number(cleaned) : 0;
+  };
+
+  // Filtered customers
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearchTerm) return customers;
+    const term = customerSearchTerm.toLowerCase();
+    return customers.filter(
+      (c) =>
+        c.name.toLowerCase().includes(term) ||
+        c.phone?.toLowerCase().includes(term)
+    );
+  }, [customers, customerSearchTerm]);
+
+  // Filtered parts
+  const filteredParts = useMemo(() => {
+    if (!partSearchTerm) return parts;
+    const term = partSearchTerm.toLowerCase();
+    return parts.filter(
+      (p) =>
+        p.name.toLowerCase().includes(term) ||
+        p.sku?.toLowerCase().includes(term)
+    );
+  }, [parts, partSearchTerm]);
+
+  // Customer vehicles
+  const customerVehicles = useMemo(() => {
+    if (!selectedCustomer) return [];
+    return selectedCustomer.vehicles || [];
+  }, [selectedCustomer]);
+
+  // Auto-select vehicle if customer has only one
+  React.useEffect(() => {
+    if (customerVehicles.length === 1 && !selectedVehicle) {
+      setSelectedVehicle(customerVehicles[0]);
+    }
+  }, [customerVehicles, selectedVehicle]);
+
+  // Calculations
+  const partsTotal = useMemo(() => {
+    return selectedParts.reduce(
+      (sum, p) => sum + p.quantity * p.sellingPrice,
+      0
+    );
+  }, [selectedParts]);
+
+  const servicesTotal = useMemo(() => {
+    return additionalServices.reduce((sum, s) => sum + s.sellingPrice, 0);
+  }, [additionalServices]);
+
+  const subtotal = partsTotal + servicesTotal + laborCost;
+
+  const discountAmount = useMemo(() => {
+    if (discountType === "percent") {
+      return (subtotal * discount) / 100;
+    }
+    return discount;
+  }, [subtotal, discount, discountType]);
+
+  const total = Math.max(0, subtotal - discountAmount);
+
+  // Handlers
+  const handleSelectCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setShowCustomerSearch(false);
+    setCustomerSearchTerm("");
+    setSelectedVehicle(null);
+  };
+
+  const handleSelectVehicle = (vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+  };
+
+  const handleAddPart = (part: Part) => {
+    const existing = selectedParts.find((p) => p.partId === part.id);
+    if (existing) {
+      setSelectedParts(
+        selectedParts.map((p) =>
+          p.partId === part.id ? { ...p, quantity: p.quantity + 1 } : p
+        )
+      );
+    } else {
+      setSelectedParts([
+        ...selectedParts,
+        {
+          partId: part.id,
+          partName: part.name,
+          quantity: 1,
+          sellingPrice: part.retailPrice?.[currentBranchId] || 0,
+        },
+      ]);
+    }
+    setShowPartSearch(false);
+    setPartSearchTerm("");
+  };
+
+  const handleUpdatePartQuantity = (partId: string, delta: number) => {
+    setSelectedParts((prev) =>
+      prev
+        .map((p) =>
+          p.partId === partId ? { ...p, quantity: p.quantity + delta } : p
+        )
+        .filter((p) => p.quantity > 0)
+    );
+  };
+
+  const handleAddService = () => {
+    if (!newServiceName || newServicePrice <= 0) return;
+    setAdditionalServices([
+      ...additionalServices,
+      {
+        id: `srv-${Date.now()}`,
+        name: newServiceName,
+        costPrice: newServiceCost,
+        sellingPrice: newServicePrice,
+      },
+    ]);
+    setNewServiceName("");
+    setNewServiceCost(0);
+    setNewServicePrice(0);
+    setShowAddService(false);
+  };
+
+  const handleRemoveService = (id: string) => {
+    setAdditionalServices(additionalServices.filter((s) => s.id !== id));
+  };
+
+  const handleAddVehicle = () => {
+    if (!newVehiclePlate || !newVehicleName) return;
+    const newVehicle: Vehicle = {
+      id: `veh-${Date.now()}`,
+      customerId: selectedCustomer!.id,
+      licensePlate: newVehiclePlate,
+      vehicleName: newVehicleName,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Add to customer vehicles
+    if (selectedCustomer) {
+      selectedCustomer.vehicles = [
+        ...(selectedCustomer.vehicles || []),
+        newVehicle,
+      ];
+      setSelectedVehicle(newVehicle);
+    }
+
+    setNewVehiclePlate("");
+    setNewVehicleName("");
+    setShowAddVehicle(false);
+  };
+
+  const handleSave = () => {
+    if (!selectedCustomer || !selectedVehicle) {
+      alert("Vui lòng chọn khách hàng và xe");
+      return;
+    }
+
+    const workOrderData = {
+      status,
+      technicianId: selectedTechnicianId,
+      customer: selectedCustomer,
+      vehicle: selectedVehicle,
+      currentKm: parseInt(currentKm) || 0,
+      issueDescription,
+      parts: selectedParts,
+      additionalServices,
+      laborCost,
+      discount: discountAmount,
+      total,
+      depositAmount: isDeposit ? depositAmount : 0,
+      paymentMethod,
+    };
+
+    onSave(workOrderData);
+  };
+
+  // Status colors
+  const getStatusColor = (s: WorkOrderStatus) => {
+    switch (s) {
+      case "Tiếp nhận":
+        return "bg-blue-500";
+      case "Đang sửa":
+        return "bg-yellow-500";
+      case "Chờ vật tư":
+        return "bg-red-500";
+      case "Trả máy":
+        return "bg-green-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-end md:items-center justify-center">
+      {/* Mobile Full Screen */}
+      <div className="md:hidden w-full h-full bg-[#151521] flex flex-col">
+        {/* Header */}
+        <div className="flex-shrink-0 bg-[#1e1e2d] px-3 py-2.5 flex items-center justify-between border-b border-slate-700">
+          <button onClick={onClose} className="text-slate-400">
+            <X className="w-4 h-4" />
+          </button>
+          <h2 className="text-sm font-semibold text-white">
+            {workOrder ? `Phiếu #${workOrder.id}` : "Tạo phiếu sửa chữa"}
+          </h2>
+          <div className="w-8"></div>
+        </div>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto pb-32">
+          {/* KHỐI 1: TRẠNG THÁI & KỸ THUẬT VIÊN */}
+          <div className="p-3 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              {/* Status Dropdown */}
+              <div className="relative">
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as WorkOrderStatus)}
+                  className={`w-full px-2.5 py-2 rounded-lg text-white text-xs font-medium appearance-none pr-7 ${getStatusColor(
+                    status
+                  )}`}
+                >
+                  <option value="Tiếp nhận">🔧 Tiếp nhận</option>
+                  <option value="Đang sửa">⚙️ Đang sửa</option>
+                  <option value="Chờ vật tư">⏳ Chờ vật tư</option>
+                  <option value="Trả máy">✅ Trả máy</option>
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white pointer-events-none" />
+              </div>
+
+              {/* Technician Dropdown */}
+              <div className="relative">
+                <select
+                  value={selectedTechnicianId}
+                  onChange={(e) => setSelectedTechnicianId(e.target.value)}
+                  className="w-full px-2.5 py-2 bg-[#2b2b40] rounded-lg text-white text-xs appearance-none pr-7"
+                >
+                  <option value="">👤 Chọn KTV</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* KHỐI 2: KHÁCH HÀNG & XE */}
+          <div className="px-3 pb-3 space-y-2">
+            <h3 className="text-xs font-semibold text-white uppercase tracking-wide">
+              Khách hàng
+            </h3>
+
+            {/* Customer Selection */}
+            {showCustomerSearch ? (
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={customerSearchTerm}
+                    onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                    placeholder="🔍 Tìm tên hoặc SĐT khách..."
+                    className="w-full pl-9 pr-3 py-2 bg-[#2b2b40] rounded-lg text-white text-xs placeholder-slate-500"
+                    autoFocus
+                  />
+                </div>
+
+                {/* Customer List */}
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {filteredCustomers.slice(0, 5).map((customer) => (
+                    <div
+                      key={customer.id}
+                      onClick={() => handleSelectCustomer(customer)}
+                      className="p-3 bg-[#1e1e2d] rounded-lg cursor-pointer hover:bg-[#2b2b40] transition-colors"
+                    >
+                      <div className="text-white font-medium">
+                        {customer.name}
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        {customer.phone}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : selectedCustomer ? (
+              <div className="p-2.5 bg-[#1e1e2d] rounded-lg flex items-start justify-between">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-semibold text-xs">
+                    {selectedCustomer.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="text-white font-medium text-xs">
+                      {selectedCustomer.name}
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      📞 {selectedCustomer.phone}
+                    </div>
+                    {selectedCustomer.address && (
+                      <div className="text-xs text-slate-400">
+                        📍 {selectedCustomer.address}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedCustomer(null);
+                    setSelectedVehicle(null);
+                    setShowCustomerSearch(true);
+                  }}
+                  className="p-1 text-slate-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : null}
+
+            {/* Vehicle Selection */}
+            {selectedCustomer && (
+              <>
+                <h3 className="text-xs font-semibold text-white mt-3 uppercase tracking-wide">
+                  XE CỦA KHÁCH (Chọn 1):
+                </h3>
+
+                <div className="space-y-2">
+                  {customerVehicles.map((vehicle) => {
+                    const isActive = selectedVehicle?.id === vehicle.id;
+                    return (
+                      <div
+                        key={vehicle.id}
+                        onClick={() => handleSelectVehicle(vehicle)}
+                        className={`p-3 rounded-lg cursor-pointer transition-all ${
+                          isActive
+                            ? "bg-blue-500/20 border-2 border-blue-500"
+                            : "bg-[#1e1e2d] border-2 border-transparent"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="text-2xl">
+                              {isActive ? (
+                                <Check className="w-4 h-4 text-blue-400" />
+                              ) : (
+                                "🏍️"
+                              )}
+                            </div>
+                            <div>
+                              <div
+                                className={`font-semibold ${
+                                  isActive ? "text-blue-400" : "text-white"
+                                }`}
+                              >
+                                {vehicle.vehicleName}
+                                {isActive && " (ĐANG CHỌN)"}
+                              </div>
+                              <div className="text-xs text-slate-400">
+                                BKS: {vehicle.licensePlate}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Add New Vehicle Button */}
+                  <button
+                    onClick={() => setShowAddVehicle(true)}
+                    className="w-full py-1.5 border border-dashed border-slate-600 rounded-lg text-slate-400 hover:border-blue-500 hover:text-blue-400 transition-colors flex items-center justify-center gap-1.5 text-xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Thêm xe mới
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Vehicle Info Inputs */}
+            {selectedVehicle && (
+              <div className="space-y-2 mt-2.5">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">
+                    Số KM hiện tại
+                  </label>
+                  <input
+                    type="number"
+                    value={currentKm}
+                    onChange={(e) => setCurrentKm(e.target.value)}
+                    placeholder="Nhập số KM"
+                    className="w-full px-2.5 py-1.5 bg-[#2b2b40] rounded-lg text-white text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">
+                    Mô tả sự cố
+                  </label>
+                  <textarea
+                    value={issueDescription}
+                    onChange={(e) => setIssueDescription(e.target.value)}
+                    placeholder="Thay nhớt, kêu cò..."
+                    rows={3}
+                    className="w-full px-2.5 py-1.5 bg-[#2b2b40] rounded-lg text-white text-xs resize-none"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* KHỐI 3A: PHỤ TÙNG */}
+          {selectedCustomer && selectedVehicle && (
+            <>
+              <div className="px-3 pb-3 space-y-2.5">
+                <h3 className="text-xs font-semibold text-white uppercase tracking-wide">
+                  PHỤ TÙNG SỬ DỤNG
+                </h3>
+
+                {/* Parts List */}
+                {selectedParts.length > 0 && (
+                  <div className="space-y-2">
+                    {selectedParts.map((part, index) => (
+                      <div
+                        key={part.partId}
+                        className="p-3 bg-[#1e1e2d] rounded-lg"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <div className="text-white text-xs font-medium">
+                              {index + 1}. {part.partName}
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              {formatCurrency(part.sellingPrice)} / cái
+                            </div>
+                          </div>
+                          <div className="text-[#50cd89] font-bold">
+                            {formatCurrency(part.quantity * part.sellingPrice)}
+                          </div>
+                        </div>
+
+                        {/* Quantity Controls */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() =>
+                                handleUpdatePartQuantity(part.partId, -1)
+                              }
+                              className="w-8 h-8 bg-[#2b2b40] rounded-lg flex items-center justify-center text-white hover:bg-red-500/20 hover:text-red-400"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <span className="w-8 text-center text-white font-semibold">
+                              {part.quantity}
+                            </span>
+                            <button
+                              onClick={() =>
+                                handleUpdatePartQuantity(part.partId, 1)
+                              }
+                              className="w-8 h-8 bg-[#2b2b40] rounded-lg flex items-center justify-center text-white hover:bg-blue-500/20 hover:text-blue-400"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add Part Button */}
+                <button
+                  onClick={() => setShowPartSearch(true)}
+                  className="w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium flex items-center justify-center gap-1.5 transition-colors text-xs"
+                >
+                  <Plus className="w-4 h-4" />+ THÊM PHỤ TÙNG
+                </button>
+              </div>
+
+              {/* KHỐI 3B: GIA CÔNG */}
+              <div className="px-3 pb-3 space-y-2.5">
+                <h3 className="text-xs font-semibold text-white uppercase tracking-wide">
+                  BÁO GIÁ (GIA CÔNG, ĐẶT NGOÀI)
+                </h3>
+
+                {/* Services List - Card Design */}
+                {additionalServices.length > 0 && (
+                  <div className="space-y-2">
+                    {additionalServices.map((service, index) => (
+                      <div
+                        key={service.id}
+                        className="p-3 bg-[#1e1e2d] rounded-lg border border-slate-700/50"
+                      >
+                        <div className="flex items-start gap-2 mb-2">
+                          <span className="text-lg">🛠️</span>
+                          <div className="flex-1">
+                            <div className="text-white text-sm font-medium">
+                              {service.name}
+                            </div>
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              1 x {formatCurrency(service.sellingPrice)}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="border-t border-slate-700 pt-2 mt-2 flex items-center justify-between">
+                          <div>
+                            <div className="text-xs text-slate-500">
+                              Thành tiền:
+                            </div>
+                            <div className="text-[#50cd89] font-bold text-sm">
+                              💵 {formatCurrency(service.sellingPrice)}
+                            </div>
+                            {service.costPrice > 0 && (
+                              <div className="text-[10px] text-slate-600 mt-0.5">
+                                (Vốn: {formatCurrency(service.costPrice)})
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => {
+                                // TODO: Edit service
+                                setShowAddService(true);
+                              }}
+                              className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded-lg"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleRemoveService(service.id)}
+                              className="p-1.5 text-red-400 hover:bg-red-500/20 rounded-lg"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add Service Button - Dashed Border */}
+                <button
+                  onClick={() => setShowAddService(true)}
+                  className="w-full py-3 border border-dashed border-[#009ef7] rounded-lg text-[#009ef7] font-medium flex items-center justify-center gap-2 transition-all hover:bg-[#009ef7]/10 text-xs"
+                >
+                  <Plus className="w-4 h-4" />
+                  THÊM CÔNG VIỆC KHÁC (GIA CÔNG)
+                </button>
+              </div>
+
+              {/* KHỐI 4: TÀI CHÍNH */}
+              <div className="px-3 pb-3 space-y-2.5">
+                <h3 className="text-xs font-semibold text-white uppercase tracking-wide">
+                  THANH TOÁN
+                </h3>
+
+                <div className="p-4 bg-[#1e1e2d] rounded-lg space-y-2">
+                  {/* Labor Cost */}
+                  <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">
+                      Tiền công
+                    </label>
+                    <input
+                      type="text"
+                      value={formatNumberWithDots(laborCost)}
+                      onChange={(e) =>
+                        setLaborCost(parseFormattedNumber(e.target.value))
+                      }
+                      placeholder="0"
+                      className="w-full px-2.5 py-1.5 bg-[#2b2b40] rounded-lg text-white text-xs"
+                    />
+                  </div>
+
+                  {/* Deposit Toggle */}
+                  <div className="pt-2">
+                    <div className="flex items-center justify-between p-3 bg-[#2b2b40] rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                          <span className="text-lg">💳</span>
+                        </div>
+                        <span className="text-white font-medium text-sm">
+                          Đặt cọc trước
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setIsDeposit(!isDeposit)}
+                        className={`relative w-12 h-6 rounded-full transition-colors ${
+                          isDeposit ? "bg-[#009ef7]" : "bg-slate-600"
+                        }`}
+                      >
+                        <div
+                          className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${
+                            isDeposit ? "right-0.5" : "left-0.5"
+                          }`}
+                        >
+                          {isDeposit && (
+                            <span className="absolute inset-0 flex items-center justify-center text-[#009ef7] text-[10px] font-bold">
+                              ON
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    </div>
+
+                    {isDeposit && (
+                      <div className="mt-3 p-3 bg-[#151521] border-2 border-[#009ef7] rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-lg">💵</span>
+                          <span className="text-slate-400 text-xs">
+                            Nhập số tiền cọc...
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          value={formatNumberWithDots(depositAmount)}
+                          onChange={(e) =>
+                            setDepositAmount(
+                              parseFormattedNumber(e.target.value)
+                            )
+                          }
+                          placeholder="0"
+                          className="w-full px-3 py-2.5 bg-[#2b2b40] border border-slate-600 rounded-lg text-white text-sm focus:border-[#009ef7] focus:outline-none transition-colors"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment Method */}
+                  <div className="pt-2">
+                    <label className="block text-xs font-medium text-slate-400 mb-2">
+                      Phương thức thanh toán
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setPaymentMethod("cash")}
+                        className={`relative p-3 rounded-lg transition-all border-2 ${
+                          paymentMethod === "cash"
+                            ? "bg-emerald-500/10 border-emerald-500 shadow-lg shadow-emerald-500/20"
+                            : "bg-[#2b2b40] border-transparent hover:border-slate-600"
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <div
+                            className={`text-xl ${
+                              paymentMethod === "cash" ? "scale-110" : ""
+                            } transition-transform`}
+                          >
+                            💵
+                          </div>
+                          <span
+                            className={`text-xs font-medium ${
+                              paymentMethod === "cash"
+                                ? "text-emerald-400"
+                                : "text-slate-400"
+                            }`}
+                          >
+                            Tiền mặt
+                          </span>
+                        </div>
+                        {paymentMethod === "cash" && (
+                          <div className="absolute top-1 right-1 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                            <svg
+                              className="w-2.5 h-2.5 text-white"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={3}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setPaymentMethod("bank")}
+                        className={`relative p-3 rounded-lg transition-all border-2 ${
+                          paymentMethod === "bank"
+                            ? "bg-blue-500/10 border-blue-500 shadow-lg shadow-blue-500/20"
+                            : "bg-[#2b2b40] border-transparent hover:border-slate-600"
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <div
+                            className={`text-xl ${
+                              paymentMethod === "bank" ? "scale-110" : ""
+                            } transition-transform`}
+                          >
+                            🏦
+                          </div>
+                          <span
+                            className={`text-xs font-medium ${
+                              paymentMethod === "bank"
+                                ? "text-blue-400"
+                                : "text-slate-400"
+                            }`}
+                          >
+                            Chuyển khoản
+                          </span>
+                        </div>
+                        {paymentMethod === "bank" && (
+                          <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                            <svg
+                              className="w-2.5 h-2.5 text-white"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={3}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Info Note */}
+                    <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-start gap-2">
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center mt-0.5">
+                        <span className="text-blue-400 text-xs">ℹ️</span>
+                      </div>
+                      <p className="text-blue-300 text-xs leading-relaxed">
+                        <span className="font-semibold">Lưu ý:</span> Chỉ thanh
+                        toán khi trả xe, chỉ khả dụng khi trạng thái "Trả máy"
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Summary - Moved to end */}
+                  <div className="pt-2 border-t border-slate-700 space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-400">Tiền công:</span>
+                      <span className="text-white">
+                        {formatCurrency(laborCost)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-400">Tiền phụ tùng:</span>
+                      <span className="text-white">
+                        {formatCurrency(partsTotal)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-slate-400">Tiền gia công:</span>
+                      <span className="text-white">
+                        {formatCurrency(servicesTotal)}
+                      </span>
+                    </div>
+
+                    {/* Discount */}
+                    <div className="flex gap-2 items-center">
+                      <label className="text-slate-400 text-xs flex-shrink-0">
+                        Giảm giá:
+                      </label>
+                      <input
+                        type="text"
+                        value={formatNumberWithDots(discount)}
+                        onChange={(e) =>
+                          setDiscount(parseFormattedNumber(e.target.value))
+                        }
+                        placeholder="0"
+                        className="flex-1 px-2 py-1 bg-[#2b2b40] rounded text-white text-xs"
+                      />
+                      <select
+                        value={discountType}
+                        onChange={(e) =>
+                          setDiscountType(
+                            e.target.value as "amount" | "percent"
+                          )
+                        }
+                        className="px-2 py-1 bg-[#2b2b40] rounded text-white text-xs"
+                      >
+                        <option value="amount">₫</option>
+                        <option value="percent">%</option>
+                      </select>
+                    </div>
+
+                    {/* Total */}
+                    <div className="flex justify-between text-sm font-bold pt-2 border-t border-slate-700">
+                      <span className="text-white">TỔNG CỘNG:</span>
+                      <span className="text-[#50cd89]">
+                        {formatCurrency(total)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* STICKY FOOTER - Action Buttons */}
+        <div className="flex-shrink-0 bg-[#1e1e2d] border-t border-slate-700 p-3">
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-[#2b2b40] text-slate-300 rounded-lg font-medium hover:bg-slate-700 transition-colors text-xs"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={handleSave}
+              className={`flex-1 py-2 rounded-lg font-medium text-white transition-colors text-xs ${
+                status === "Trả máy"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : isDeposit
+                  ? "bg-purple-600 hover:bg-purple-700"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {status === "Trả máy"
+                ? "✅ THANH TOÁN & TRẢ XE"
+                : isDeposit
+                ? "💰 LƯU & ĐẶT CỌC"
+                : "💾 LƯU PHIẾU"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop - Keep Original (Not Changed) */}
+      <div className="hidden md:block">
+        {/* Desktop modal would go here - keeping original unchanged */}
+      </div>
+
+      {/* Part Search Bottom Sheet */}
+      {showPartSearch && (
+        <div className="fixed inset-0 bg-black/70 z-[110] flex items-end">
+          <div className="w-full bg-[#151521] rounded-t-2xl max-h-[80vh] flex flex-col">
+            <div className="flex-shrink-0 p-3 border-b border-slate-700 flex items-center justify-between">
+              <h3 className="text-white font-semibold text-sm">
+                Chọn phụ tùng
+              </h3>
+              <button
+                onClick={() => {
+                  setShowPartSearch(false);
+                  setPartSearchTerm("");
+                }}
+                className="p-1.5 text-slate-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={partSearchTerm}
+                  onChange={(e) => setPartSearchTerm(e.target.value)}
+                  placeholder="Tìm tên hoặc SKU..."
+                  className="w-full pl-9 pr-3 py-2 bg-[#2b2b40] rounded-lg text-white text-xs"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-3 pb-3">
+              <div className="space-y-2">
+                {filteredParts.slice(0, 20).map((part) => {
+                  const stock = part.stock?.[currentBranchId] || 0;
+                  const price = part.retailPrice?.[currentBranchId] || 0;
+                  return (
+                    <div
+                      key={part.id}
+                      onClick={() => handleAddPart(part)}
+                      className="p-2.5 bg-[#1e1e2d] rounded-lg cursor-pointer hover:bg-[#2b2b40] transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="text-white font-medium text-xs">
+                            {part.name}
+                          </div>
+                          <div className="text-xs text-slate-400">
+                            SKU: {part.sku} • Tồn: {stock}
+                          </div>
+                        </div>
+                        <div className="text-[#50cd89] font-bold text-xs">
+                          {formatCurrency(price)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Service Modal - Bottom Sheet Design */}
+      {showAddService && (
+        <div className="fixed inset-0 bg-black/70 z-[110] flex items-end md:items-center md:justify-center">
+          <div className="w-full md:max-w-md bg-[#1e1e2d] rounded-t-2xl md:rounded-xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+              <h3 className="text-white font-semibold text-base">
+                THÊM DỊCH VỤ GIA CÔNG
+              </h3>
+              <button
+                onClick={() => {
+                  setShowAddService(false);
+                  setNewServiceName("");
+                  setNewServiceCost(0);
+                  setNewServicePrice(0);
+                  setNewServiceQuantity(1);
+                }}
+                className="p-1.5 text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form Content */}
+            <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Service Name */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Tên công việc / Mô tả:
+                </label>
+                <input
+                  type="text"
+                  value={newServiceName}
+                  onChange={(e) => setNewServiceName(e.target.value)}
+                  placeholder="Nhập tên (VD: Hàn yếm, Sơn...)"
+                  className="w-full px-4 py-3 bg-[#151521] border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:border-[#009ef7] focus:outline-none transition-colors"
+                  autoFocus
+                />
+              </div>
+
+              {/* Quantity Stepper */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Số lượng:
+                </label>
+                <div className="flex items-center justify-center gap-4">
+                  <button
+                    onClick={() =>
+                      setNewServiceQuantity(Math.max(1, newServiceQuantity - 1))
+                    }
+                    className="w-12 h-12 bg-[#2b2b40] hover:bg-slate-700 rounded-lg flex items-center justify-center text-white text-2xl font-bold transition-colors"
+                  >
+                    −
+                  </button>
+                  <div className="w-20 h-12 bg-[#151521] border border-slate-700 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-xl font-bold">
+                      {newServiceQuantity}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() =>
+                      setNewServiceQuantity(newServiceQuantity + 1)
+                    }
+                    className="w-12 h-12 bg-[#2b2b40] hover:bg-slate-700 rounded-lg flex items-center justify-center text-white text-2xl font-bold transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Cost & Price Section */}
+              <div>
+                <h4 className="text-sm font-semibold text-slate-300 mb-3 uppercase tracking-wide">
+                  CHI PHÍ & GIÁ BÁN
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Cost Price */}
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5">
+                      Giá nhập (Vốn):
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={formatNumberWithDots(newServiceCost)}
+                        onChange={(e) =>
+                          setNewServiceCost(
+                            parseFormattedNumber(e.target.value)
+                          )
+                        }
+                        placeholder="0"
+                        className="w-full px-3 py-3 pr-8 bg-[#151521] border border-slate-700 rounded-lg text-slate-400 text-sm focus:border-slate-600 focus:outline-none transition-colors"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs">
+                        đ
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Selling Price */}
+                  <div>
+                    <label className="block text-xs text-[#ffc700] mb-1.5 font-medium">
+                      Đơn giá (Báo khách):
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={formatNumberWithDots(newServicePrice)}
+                        onChange={(e) =>
+                          setNewServicePrice(
+                            parseFormattedNumber(e.target.value)
+                          )
+                        }
+                        placeholder="0"
+                        className="w-full px-3 py-3 pr-8 bg-gradient-to-br from-[#009ef7]/10 to-purple-600/10 border-2 border-[#009ef7] rounded-lg text-white text-sm font-semibold focus:border-[#0077c7] focus:outline-none transition-colors"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#009ef7] text-xs font-bold">
+                        đ
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Total Amount - Auto Calculate */}
+              <div className="p-4 bg-[#151521] border border-slate-700 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 text-sm">
+                    Thành tiền (Tự tính):
+                  </span>
+                  <span className="text-[#50cd89] text-xl font-bold">
+                    {formatCurrency(newServicePrice * newServiceQuantity)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Button */}
+            <div className="p-4 border-t border-slate-700">
+              <button
+                onClick={handleAddService}
+                disabled={!newServiceName.trim() || newServicePrice <= 0}
+                className="w-full py-4 bg-gradient-to-r from-[#009ef7] to-purple-600 hover:from-[#0077c7] hover:to-purple-700 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-bold text-sm rounded-lg transition-all shadow-lg"
+              >
+                LƯU VÀO PHIẾU
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Vehicle Modal */}
+      {showAddVehicle && (
+        <div className="fixed inset-0 bg-black/70 z-[110] flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-[#1e1e2d] rounded-xl p-3">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-semibold text-sm">Thêm xe mới</h3>
+              <button
+                onClick={() => setShowAddVehicle(false)}
+                className="p-1.5 text-slate-400"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">
+                  Biển số xe
+                </label>
+                <input
+                  type="text"
+                  value={newVehiclePlate}
+                  onChange={(e) => setNewVehiclePlate(e.target.value)}
+                  placeholder="59G1-123.45"
+                  className="w-full px-2.5 py-1.5 bg-[#2b2b40] rounded-lg text-white text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">
+                  Tên xe
+                </label>
+                <input
+                  type="text"
+                  value={newVehicleName}
+                  onChange={(e) => setNewVehicleName(e.target.value)}
+                  placeholder="Honda Wave RSX"
+                  className="w-full px-2.5 py-1.5 bg-[#2b2b40] rounded-lg text-white text-xs"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-1.5">
+                <button
+                  onClick={() => setShowAddVehicle(false)}
+                  className="flex-1 py-2 bg-[#2b2b40] text-slate-300 rounded-lg font-medium text-xs"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleAddVehicle}
+                  className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-medium text-xs"
+                >
+                  Thêm xe
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
