@@ -370,6 +370,19 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     }
   };
 
+  // Hide bottom navigation when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add("hide-bottom-nav");
+    } else {
+      document.body.classList.remove("hide-bottom-nav");
+    }
+
+    return () => {
+      document.body.classList.remove("hide-bottom-nav");
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (

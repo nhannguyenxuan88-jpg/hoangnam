@@ -140,64 +140,74 @@ export function ServiceManagerMobile({
       {/* KHỐI A: KPI DASHBOARD - Horizontal Scroll */}
       <div className="bg-[#1e1e2d] border-b border-gray-800">
         <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex gap-3 p-4 min-w-max">
+          <div className="flex gap-2 p-2 min-w-max">
             {/* Tiếp nhận */}
-            <div className="flex-shrink-0 w-32 bg-[#2b2b40] rounded-xl p-3 border border-blue-500/20">
-              <div className="flex justify-center mb-2">
-                <FileText className="w-8 h-8 text-blue-500" />
+            <div className="flex-shrink-0 w-24 bg-[#2b2b40] rounded-lg p-2 border border-blue-500/20">
+              <div className="flex justify-center mb-1">
+                <FileText className="w-5 h-5 text-blue-500" />
               </div>
-              <div className="text-3xl font-bold text-white text-center mb-1">
+              <div className="text-xl font-bold text-white text-center">
                 {kpis.tiepNhan}
               </div>
-              <div className="text-xs text-gray-400 text-center">Tiếp nhận</div>
+              <div className="text-[10px] text-gray-400 text-center">
+                Tiếp nhận
+              </div>
             </div>
 
             {/* Đang sửa */}
-            <div className="flex-shrink-0 w-32 bg-[#2b2b40] rounded-xl p-3 border border-orange-500/20">
-              <div className="flex justify-center mb-2">
-                <Wrench className="w-8 h-8 text-orange-500" />
+            <div className="flex-shrink-0 w-24 bg-[#2b2b40] rounded-lg p-2 border border-orange-500/20">
+              <div className="flex justify-center mb-1">
+                <Wrench className="w-5 h-5 text-orange-500" />
               </div>
-              <div className="text-3xl font-bold text-white text-center mb-1">
+              <div className="text-xl font-bold text-white text-center">
                 {kpis.dangSua}
               </div>
-              <div className="text-xs text-gray-400 text-center">Đang sửa</div>
+              <div className="text-[10px] text-gray-400 text-center">
+                Đang sửa
+              </div>
             </div>
 
             {/* Đã xong */}
-            <div className="flex-shrink-0 w-32 bg-[#2b2b40] rounded-xl p-3 border border-green-500/20">
-              <div className="flex justify-center mb-2">
-                <Check className="w-8 h-8 text-green-500" />
+            <div className="flex-shrink-0 w-24 bg-[#2b2b40] rounded-lg p-2 border border-green-500/20">
+              <div className="flex justify-center mb-1">
+                <Check className="w-5 h-5 text-green-500" />
               </div>
-              <div className="text-3xl font-bold text-white text-center mb-1">
+              <div className="text-xl font-bold text-white text-center">
                 {kpis.daHoanThanh}
               </div>
-              <div className="text-xs text-gray-400 text-center">Đã xong</div>
+              <div className="text-[10px] text-gray-400 text-center">
+                Đã xong
+              </div>
             </div>
 
             {/* Trả máy */}
-            <div className="flex-shrink-0 w-32 bg-[#2b2b40] rounded-xl p-3 border border-purple-500/20">
-              <div className="flex justify-center mb-2">
-                <Key className="w-8 h-8 text-purple-500" />
+            <div className="flex-shrink-0 w-24 bg-[#2b2b40] rounded-lg p-2 border border-purple-500/20">
+              <div className="flex justify-center mb-1">
+                <Key className="w-5 h-5 text-purple-500" />
               </div>
-              <div className="text-3xl font-bold text-white text-center mb-1">
+              <div className="text-xl font-bold text-white text-center">
                 {kpis.traMay}
               </div>
-              <div className="text-xs text-gray-400 text-center">Trả máy</div>
+              <div className="text-[10px] text-gray-400 text-center">
+                Trả máy
+              </div>
             </div>
 
             {/* Doanh thu */}
-            <div className="flex-shrink-0 w-40 bg-[#2b2b40] rounded-xl p-3 border border-emerald-500/20">
-              <div className="flex justify-center mb-2">
-                <TrendingUp className="w-8 h-8 text-emerald-500" />
+            <div className="flex-shrink-0 w-32 bg-[#2b2b40] rounded-lg p-2 border border-emerald-500/20">
+              <div className="flex justify-center mb-1">
+                <TrendingUp className="w-5 h-5 text-emerald-500" />
               </div>
-              <div className="text-2xl font-bold text-white text-center mb-1">
+              <div className="text-base font-bold text-white text-center">
                 {formatCurrency(kpis.doanhThu)}
               </div>
-              <div className="text-xs text-gray-400 text-center">Doanh thu</div>
+              <div className="text-[10px] text-gray-400 text-center">
+                Doanh thu
+              </div>
             </div>
 
             {/* Lợi nhuận */}
-            <div className="flex-shrink-0 w-40 bg-[#2b2b40] rounded-xl p-3 border border-cyan-500/20">
+            <div className="flex-shrink-0 w-32 bg-[#2b2b40] rounded-lg p-2 border border-cyan-500/20">
               <div className="flex justify-center mb-2">
                 <DollarSign className="w-8 h-8 text-cyan-500" />
               </div>
@@ -214,7 +224,7 @@ export function ServiceManagerMobile({
       </div>
 
       {/* KHỐI B: STICKY SEARCH & FILTER HEADER */}
-      <div className="sticky top-0 z-40 bg-[#1e1e2d] border-b border-gray-800 p-4 space-y-3">
+      <div className="sticky top-0 z-40 bg-[#1e1e2d] border-b border-gray-800 p-2 space-y-2">
         {/* Search Bar */}
         <div className="flex gap-2">
           <div className="flex-1 relative">
@@ -293,7 +303,7 @@ export function ServiceManagerMobile({
       </div>
 
       {/* KHỐI C: DANH SÁCH PHIẾU */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
+      <div className="flex-1 overflow-y-auto p-2 space-y-2 pb-20">
         {filteredWorkOrders.length === 0 ? (
           /* Empty State */
           <div className="flex flex-col items-center justify-center h-full text-center px-6">
@@ -433,9 +443,9 @@ export function ServiceManagerMobile({
       {/* KHỐI D: FAB (Floating Action Button) */}
       <button
         onClick={onCreateWorkOrder}
-        className="fixed bottom-20 right-6 w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-lg shadow-blue-500/50 flex items-center justify-center hover:from-blue-600 hover:to-blue-700 transition-all z-50 active:scale-95"
+        className="fixed bottom-4 right-4 w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full shadow-lg shadow-blue-500/50 flex items-center justify-center hover:from-blue-600 hover:to-blue-700 transition-all z-50 active:scale-95"
       >
-        <Plus className="w-7 h-7 text-white" />
+        <Plus className="w-6 h-6 text-white" />
       </button>
 
       {/* Filter Popup (Optional) */}
