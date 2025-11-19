@@ -183,13 +183,25 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
 
   // Filtered customers
   const filteredCustomers = useMemo(() => {
+    console.log(
+      "[WorkOrderMobileModal] Total customers:",
+      customers?.length,
+      customers
+    );
     if (!customerSearchTerm) return customers;
     const term = customerSearchTerm.toLowerCase();
-    return customers.filter(
+    const filtered = customers.filter(
       (c) =>
         c.name.toLowerCase().includes(term) ||
         c.phone?.toLowerCase().includes(term)
     );
+    console.log(
+      "[WorkOrderMobileModal] Filtered customers:",
+      filtered.length,
+      "Search term:",
+      customerSearchTerm
+    );
+    return filtered;
   }, [customers, customerSearchTerm]);
 
   // Filtered parts
