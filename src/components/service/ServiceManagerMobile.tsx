@@ -143,69 +143,63 @@ export function ServiceManagerMobile({
       {/* KPI DASHBOARD - Single Row Scroll */}
       <div className="bg-[#1e1e2d] border-b border-gray-800">
         <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex gap-3 p-3 min-w-max">
+          <div className="flex gap-2 p-2 min-w-max">
             {/* Tiếp nhận */}
-            <div className="flex-shrink-0 w-36 bg-gradient-to-br from-[#009ef7] to-[#0077b6] rounded-2xl p-4 shadow-lg">
-              <div className="flex justify-center mb-3">
-                <FileText className="w-8 h-8 text-white" />
+            <div className="flex-shrink-0 w-28 bg-gradient-to-br from-[#009ef7] to-[#0077b6] rounded-xl p-3 shadow-lg">
+              <div className="flex justify-center mb-1">
+                <FileText className="w-5 h-5 text-white" />
               </div>
-              <div className="text-3xl font-bold text-white text-center mb-2">
+              <div className="text-2xl font-bold text-white text-center mb-1">
                 {kpis.tiepNhan}
               </div>
-              <div className="text-sm text-white/90 text-center font-medium">
-                Tiếp nhận
-              </div>
+              <div className="text-xs text-white/90 text-center">Tiếp nhận</div>
             </div>
 
             {/* Đang sửa */}
-            <div className="flex-shrink-0 w-36 bg-gradient-to-br from-[#f1416c] to-[#d11a4e] rounded-2xl p-4 shadow-lg">
-              <div className="flex justify-center mb-3">
-                <Wrench className="w-8 h-8 text-white" />
+            <div className="flex-shrink-0 w-28 bg-gradient-to-br from-[#f1416c] to-[#d11a4e] rounded-xl p-3 shadow-lg">
+              <div className="flex justify-center mb-1">
+                <Wrench className="w-5 h-5 text-white" />
               </div>
-              <div className="text-3xl font-bold text-white text-center mb-2">
+              <div className="text-2xl font-bold text-white text-center mb-1">
                 {kpis.dangSua}
               </div>
-              <div className="text-sm text-white/90 text-center font-medium">
-                Đang sửa
-              </div>
+              <div className="text-xs text-white/90 text-center">Đang sửa</div>
             </div>
 
             {/* Đã xong */}
-            <div className="flex-shrink-0 w-36 bg-gradient-to-br from-[#50cd89] to-[#39a96a] rounded-2xl p-4 shadow-lg">
-              <div className="flex justify-center mb-3">
-                <Check className="w-8 h-8 text-white" />
+            <div className="flex-shrink-0 w-28 bg-gradient-to-br from-[#50cd89] to-[#39a96a] rounded-xl p-3 shadow-lg">
+              <div className="flex justify-center mb-1">
+                <Check className="w-5 h-5 text-white" />
               </div>
-              <div className="text-3xl font-bold text-white text-center mb-2">
+              <div className="text-2xl font-bold text-white text-center mb-1">
                 {kpis.daHoanThanh}
               </div>
-              <div className="text-sm text-white/90 text-center font-medium">
-                Đã xong
-              </div>
+              <div className="text-xs text-white/90 text-center">Đã xong</div>
             </div>
 
             {/* Doanh thu */}
-            <div className="flex-shrink-0 w-40 bg-[#2b2b40] rounded-2xl p-4 border-2 border-emerald-500/30">
-              <div className="flex justify-center mb-2">
-                <TrendingUp className="w-7 h-7 text-emerald-500" />
+            <div className="flex-shrink-0 w-32 bg-[#2b2b40] rounded-xl p-3 border border-emerald-500/30">
+              <div className="flex justify-center mb-1">
+                <TrendingUp className="w-5 h-5 text-emerald-500" />
               </div>
-              <div className="text-lg font-bold text-white text-center mb-1">
+              <div className="text-base font-bold text-white text-center mb-1">
                 {formatCurrency(kpis.doanhThu)}
               </div>
-              <div className="text-xs text-gray-400 text-center">
-                Doanh thu hôm nay
+              <div className="text-[10px] text-gray-400 text-center">
+                Doanh thu
               </div>
             </div>
 
             {/* Lợi nhuận */}
-            <div className="flex-shrink-0 w-40 bg-[#2b2b40] rounded-2xl p-4 border-2 border-cyan-500/30">
-              <div className="flex justify-center mb-2">
-                <DollarSign className="w-7 h-7 text-cyan-500" />
+            <div className="flex-shrink-0 w-32 bg-[#2b2b40] rounded-xl p-3 border border-cyan-500/30">
+              <div className="flex justify-center mb-1">
+                <DollarSign className="w-5 h-5 text-cyan-500" />
               </div>
-              <div className="text-lg font-bold text-white text-center mb-1">
+              <div className="text-base font-bold text-white text-center mb-1">
                 {formatCurrency(kpis.loiNhuan)}
               </div>
-              <div className="text-xs text-gray-400 text-center">
-                Lợi nhuận hôm nay
+              <div className="text-[10px] text-gray-400 text-center">
+                Lợi nhuận
               </div>
             </div>
           </div>
@@ -213,15 +207,15 @@ export function ServiceManagerMobile({
       </div>
 
       {/* SEARCH BAR */}
-      <div className="bg-[#1e1e2d] border-b border-gray-800 p-3">
+      <div className="bg-[#1e1e2d] border-b border-gray-800 p-2">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input
             type="text"
             placeholder="Tìm tên, SĐT, biển số..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-4 bg-[#2b2b40] border-2 border-gray-700 rounded-2xl text-white placeholder-gray-500 text-lg focus:outline-none focus:border-[#009ef7]"
+            className="w-full pl-10 pr-3 py-2.5 bg-[#2b2b40] border border-gray-700 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:border-[#009ef7]"
           />
         </div>
       </div>
@@ -229,10 +223,10 @@ export function ServiceManagerMobile({
       {/* STATUS TABS */}
       <div className="bg-[#1e1e2d] border-b border-gray-800">
         <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex gap-2 p-3 min-w-max">
+          <div className="flex gap-2 p-2 min-w-max">
             <button
               onClick={() => setStatusFilter("all")}
-              className={`px-6 py-3 rounded-2xl text-base font-semibold whitespace-nowrap transition-all ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                 statusFilter === "all"
                   ? "bg-[#009ef7] text-white shadow-lg shadow-[#009ef7]/30"
                   : "bg-[#2b2b40] text-gray-400"
@@ -242,7 +236,7 @@ export function ServiceManagerMobile({
             </button>
             <button
               onClick={() => setStatusFilter("Tiếp nhận")}
-              className={`px-6 py-3 rounded-2xl text-base font-semibold whitespace-nowrap transition-all ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                 statusFilter === "Tiếp nhận"
                   ? "bg-[#009ef7] text-white shadow-lg shadow-[#009ef7]/30"
                   : "bg-[#2b2b40] text-gray-400"
@@ -252,7 +246,7 @@ export function ServiceManagerMobile({
             </button>
             <button
               onClick={() => setStatusFilter("Đang sửa")}
-              className={`px-6 py-3 rounded-2xl text-base font-semibold whitespace-nowrap transition-all ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                 statusFilter === "Đang sửa"
                   ? "bg-[#f1416c] text-white shadow-lg shadow-[#f1416c]/30"
                   : "bg-[#2b2b40] text-gray-400"
@@ -262,7 +256,7 @@ export function ServiceManagerMobile({
             </button>
             <button
               onClick={() => setStatusFilter("Đã sửa xong")}
-              className={`px-6 py-3 rounded-2xl text-base font-semibold whitespace-nowrap transition-all ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                 statusFilter === "Đã sửa xong"
                   ? "bg-[#50cd89] text-white shadow-lg shadow-[#50cd89]/30"
                   : "bg-[#2b2b40] text-gray-400"
@@ -272,7 +266,7 @@ export function ServiceManagerMobile({
             </button>
             <button
               onClick={() => setStatusFilter("Trả máy")}
-              className={`px-6 py-3 rounded-2xl text-base font-semibold whitespace-nowrap transition-all ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                 statusFilter === "Trả máy"
                   ? "bg-purple-500 text-white shadow-lg shadow-purple-500/30"
                   : "bg-[#2b2b40] text-gray-400"
@@ -282,21 +276,21 @@ export function ServiceManagerMobile({
             </button>
             <button
               onClick={() => setShowFilterPopup(!showFilterPopup)}
-              className={`px-6 py-3 rounded-2xl transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
                 showFilterPopup
                   ? "bg-[#009ef7] text-white"
                   : "bg-[#2b2b40] text-gray-400"
               }`}
             >
-              <Filter className="w-5 h-5" />
-              <span className="text-base font-semibold">Lọc</span>
+              <Filter className="w-4 h-4" />
+              <span className="text-sm font-medium">Lọc</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* DANH SÁCH PHIẾU SỬA CHỮA */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 pb-20">
+      <div className="flex-1 overflow-y-auto p-2 space-y-2 pb-20">
         {filteredWorkOrders.length === 0 ? (
           /* Empty State */
           <div className="flex flex-col items-center justify-center h-full text-center px-6">
@@ -329,26 +323,26 @@ export function ServiceManagerMobile({
             </button>
           </div>
         ) : (
-          /* Work Order Cards - Simplified for Mobile */
+          /* Work Order Cards - Compact for Mobile */
           filteredWorkOrders.map((workOrder) => (
             <div
               key={workOrder.id}
               onClick={() => onEditWorkOrder(workOrder)}
-              className="bg-[#1e1e2d] rounded-2xl border-2 border-gray-800 overflow-hidden active:scale-[0.98] transition-transform"
+              className="bg-[#1e1e2d] rounded-xl border border-gray-800 overflow-hidden active:scale-[0.99] transition-transform"
             >
               {/* Card Content */}
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-3">
+              <div className="p-3">
+                <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
-                    <div className="text-[#009ef7] font-mono text-base font-semibold mb-1">
+                    <div className="text-[#009ef7] font-mono text-sm font-semibold mb-0.5">
                       {formatWorkOrderId(workOrder.id)}
                     </div>
-                    <div className="text-sm text-gray-500">
+                    <div className="text-xs text-gray-500">
                       {formatDate(workOrder.creationDate)}
                     </div>
                   </div>
                   <div
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 text-sm font-bold ${getStatusColor(
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-semibold ${getStatusColor(
                       workOrder.status
                     )}`}
                   >
@@ -358,25 +352,25 @@ export function ServiceManagerMobile({
                 </div>
 
                 {/* Customer & Vehicle */}
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">👤</span>
-                    <div className="flex-1">
-                      <div className="text-white font-semibold text-base">
+                <div className="space-y-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">👤</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white font-medium text-sm truncate">
                         {workOrder.customerName}
                       </div>
-                      <div className="text-gray-400 text-sm">
+                      <div className="text-gray-400 text-xs">
                         {workOrder.customerPhone}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">🏍️</span>
-                    <div className="flex-1">
-                      <div className="text-gray-300 text-base">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🏍️</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-gray-300 text-sm truncate">
                         {workOrder.vehicleModel}
                       </div>
-                      <div className="text-[#009ef7] text-sm font-mono font-semibold">
+                      <div className="text-[#009ef7] text-xs font-mono">
                         {workOrder.licensePlate}
                       </div>
                     </div>
@@ -384,30 +378,30 @@ export function ServiceManagerMobile({
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between pt-3 border-t-2 border-gray-800">
-                  <div className="text-sm text-gray-400">
+                <div className="flex items-center justify-between pt-2 border-t border-gray-800">
+                  <div className="text-xs text-gray-400">
                     KTV:{" "}
-                    <span className="text-gray-300 font-medium">
+                    <span className="text-gray-300">
                       {workOrder.technicianName || "Chưa phân"}
                     </span>
                   </div>
-                  <div className="text-white font-bold text-lg">
+                  <div className="text-white font-bold text-base">
                     {formatCurrency(workOrder.total || 0)}
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons Row */}
-              <div className="grid grid-cols-3 border-t-2 border-gray-800">
+              <div className="grid grid-cols-3 border-t border-gray-800">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onCallCustomer(workOrder.customerPhone || "");
                   }}
-                  className="flex items-center justify-center gap-2 py-4 bg-green-500/10 hover:bg-green-500/20 transition-colors border-r border-gray-800"
+                  className="flex items-center justify-center gap-1.5 py-3 bg-green-500/10 hover:bg-green-500/20 transition-colors border-r border-gray-800"
                 >
-                  <Phone className="w-5 h-5 text-green-500" />
-                  <span className="text-sm font-semibold text-green-500">
+                  <Phone className="w-4 h-4 text-green-500" />
+                  <span className="text-xs font-semibold text-green-500">
                     Gọi
                   </span>
                 </button>
@@ -416,10 +410,10 @@ export function ServiceManagerMobile({
                     e.stopPropagation();
                     onEditWorkOrder(workOrder);
                   }}
-                  className="flex items-center justify-center gap-2 py-4 bg-[#009ef7]/10 hover:bg-[#009ef7]/20 transition-colors border-r border-gray-800"
+                  className="flex items-center justify-center gap-1.5 py-3 bg-[#009ef7]/10 hover:bg-[#009ef7]/20 transition-colors border-r border-gray-800"
                 >
-                  <Edit2 className="w-5 h-5 text-[#009ef7]" />
-                  <span className="text-sm font-semibold text-[#009ef7]">
+                  <Edit2 className="w-4 h-4 text-[#009ef7]" />
+                  <span className="text-xs font-semibold text-[#009ef7]">
                     Sửa
                   </span>
                 </button>
@@ -428,10 +422,10 @@ export function ServiceManagerMobile({
                     e.stopPropagation();
                     onDeleteWorkOrder(workOrder);
                   }}
-                  className="flex items-center justify-center gap-2 py-4 bg-[#f1416c]/10 hover:bg-[#f1416c]/20 transition-colors"
+                  className="flex items-center justify-center gap-1.5 py-3 bg-[#f1416c]/10 hover:bg-[#f1416c]/20 transition-colors"
                 >
-                  <Trash2 className="w-5 h-5 text-[#f1416c]" />
-                  <span className="text-sm font-semibold text-[#f1416c]">
+                  <Trash2 className="w-4 h-4 text-[#f1416c]" />
+                  <span className="text-xs font-semibold text-[#f1416c]">
                     Xóa
                   </span>
                 </button>
@@ -444,9 +438,9 @@ export function ServiceManagerMobile({
       {/* FAB (Floating Action Button) */}
       <button
         onClick={onCreateWorkOrder}
-        className="fixed bottom-6 right-4 w-16 h-16 bg-gradient-to-br from-[#009ef7] to-[#0077b6] rounded-full shadow-xl shadow-[#009ef7]/50 flex items-center justify-center hover:from-[#0077b6] hover:to-[#005a8a] transition-all z-[60] active:scale-95"
+        className="fixed bottom-6 right-4 w-14 h-14 bg-gradient-to-br from-[#009ef7] to-[#0077b6] rounded-full shadow-xl shadow-[#009ef7]/50 flex items-center justify-center hover:from-[#0077b6] hover:to-[#005a8a] transition-all z-[60] active:scale-95"
       >
-        <Plus className="w-8 h-8 text-white" />
+        <Plus className="w-6 h-6 text-white" />
       </button>
 
       {/* Filter Popup (Optional) */}
