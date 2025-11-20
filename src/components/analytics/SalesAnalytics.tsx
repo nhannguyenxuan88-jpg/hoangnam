@@ -18,9 +18,16 @@ import { formatCurrency } from "../../utils/format";
 
 type TimeRange = "7days" | "30days" | "90days" | "all";
 
+import { useSalesRepo } from "../../hooks/useSalesRepository";
+import { usePartsRepo } from "../../hooks/usePartsRepository";
+
 const SalesAnalytics: React.FC = () => {
-  const { sales, parts, currentBranchId } = useAppContext();
+  const { currentBranchId } = useAppContext();
+  const { data: sales = [], isLoading: salesLoading } = useSalesRepo();
+  const { data: parts = [], isLoading: partsLoading } = usePartsRepo();
   const [timeRange, setTimeRange] = useState<TimeRange>("30days");
+
+  const isLoading = salesLoading || partsLoading;
 
   // Filter sales by time range
   const filteredSales = useMemo(() => {
@@ -146,6 +153,14 @@ const SalesAnalytics: React.FC = () => {
     }));
   }, [filteredSales]);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Time Range Selector */}
@@ -161,11 +176,10 @@ const SalesAnalytics: React.FC = () => {
           <button
             key={option.value}
             onClick={() => setTimeRange(option.value)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              timeRange === option.value
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${timeRange === option.value
                 ? "bg-blue-600 text-white"
                 : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-            }`}
+              }`}
           >
             {option.label}
           </button>

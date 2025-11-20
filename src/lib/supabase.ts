@@ -23,6 +23,17 @@ export const supabaseHelpers = {
       .single();
 
     if (error) throw error;
+    if (error) throw error;
+    return data;
+  },
+
+  async createCustomersBulk(customers: any[]) {
+    const { data, error } = await supabase
+      .from("customers")
+      .insert(customers)
+      .select();
+
+    if (error) throw error;
     return data;
   },
 
@@ -77,7 +88,7 @@ export const supabaseHelpers = {
     const { data, error } = await supabase
       .from("work_orders")
       .select("*")
-      .order("creationDate", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return data;

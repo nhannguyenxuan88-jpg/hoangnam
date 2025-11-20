@@ -12,21 +12,40 @@ import {
   ResponsiveContainer,
   ComposedChart,
 } from "recharts";
+import { useSalesRepo } from "../../hooks/useSalesRepository";
+import { usePartsRepo } from "../../hooks/usePartsRepository";
+import { useInventoryTxRepo } from "../../hooks/useInventoryTransactionsRepository";
+import {
+  useCustomerDebtsRepo,
+  useSupplierDebtsRepo,
+} from "../../hooks/useDebtsRepository";
 import { useAppContext } from "../../contexts/AppContext";
 import { formatCurrency } from "../../utils/format";
 
 type TimeRange = "7days" | "30days" | "90days" | "all";
 
 const FinancialAnalytics: React.FC = () => {
-  const {
-    sales,
-    parts,
-    inventoryTransactions,
-    customerDebts,
-    supplierDebts,
-    currentBranchId,
-  } = useAppContext();
+  const { currentBranchId } = useAppContext();
+
+  // --- Hook Data ---
+  const { data: sales = [], isLoading: salesLoading } = useSalesRepo();
+  const { data: parts = [], isLoading: partsLoading } = usePartsRepo();
+  const { data: inventoryTransactions = [], isLoading: invTxLoading } =
+    useInventoryTxRepo();
+  const { data: customerDebts = [], isLoading: customerDebtsLoading } =
+    useCustomerDebtsRepo();
+  const { data: supplierDebts = [], isLoading: supplierDebtsLoading } =
+    useSupplierDebtsRepo();
+
+  const isLoading =
+    salesLoading ||
+    partsLoading ||
+    invTxLoading ||
+    customerDebtsLoading ||
+    supplierDebtsLoading;
   const [timeRange, setTimeRange] = useState<TimeRange>("30days");
+
+
 
   // Filter by time range
   const getCutoffDate = () => {
@@ -145,6 +164,14 @@ const FinancialAnalytics: React.FC = () => {
     }, 0);
   }, [parts, currentBranchId]);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Time Range Selector */}
@@ -160,11 +187,10 @@ const FinancialAnalytics: React.FC = () => {
           <button
             key={option.value}
             onClick={() => setTimeRange(option.value)}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              timeRange === option.value
-                ? "bg-blue-600 text-white"
-                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${timeRange === option.value
+              ? "bg-blue-600 text-white"
+              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+              }`}
           >
             {option.label}
           </button>
@@ -192,36 +218,32 @@ const FinancialAnalytics: React.FC = () => {
         </div>
 
         <div
-          className={`bg-gradient-to-br p-6 rounded-lg border ${
-            netProfit >= 0
-              ? "from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700"
-              : "from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-700"
-          }`}
+          className={`bg-gradient-to-br p-6 rounded-lg border ${netProfit >= 0
+            ? "from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700"
+            : "from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-700"
+            }`}
         >
           <div
-            className={`text-sm font-medium mb-2 ${
-              netProfit >= 0
-                ? "text-blue-600 dark:text-blue-400"
-                : "text-red-600 dark:text-red-400"
-            }`}
+            className={`text-sm font-medium mb-2 ${netProfit >= 0
+              ? "text-blue-600 dark:text-blue-400"
+              : "text-red-600 dark:text-red-400"
+              }`}
           >
             Lợi nhuận
           </div>
           <div
-            className={`text-3xl font-bold ${
-              netProfit >= 0
-                ? "text-blue-900 dark:text-blue-100"
-                : "text-red-900 dark:text-red-100"
-            }`}
+            className={`text-3xl font-bold ${netProfit >= 0
+              ? "text-blue-900 dark:text-blue-100"
+              : "text-red-900 dark:text-red-100"
+              }`}
           >
             {formatCurrency(netProfit)}
           </div>
           <div
-            className={`text-xs mt-1 ${
-              netProfit >= 0
-                ? "text-blue-600 dark:text-blue-400"
-                : "text-red-600 dark:text-red-400"
-            }`}
+            className={`text-xs mt-1 ${netProfit >= 0
+              ? "text-blue-600 dark:text-blue-400"
+              : "text-red-600 dark:text-red-400"
+              }`}
           >
             Biên lợi nhuận: {profitMargin.toFixed(1)}%
           </div>

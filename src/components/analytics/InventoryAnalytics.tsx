@@ -15,12 +15,16 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useAppContext } from "../../contexts/AppContext";
-import { usePartsData } from "../../hooks/useData";
+import { usePartsRepo } from "../../hooks/usePartsRepository";
+import { useInventoryTxRepo } from "../../hooks/useInventoryTransactionsRepository";
 import { formatCurrency } from "../../utils/format";
 
 const InventoryAnalytics: React.FC = () => {
-  const { currentBranchId, inventoryTransactions } = useAppContext();
-  const { data: parts = [] } = usePartsData();
+  const { currentBranchId } = useAppContext();
+  const { data: parts = [], isLoading: partsLoading } = usePartsRepo();
+  const { data: inventoryTransactions = [], isLoading: txLoading } = useInventoryTxRepo();
+
+  const isLoading = partsLoading || txLoading;
 
   // Stock value by category
   const categoryData = useMemo(() => {
@@ -100,6 +104,14 @@ const InventoryAnalytics: React.FC = () => {
     }, 0);
   }, [parts, currentBranchId]);
 
+  // Total Inventory Quantity (Sum of all stock)
+  const totalInventoryQty = useMemo(() => {
+    return parts.reduce((sum, part) => {
+      const stock = part.stock[currentBranchId] || 0;
+      return sum + stock;
+    }, 0);
+  }, [parts, currentBranchId]);
+
   // Recent transactions (last 30 days)
   const recentTransactions = useMemo(() => {
     const thirtyDaysAgo = new Date();
@@ -145,6 +157,14 @@ const InventoryAnalytics: React.FC = () => {
     "#f97316",
   ];
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Summary Stats */}
@@ -160,10 +180,13 @@ const InventoryAnalytics: React.FC = () => {
 
         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 p-6 rounded-lg border border-emerald-200 dark:border-emerald-700">
           <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-2">
-            Tổng sản phẩm
+            Tổng SL tồn kho
           </div>
           <div className="text-3xl font-bold text-emerald-900 dark:text-emerald-100">
-            {parts.length}
+            {totalInventoryQty}
+          </div>
+          <div className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">
+            {parts.length} mã sản phẩm
           </div>
         </div>
 
@@ -332,13 +355,12 @@ const InventoryAnalytics: React.FC = () => {
               return (
                 <div
                   key={item.id}
-                  className={`flex items-center justify-between p-3 rounded-lg ${
-                    level === "critical"
-                      ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
-                      : level === "warning"
+                  className={`flex items-center justify-between p-3 rounded-lg ${level === "critical"
+                    ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                    : level === "warning"
                       ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
                       : "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800"
-                  }`}
+                    }`}
                 >
                   <div>
                     <div className="font-medium text-slate-900 dark:text-slate-100">
@@ -350,13 +372,12 @@ const InventoryAnalytics: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <div
-                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        level === "critical"
-                          ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-                          : level === "warning"
+                      className={`px-3 py-1 rounded-full text-sm font-semibold ${level === "critical"
+                        ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                        : level === "warning"
                           ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
                           : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
-                      }`}
+                        }`}
                     >
                       {stock} còn lại
                     </div>

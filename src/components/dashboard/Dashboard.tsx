@@ -37,7 +37,17 @@ import {
 import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAppContext } from "../../contexts/AppContext";
-import { useInventorySummary } from "../../hooks/useInventorySummary";
+
+import { useSalesRepo } from "../../hooks/useSalesRepository";
+import { usePartsRepo } from "../../hooks/usePartsRepository";
+import { useCashTxRepo } from "../../hooks/useCashTransactionsRepository";
+import {
+  useCustomers,
+  usePaymentSources,
+  useWorkOrders,
+} from "../../hooks/useSupabase";
+import { useEmployeesRepo } from "../../hooks/useEmployeesRepository";
+import { useLoansRepo } from "../../hooks/useLoansRepository";
 import { formatCurrency } from "../../utils/format";
 import { loadDemoData, clearDemoData } from "../../utils/demoData";
 import {
@@ -56,37 +66,201 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+// Stat Card Component
+type CardColorKey = "blue" | "emerald" | "amber" | "violet";
+
+const CARD_COLORS: Record<
+  CardColorKey,
+  { card: string; icon: string; accent: string }
+> = {
+  blue: {
+    card: "bg-white dark:bg-slate-800 border border-blue-100 dark:border-blue-900/40",
+    icon: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+    accent: "text-blue-600 dark:text-blue-400",
+  },
+  emerald: {
+    card: "bg-white dark:bg-slate-800 border border-emerald-100 dark:border-emerald-900/40",
+    icon: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+    accent: "text-emerald-600 dark:text-emerald-400",
+  },
+  amber: {
+    card: "bg-white dark:bg-slate-800 border border-amber-100 dark:border-amber-900/40",
+    icon: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+    accent: "text-amber-600 dark:text-amber-400",
+  },
+  violet: {
+    card: "bg-white dark:bg-slate-800 border border-violet-100 dark:border-violet-900/40",
+    icon: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+    accent: "text-violet-600 dark:text-violet-400",
+  },
+};
+
+const StatCard: React.FC<{
+  title: string;
+  value: string;
+  subtitle: string;
+  colorKey: CardColorKey;
+  icon: React.ReactNode;
+}> = ({ title, value, subtitle, colorKey, icon }) => {
+  const c = CARD_COLORS[colorKey];
+  return (
+    <div
+      className={`${c.card} rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow`}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">
+            {title}
+          </p>
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+            {value}
+          </h3>
+        </div>
+        <div
+          className={`w-10 h-10 rounded-lg ${c.icon} flex items-center justify-center`}
+        >
+          {icon}
+        </div>
+      </div>
+      <p className={`text-sm ${c.accent}`}>{subtitle}</p>
+    </div>
+  );
+};
+
+// StatusItem Component
+const StatusItem: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  count: number;
+  color: "blue" | "green" | "amber" | "slate" | "red";
+}> = ({ icon, label, count, color }) => {
+  const colorClasses = {
+    blue: "text-blue-600 dark:text-blue-400",
+    green: "text-green-600 dark:text-green-400",
+    amber: "text-amber-600 dark:text-amber-400",
+    slate: "text-slate-600 dark:text-slate-400",
+    red: "text-red-600 dark:text-red-400",
+  };
+
+  return (
+    <Link
+      to="/service"
+      className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition group"
+    >
+      <div className="flex items-center gap-3">
+        <div className={colorClasses[color]}>{icon}</div>
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+          {label}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-lg font-bold text-slate-900 dark:text-white">
+          {count}
+        </span>
+        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition" />
+      </div>
+    </Link>
+  );
+};
+
+// QuickActionCard Component với nhiều màu sắc
+const QUICK_ACTION_COLORS: Record<string, { from: string; to: string }> = {
+  purple: { from: "from-purple-600", to: "to-purple-700" },
+  orange: { from: "from-orange-600", to: "to-orange-700" },
+  emerald: { from: "from-emerald-600", to: "to-emerald-700" },
+  cyan: { from: "from-cyan-600", to: "to-cyan-700" },
+  blue: { from: "from-blue-600", to: "to-blue-700" },
+  amber: { from: "from-amber-600", to: "to-amber-700" },
+  rose: { from: "from-rose-600", to: "to-rose-700" },
+  violet: { from: "from-violet-600", to: "to-violet-700" },
+  slate: { from: "from-slate-600", to: "to-slate-700" },
+};
+
+const QuickActionCard: React.FC<{
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+  color:
+  | "purple"
+  | "orange"
+  | "emerald"
+  | "cyan"
+  | "blue"
+  | "amber"
+  | "rose"
+  | "violet"
+  | "slate";
+  labelClassName?: string;
+}> = ({ to, icon, label, color, labelClassName }) => {
+  const colors = QUICK_ACTION_COLORS[color] || QUICK_ACTION_COLORS.purple;
+
+  return (
+    <Link
+      to={to}
+      className={`flex flex-col items-center justify-center gap-2 p-3 md:p-4 bg-gradient-to-br ${colors.from} ${colors.to} dark:${colors.from} dark:${colors.to} rounded-xl text-white hover:shadow-lg hover:scale-105 transition-all duration-200`}
+    >
+      <div className="w-11 h-11 md:w-12 md:h-12 bg-white/20 rounded-full flex items-center justify-center">
+        {icon}
+      </div>
+      <span
+        className={`text-[11px] md:text-xs font-medium text-center leading-tight ${labelClassName || ""
+          }`}
+      >
+        {label}
+      </span>
+    </Link>
+  );
+};
+
 const Dashboard: React.FC = () => {
   const { profile } = useAuth();
-  const {
-    sales,
-    parts,
-    cashTransactions,
-    customers,
-    paymentSources,
-    employees,
-    loans,
-    currentBranchId,
-    workOrders = [],
-  } = useAppContext();
+  // --- Hook Imports ---
+  const { data: sales = [], isLoading: salesLoading } = useSalesRepo();
+  const { data: parts = [], isLoading: partsLoading } = usePartsRepo();
+  const { data: cashTransactions = [], isLoading: cashTxLoading } =
+    useCashTxRepo();
+  const { data: customers = [], isLoading: customersLoading } = useCustomers();
+  const { data: paymentSources = [], isLoading: sourcesLoading } =
+    usePaymentSources();
+  const { data: employees = [], isLoading: employeesLoading } =
+    useEmployeesRepo();
+  const { data: loans = [], isLoading: loansLoading } = useLoansRepo();
+  const { data: workOrders = [], isLoading: workOrdersLoading } =
+    useWorkOrders();
+  const { currentBranchId } = useAppContext(); // Keep context only for branch ID
 
-  const [showDemoButton, setShowDemoButton] = useState(sales.length === 0);
+  const isLoading =
+    salesLoading ||
+    partsLoading ||
+    cashTxLoading ||
+    customersLoading ||
+    sourcesLoading ||
+    employeesLoading ||
+    loansLoading ||
+    workOrdersLoading;
+
+  const [showDemoButton, setShowDemoButton] = useState(false);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
-  // Server-side inventory summary (Supabase view)
-  const { data: invSummary, isLoading: invLoading } = useInventorySummary();
-  const totalInvQty = useMemo(
-    () => (invSummary || []).reduce((s, r) => s + r.total_quantity, 0),
-    [invSummary]
-  );
-  const totalInvValue = useMemo(
-    () => (invSummary || []).reduce((s, r) => s + r.total_value, 0),
-    [invSummary]
-  );
+  // Calculate inventory stats from parts data directly
+  const totalInvQty = useMemo(() => {
+    return parts.reduce((sum, part) => {
+      const stock = part.stock?.[currentBranchId] || 0;
+      return sum + stock;
+    }, 0);
+  }, [parts, currentBranchId]);
+
+  const totalInvValue = useMemo(() => {
+    return parts.reduce((sum, part) => {
+      const stock = part.stock?.[currentBranchId] || 0;
+      const price = part.retailPrice?.[currentBranchId] || 0;
+      return sum + stock * price;
+    }, 0);
+  }, [parts, currentBranchId]);
 
   const handleLoadDemo = () => {
     loadDemoData();
-    window.location.reload(); // Reload để load dữ liệu mới
+    window.location.reload();
   };
 
   const handleClearDemo = () => {
@@ -249,6 +423,74 @@ const Dashboard: React.FC = () => {
     return warnings;
   }, [parts, loans, cashBalance, bankBalance, currentBranchId]);
 
+  // Top Customers Data
+  const topCustomersData = useMemo(() => {
+    const customerSpending: Record<
+      string,
+      { name: string; phone?: string; total: number }
+    > = {};
+
+    sales.forEach((sale) => {
+      const key = sale.customer.phone || sale.customer.name;
+      if (!customerSpending[key]) {
+        customerSpending[key] = {
+          name: sale.customer.name,
+          phone: sale.customer.phone,
+          total: 0,
+        };
+      }
+      customerSpending[key].total += sale.total;
+    });
+
+    return Object.values(customerSpending)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+  }, [sales]);
+
+  // Monthly Comparison Data
+  const monthlyComparisonData = useMemo(() => {
+    const months = [];
+    const now = new Date();
+
+    for (let i = 2; i >= 0; i--) {
+      const monthDate = new Date(
+        now.getFullYear(),
+        now.getMonth() - i,
+        1
+      );
+      const monthStr = monthDate.toISOString().slice(0, 7);
+      const monthName = monthDate.toLocaleDateString("vi-VN", {
+        month: "short",
+        year: "numeric",
+      });
+
+      const monthSales = sales.filter((s) =>
+        s.date.startsWith(monthStr)
+      );
+      const revenue = monthSales.reduce(
+        (sum, s) => sum + s.total,
+        0
+      );
+      const orders = monthSales.length;
+
+      months.push({
+        month: monthName,
+        revenue: revenue,
+        orders: orders,
+      });
+    }
+
+    return months;
+  }, [sales]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header - Lời chào người dùng - Chỉ hiện trên mobile */}
@@ -323,11 +565,10 @@ const Dashboard: React.FC = () => {
               Lợi nhuận
             </p>
             <p
-              className={`text-lg md:text-2xl font-bold ${
-                todayStats.profit >= 0
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-red-600 dark:text-red-400"
-              }`}
+              className={`text-lg md:text-2xl font-bold ${todayStats.profit >= 0
+                ? "text-green-600 dark:text-green-400"
+                : "text-red-600 dark:text-red-400"
+                }`}
             >
               {formatCurrency(todayStats.profit)}
             </p>
@@ -632,14 +873,14 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StatCard
           title="Tổng SL tồn kho"
-          value={invLoading ? "..." : `${totalInvQty}`}
+          value={isLoading ? "..." : `${totalInvQty}`}
           subtitle="Gộp tất cả chi nhánh"
           colorKey="blue"
           icon={<Boxes className="w-5 h-5" />}
         />
         <StatCard
           title="Tổng giá trị tồn kho"
-          value={invLoading ? "..." : formatCurrency(totalInvValue)}
+          value={isLoading ? "..." : formatCurrency(totalInvValue)}
           subtitle="Theo giá bán lẻ hiện tại"
           colorKey="violet"
           icon={<Package className="w-5 h-5" />}
@@ -746,42 +987,30 @@ const Dashboard: React.FC = () => {
             </PieChart>
           </ResponsiveContainer>
           <div className="mt-4 flex justify-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                Thu: {formatCurrency(incomeExpenseData[0].value)}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                Chi: {formatCurrency(incomeExpenseData[1].value)}
-              </span>
-            </div>
           </div>
         </div>
-      </div>
 
-      {/* Top sản phẩm bán chạy */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-          Top 5 sản phẩm bán chạy
-        </h3>
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={topProducts}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis dataKey="name" stroke="#94a3b8" />
-            <YAxis stroke="#94a3b8" />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#1e293b",
-                border: "1px solid #334155",
-                borderRadius: "8px",
-              }}
-            />
-            <Bar dataKey="quantity" fill="#3b82f6" name="Số lượng bán" />
-          </BarChart>
-        </ResponsiveContainer>
+        {/* Top sản phẩm bán chạy */}
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+            Top 5 sản phẩm bán chạy
+          </h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={topProducts}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+              <XAxis dataKey="name" stroke="#94a3b8" />
+              <YAxis stroke="#94a3b8" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#1e293b",
+                  border: "1px solid #334155",
+                  borderRadius: "8px",
+                }}
+              />
+              <Bar dataKey="quantity" fill="#3b82f6" name="Số lượng bán" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Top Customers và Monthly Comparison */}
@@ -793,59 +1022,36 @@ const Dashboard: React.FC = () => {
             Top 10 Khách hàng VIP
           </h3>
           <div className="space-y-3">
-            {useMemo(() => {
-              // Tính tổng chi tiêu của mỗi khách hàng
-              const customerSpending: Record<
-                string,
-                { name: string; phone?: string; total: number }
-              > = {};
-
-              sales.forEach((sale) => {
-                const key = sale.customer.phone || sale.customer.name;
-                if (!customerSpending[key]) {
-                  customerSpending[key] = {
-                    name: sale.customer.name,
-                    phone: sale.customer.phone,
-                    total: 0,
-                  };
-                }
-                customerSpending[key].total += sale.total;
-              });
-
-              return Object.values(customerSpending)
-                .sort((a, b) => b.total - a.total)
-                .slice(0, 10)
-                .map((customer, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white font-bold text-sm">
-                        {idx + 1}
-                      </div>
-                      <div>
-                        <div className="font-medium text-slate-900 dark:text-white">
-                          {customer.name}
-                        </div>
-                        {customer.phone && (
-                          <div className="text-sm text-slate-500 dark:text-slate-400">
-                            {customer.phone}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-green-600 dark:text-green-400">
-                        {formatCurrency(customer.total)}
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400">
-                        Tổng chi tiêu
-                      </div>
-                    </div>
+            {topCustomersData.map((customer, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white font-bold text-sm">
+                    {idx + 1}
                   </div>
-                ));
-            }, [sales])}
+                  <div>
+                    <div className="font-medium text-slate-900 dark:text-white">
+                      {customer.name}
+                    </div>
+                    {customer.phone && (
+                      <div className="text-sm text-slate-500 dark:text-slate-400">
+                        {customer.phone}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold text-green-600 dark:text-green-400">
+                    {formatCurrency(customer.total)}
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    Tổng chi tiêu
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -857,40 +1063,7 @@ const Dashboard: React.FC = () => {
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart
-              data={useMemo(() => {
-                const months = [];
-                const now = new Date();
-
-                for (let i = 2; i >= 0; i--) {
-                  const monthDate = new Date(
-                    now.getFullYear(),
-                    now.getMonth() - i,
-                    1
-                  );
-                  const monthStr = monthDate.toISOString().slice(0, 7);
-                  const monthName = monthDate.toLocaleDateString("vi-VN", {
-                    month: "short",
-                    year: "numeric",
-                  });
-
-                  const monthSales = sales.filter((s) =>
-                    s.date.startsWith(monthStr)
-                  );
-                  const revenue = monthSales.reduce(
-                    (sum, s) => sum + s.total,
-                    0
-                  );
-                  const orders = monthSales.length;
-
-                  months.push({
-                    month: monthName,
-                    revenue: revenue,
-                    orders: orders,
-                  });
-                }
-
-                return months;
-              }, [sales])}
+              data={monthlyComparisonData}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
               <XAxis dataKey="month" stroke="#94a3b8" />
@@ -975,151 +1148,6 @@ const Dashboard: React.FC = () => {
   );
 };
 
-// Stat Card Component
-type CardColorKey = "blue" | "emerald" | "amber" | "violet";
 
-const CARD_COLORS: Record<
-  CardColorKey,
-  { card: string; icon: string; accent: string }
-> = {
-  blue: {
-    card: "bg-white dark:bg-slate-800 border border-blue-100 dark:border-blue-900/40",
-    icon: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
-    accent: "text-blue-600 dark:text-blue-400",
-  },
-  emerald: {
-    card: "bg-white dark:bg-slate-800 border border-emerald-100 dark:border-emerald-900/40",
-    icon: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-    accent: "text-emerald-600 dark:text-emerald-400",
-  },
-  amber: {
-    card: "bg-white dark:bg-slate-800 border border-amber-100 dark:border-amber-900/40",
-    icon: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-    accent: "text-amber-600 dark:text-amber-400",
-  },
-  violet: {
-    card: "bg-white dark:bg-slate-800 border border-violet-100 dark:border-violet-900/40",
-    icon: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
-    accent: "text-violet-600 dark:text-violet-400",
-  },
-};
-
-const StatCard: React.FC<{
-  title: string;
-  value: string;
-  subtitle: string;
-  colorKey: CardColorKey;
-  icon: React.ReactNode;
-}> = ({ title, value, subtitle, colorKey, icon }) => {
-  const c = CARD_COLORS[colorKey];
-  return (
-    <div
-      className={`${c.card} rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow`}
-    >
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">
-            {title}
-          </p>
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
-            {value}
-          </h3>
-        </div>
-        <div
-          className={`w-10 h-10 rounded-lg ${c.icon} flex items-center justify-center`}
-        >
-          {icon}
-        </div>
-      </div>
-      <p className={`text-sm ${c.accent}`}>{subtitle}</p>
-    </div>
-  );
-};
-
-// StatusItem Component
-const StatusItem: React.FC<{
-  icon: React.ReactNode;
-  label: string;
-  count: number;
-  color: "blue" | "green" | "amber" | "slate" | "red";
-}> = ({ icon, label, count, color }) => {
-  const colorClasses = {
-    blue: "text-blue-600 dark:text-blue-400",
-    green: "text-green-600 dark:text-green-400",
-    amber: "text-amber-600 dark:text-amber-400",
-    slate: "text-slate-600 dark:text-slate-400",
-    red: "text-red-600 dark:text-red-400",
-  };
-
-  return (
-    <Link
-      to="/service"
-      className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition group"
-    >
-      <div className="flex items-center gap-3">
-        <div className={colorClasses[color]}>{icon}</div>
-        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-          {label}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-lg font-bold text-slate-900 dark:text-white">
-          {count}
-        </span>
-        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition" />
-      </div>
-    </Link>
-  );
-};
-
-// QuickActionCard Component với nhiều màu sắc
-const QUICK_ACTION_COLORS: Record<string, { from: string; to: string }> = {
-  purple: { from: "from-purple-600", to: "to-purple-700" },
-  orange: { from: "from-orange-600", to: "to-orange-700" },
-  emerald: { from: "from-emerald-600", to: "to-emerald-700" },
-  cyan: { from: "from-cyan-600", to: "to-cyan-700" },
-  blue: { from: "from-blue-600", to: "to-blue-700" },
-  amber: { from: "from-amber-600", to: "to-amber-700" },
-  rose: { from: "from-rose-600", to: "to-rose-700" },
-  violet: { from: "from-violet-600", to: "to-violet-700" },
-  slate: { from: "from-slate-600", to: "to-slate-700" },
-};
-
-const QuickActionCard: React.FC<{
-  to: string;
-  icon: React.ReactNode;
-  label: string;
-  color:
-    | "purple"
-    | "orange"
-    | "emerald"
-    | "cyan"
-    | "blue"
-    | "amber"
-    | "rose"
-    | "violet"
-    | "slate";
-  labelClassName?: string;
-}> = ({ to, icon, label, color, labelClassName }) => {
-  const colors = QUICK_ACTION_COLORS[color] || QUICK_ACTION_COLORS.purple;
-
-  return (
-    <Link
-      to={to}
-      className={`flex flex-col items-center justify-center gap-2 p-3 md:p-4 bg-gradient-to-br ${colors.from} ${colors.to} dark:${colors.from} dark:${colors.to} rounded-xl text-white hover:shadow-lg hover:scale-105 transition-all duration-200`}
-    >
-      <div className="w-11 h-11 md:w-12 md:h-12 bg-white/20 rounded-full flex items-center justify-center">
-        {icon}
-      </div>
-      <span
-        className={`text-[11px] md:text-xs font-medium text-center leading-tight ${
-          labelClassName || ""
-        }`}
-      >
-        {label}
-      </span>
-    </Link>
-  );
-};
 
 export default Dashboard;

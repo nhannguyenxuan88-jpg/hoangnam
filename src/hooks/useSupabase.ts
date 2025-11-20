@@ -24,6 +24,16 @@ export const useCreateCustomer = () => {
   });
 };
 
+export const useCreateCustomersBulk = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: supabaseHelpers.createCustomersBulk,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+    },
+  });
+};
+
 export const useUpdateCustomer = () => {
   const queryClient = useQueryClient();
   return useMutation({

@@ -134,8 +134,8 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
           <button
             onClick={() => setActiveTab("sales")}
             className={`px-4 py-2 font-medium transition-colors ${activeTab === "sales"
-                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+              ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
               }`}
           >
             🛒 Hóa đơn ({customerSales.length})
@@ -143,8 +143,8 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
           <button
             onClick={() => setActiveTab("workorders")}
             className={`px-4 py-2 font-medium transition-colors ${activeTab === "workorders"
-                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+              ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
               }`}
           >
             🔧 Phiếu sửa chữa ({customerWorkOrders.length})
@@ -481,8 +481,8 @@ const CustomerManager: React.FC = () => {
           <button
             onClick={() => setActiveTab("customers")}
             className={`flex items-center gap-2 px-4 py-4 border-b-2 font-medium text-sm transition-colors ${activeTab === "customers"
-                ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              ? "border-blue-500 text-blue-600 dark:text-blue-400"
+              : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
           >
             <UsersIcon className="w-5 h-5" />
@@ -491,8 +491,8 @@ const CustomerManager: React.FC = () => {
           <button
             onClick={() => setActiveTab("suppliers")}
             className={`flex items-center gap-2 px-4 py-4 border-b-2 font-medium text-sm transition-colors ${activeTab === "suppliers"
-                ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              ? "border-blue-500 text-blue-600 dark:text-blue-400"
+              : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
           >
             <svg
@@ -788,8 +788,8 @@ const CustomerManager: React.FC = () => {
               <button
                 onClick={() => setActiveFilter("all")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "all"
-                    ? "bg-blue-600 text-white"
-                    : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
+                  ? "bg-blue-600 text-white"
+                  : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
                   }`}
               >
                 Tất cả khách hàng
@@ -797,8 +797,8 @@ const CustomerManager: React.FC = () => {
               <button
                 onClick={() => setActiveFilter("vip")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "vip"
-                    ? "bg-purple-600 text-white"
-                    : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
+                  ? "bg-purple-600 text-white"
+                  : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
                   }`}
               >
                 <span className="inline-block w-2 h-2 rounded-full bg-purple-500 mr-2"></span>
@@ -807,8 +807,8 @@ const CustomerManager: React.FC = () => {
               <button
                 onClick={() => setActiveFilter("loyal")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "loyal"
-                    ? "bg-blue-600 text-white"
-                    : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
+                  ? "bg-blue-600 text-white"
+                  : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
                   }`}
               >
                 <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
@@ -817,8 +817,8 @@ const CustomerManager: React.FC = () => {
               <button
                 onClick={() => setActiveFilter("potential")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "potential"
-                    ? "bg-green-600 text-white"
-                    : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
+                  ? "bg-green-600 text-white"
+                  : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
                   }`}
               >
                 <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
@@ -827,8 +827,8 @@ const CustomerManager: React.FC = () => {
               <button
                 onClick={() => setActiveFilter("at-risk")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "at-risk"
-                    ? "bg-orange-600 text-white"
-                    : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
+                  ? "bg-orange-600 text-white"
+                  : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
                   }`}
               >
                 <span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-2"></span>
@@ -837,8 +837,8 @@ const CustomerManager: React.FC = () => {
               <button
                 onClick={() => setActiveFilter("lost")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "lost"
-                    ? "bg-red-600 text-white"
-                    : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
+                  ? "bg-red-600 text-white"
+                  : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
                   }`}
               >
                 <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2"></span>
@@ -847,8 +847,8 @@ const CustomerManager: React.FC = () => {
               <button
                 onClick={() => setActiveFilter("new")}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "new"
-                    ? "bg-cyan-600 text-white"
-                    : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
+                  ? "bg-cyan-600 text-white"
+                  : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
                   }`}
               >
                 <span className="inline-block w-2 h-2 rounded-full bg-cyan-500 mr-2"></span>
@@ -1475,8 +1475,8 @@ const CustomerModal: React.FC<{
                       type="button"
                       onClick={() => setPrimaryVehicle(vehicle.id)}
                       className={`flex-shrink-0 ${vehicle.isPrimary
-                          ? "text-yellow-400"
-                          : "text-slate-500 hover:text-yellow-400"
+                        ? "text-yellow-400"
+                        : "text-slate-500 hover:text-yellow-400"
                         }`}
                       title={
                         vehicle.isPrimary ? "Xe chính" : "Đặt làm xe chính"
