@@ -86,7 +86,7 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
         </div>
 
         {/* Stats Summary */}
-        <div className="grid grid-cols-5 gap-4 p-6 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-6 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
               {customerSales.length}
@@ -130,24 +130,22 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-4 px-6 pt-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex gap-4 px-6 pt-4 border-b border-slate-200 dark:border-slate-700 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab("sales")}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === "sales"
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === "sales"
                 ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
-            }`}
+              }`}
           >
             🛒 Hóa đơn ({customerSales.length})
           </button>
           <button
             onClick={() => setActiveTab("workorders")}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === "workorders"
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === "workorders"
                 ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
-            }`}
+              }`}
           >
             🔧 Phiếu sửa chữa ({customerWorkOrders.length})
           </button>
@@ -220,13 +218,13 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
                   const statusClass = isCompleted
                     ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
                     : isInProgress
-                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                    : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300";
+                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                      : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300";
                   const statusLabel = isCompleted
                     ? "Hoàn thành"
                     : isInProgress
-                    ? "Đang SC"
-                    : "Chờ xử lý";
+                      ? "Đang SC"
+                      : "Chờ xử lý";
 
                   return (
                     <div
@@ -482,22 +480,20 @@ const CustomerManager: React.FC = () => {
         <div className="flex items-center px-6">
           <button
             onClick={() => setActiveTab("customers")}
-            className={`flex items-center gap-2 px-4 py-4 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === "customers"
+            className={`flex items-center gap-2 px-4 py-4 border-b-2 font-medium text-sm transition-colors ${activeTab === "customers"
                 ? "border-blue-500 text-blue-600 dark:text-blue-400"
                 : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-            }`}
+              }`}
           >
             <UsersIcon className="w-5 h-5" />
             <span>Khách hàng ({stats.total})</span>
           </button>
           <button
             onClick={() => setActiveTab("suppliers")}
-            className={`flex items-center gap-2 px-4 py-4 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === "suppliers"
+            className={`flex items-center gap-2 px-4 py-4 border-b-2 font-medium text-sm transition-colors ${activeTab === "suppliers"
                 ? "border-blue-500 text-blue-600 dark:text-blue-400"
                 : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-            }`}
+              }`}
           >
             <svg
               className="w-5 h-5"
@@ -520,8 +516,8 @@ const CustomerManager: React.FC = () => {
       {activeTab === "customers" ? (
         <div className="flex-1 overflow-auto p-6">
           {/* Search and Actions */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 relative">
+          <div className="flex flex-col md:flex-row gap-3 mb-6">
+            <div className="flex-1 relative w-full">
               <svg
                 className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                 fill="none"
@@ -543,48 +539,50 @@ const CustomerManager: React.FC = () => {
                 className="w-full pl-10 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <button
-              onClick={() => setShowImport(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+              <button
+                onClick={() => setShowImport(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
-              <span>Upload DS</span>
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors">
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
+                </svg>
+                <span>Upload DS</span>
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors whitespace-nowrap">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
+                </svg>
+                <span>Nhắc BD</span>
+              </button>
+              <button
+                onClick={() => setEditCustomer({} as Customer)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
-              </svg>
-              <span>Nhắc BD</span>
-            </button>
-            <button
-              onClick={() => setEditCustomer({} as Customer)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-            >
-              <PlusIcon className="w-5 h-5" />
-              <span>Thêm KH</span>
-            </button>
+                <PlusIcon className="w-5 h-5" />
+                <span>Thêm KH</span>
+              </button>
+            </div>
           </div>
 
           {/* Statistics Section */}
@@ -608,7 +606,7 @@ const CustomerManager: React.FC = () => {
               </h2>
             </div>
 
-            <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               {/* Total Customers */}
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
                 <div className="text-blue-600 dark:text-blue-400 text-sm font-medium mb-1">
@@ -684,7 +682,7 @@ const CustomerManager: React.FC = () => {
               </h2>
             </div>
 
-            <div className="grid grid-cols-6 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
               {/* VIP */}
               <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border-2 border-purple-200 dark:border-purple-800">
                 <div className="text-purple-600 dark:text-purple-400 text-xs font-medium mb-1">
@@ -786,79 +784,72 @@ const CustomerManager: React.FC = () => {
               </h2>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex overflow-x-auto pb-2 gap-2 md:flex-wrap md:overflow-visible md:pb-0 no-scrollbar">
               <button
                 onClick={() => setActiveFilter("all")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeFilter === "all"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "all"
                     ? "bg-blue-600 text-white"
                     : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
-                }`}
+                  }`}
               >
                 Tất cả khách hàng
               </button>
               <button
                 onClick={() => setActiveFilter("vip")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeFilter === "vip"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "vip"
                     ? "bg-purple-600 text-white"
                     : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
-                }`}
+                  }`}
               >
                 <span className="inline-block w-2 h-2 rounded-full bg-purple-500 mr-2"></span>
                 VIP - Khách hàng quý
               </button>
               <button
                 onClick={() => setActiveFilter("loyal")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeFilter === "loyal"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "loyal"
                     ? "bg-blue-600 text-white"
                     : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
-                }`}
+                  }`}
               >
                 <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
                 Trung thành
               </button>
               <button
                 onClick={() => setActiveFilter("potential")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeFilter === "potential"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "potential"
                     ? "bg-green-600 text-white"
                     : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
-                }`}
+                  }`}
               >
                 <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
                 Tiềm năng
               </button>
               <button
                 onClick={() => setActiveFilter("at-risk")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeFilter === "at-risk"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "at-risk"
                     ? "bg-orange-600 text-white"
                     : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
-                }`}
+                  }`}
               >
                 <span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-2"></span>
                 Cần chăm sóc
               </button>
               <button
                 onClick={() => setActiveFilter("lost")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeFilter === "lost"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "lost"
                     ? "bg-red-600 text-white"
                     : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
-                }`}
+                  }`}
               >
                 <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2"></span>
                 Đã mất
               </button>
               <button
                 onClick={() => setActiveFilter("new")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeFilter === "new"
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeFilter === "new"
                     ? "bg-cyan-600 text-white"
                     : "bg-primary-bg text-secondary-text border border-primary-border hover:bg-tertiary-bg"
-                }`}
+                  }`}
               >
                 <span className="inline-block w-2 h-2 rounded-full bg-cyan-500 mr-2"></span>
                 Khách mới
@@ -1017,10 +1008,10 @@ const CustomerManager: React.FC = () => {
                 const config = customer.segment
                   ? segmentConfig[customer.segment]
                   : {
-                      bg: "bg-gradient-to-br from-slate-400 to-slate-600 dark:from-slate-500 dark:to-slate-700",
-                      text: "Khách hàng",
-                      icon: <User className="w-6 h-6" />,
-                    };
+                    bg: "bg-gradient-to-br from-slate-400 to-slate-600 dark:from-slate-500 dark:to-slate-700",
+                    text: "Khách hàng",
+                    icon: <User className="w-6 h-6" />,
+                  };
                 const points = calculateLoyaltyPoints(customer);
                 const pointsPercent = Math.min((points / 10000) * 100, 100);
 
@@ -1223,10 +1214,10 @@ const CustomerManager: React.FC = () => {
                           <div className="text-[10px] font-semibold text-slate-700 dark:text-slate-300">
                             {customer.lastVisit
                               ? `${Math.floor(
-                                  (Date.now() -
-                                    new Date(customer.lastVisit).getTime()) /
-                                    (1000 * 60 * 60 * 24)
-                                )} ngày`
+                                (Date.now() -
+                                  new Date(customer.lastVisit).getTime()) /
+                                (1000 * 60 * 60 * 24)
+                              )} ngày`
                               : "—"}
                           </div>
                           <div className="text-xs text-slate-500 dark:text-slate-400">
@@ -1483,11 +1474,10 @@ const CustomerModal: React.FC<{
                     <button
                       type="button"
                       onClick={() => setPrimaryVehicle(vehicle.id)}
-                      className={`flex-shrink-0 ${
-                        vehicle.isPrimary
+                      className={`flex-shrink-0 ${vehicle.isPrimary
                           ? "text-yellow-400"
                           : "text-slate-500 hover:text-yellow-400"
-                      }`}
+                        }`}
                       title={
                         vehicle.isPrimary ? "Xe chính" : "Đặt làm xe chính"
                       }
