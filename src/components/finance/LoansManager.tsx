@@ -87,7 +87,7 @@ const LoansManager: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {loadingLoans || loadingPayments ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
@@ -97,12 +97,12 @@ const LoansManager: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6">
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border-2 border-blue-200 dark:border-blue-800">
                 <div className="text-blue-600 dark:text-blue-400 text-sm font-medium mb-2">
                   Tổng vay
                 </div>
-                <div className="text-blue-900 dark:text-blue-100 text-2xl font-bold">
+                <div className="text-blue-900 dark:text-blue-100 text-xl md:text-2xl font-bold truncate">
                   {formatCurrency(summary.totalLoans)}
                 </div>
               </div>
@@ -111,7 +111,7 @@ const LoansManager: React.FC = () => {
                 <div className="text-red-600 dark:text-red-400 text-sm font-medium mb-2">
                   Còn nợ
                 </div>
-                <div className="text-red-900 dark:text-red-100 text-2xl font-bold">
+                <div className="text-red-900 dark:text-red-100 text-xl md:text-2xl font-bold truncate">
                   {formatCurrency(summary.totalRemaining)}
                 </div>
               </div>
@@ -120,7 +120,7 @@ const LoansManager: React.FC = () => {
                 <div className="text-green-600 dark:text-green-400 text-sm font-medium mb-2">
                   Đã trả
                 </div>
-                <div className="text-green-900 dark:text-green-100 text-2xl font-bold">
+                <div className="text-green-900 dark:text-green-100 text-xl md:text-2xl font-bold truncate">
                   {formatCurrency(summary.totalPaid)}
                 </div>
               </div>
@@ -129,7 +129,7 @@ const LoansManager: React.FC = () => {
                 <div className="text-amber-600 dark:text-amber-400 text-sm font-medium mb-2">
                   Đang vay
                 </div>
-                <div className="text-amber-900 dark:text-amber-100 text-2xl font-bold">
+                <div className="text-amber-900 dark:text-amber-100 text-xl md:text-2xl font-bold">
                   {summary.activeLoans}
                 </div>
                 <div className="text-amber-600 dark:text-amber-400 text-xs mt-1">
@@ -137,11 +137,11 @@ const LoansManager: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border-2 border-orange-200 dark:border-orange-800">
+              <div className="col-span-2 md:col-span-1 bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border-2 border-orange-200 dark:border-orange-800">
                 <div className="text-orange-600 dark:text-orange-400 text-sm font-medium mb-2">
                   Quá hạn
                 </div>
-                <div className="text-orange-900 dark:text-orange-100 text-2xl font-bold">
+                <div className="text-orange-900 dark:text-orange-100 text-xl md:text-2xl font-bold">
                   {summary.overdueLoans}
                 </div>
                 <div className="text-orange-600 dark:text-orange-400 text-xs mt-1">
@@ -266,11 +266,10 @@ const LoansManager: React.FC = () => {
                 date: payment.paymentDate,
                 amount: payment.totalAmount,
                 recipient: selectedLoan.lenderName,
-                notes: `Trả nợ vay - ${
-                  selectedLoan.lenderName
-                } (Gốc: ${formatCurrency(
-                  payment.principalAmount
-                )}, Lãi: ${formatCurrency(payment.interestAmount)})`,
+                notes: `Trả nợ vay - ${selectedLoan.lenderName
+                  } (Gốc: ${formatCurrency(
+                    payment.principalAmount
+                  )}, Lãi: ${formatCurrency(payment.interestAmount)})`,
                 paymentSourceId: payment.paymentMethod,
                 branchId: currentBranchId,
                 category: "loan_payment" as const,
@@ -283,14 +282,14 @@ const LoansManager: React.FC = () => {
                 paymentSources.map((ps) =>
                   ps.id === payment.paymentMethod
                     ? {
-                        ...ps,
-                        balance: {
-                          ...ps.balance,
-                          [currentBranchId]:
-                            (ps.balance[currentBranchId] || 0) -
-                            payment.totalAmount,
-                        },
-                      }
+                      ...ps,
+                      balance: {
+                        ...ps.balance,
+                        [currentBranchId]:
+                          (ps.balance[currentBranchId] || 0) -
+                          payment.totalAmount,
+                      },
+                    }
                     : ps
                 )
               );
@@ -318,18 +317,17 @@ const LoanCard: React.FC<{
     ((loan.principal - loan.remainingAmount) / loan.principal) * 100;
   const daysUntilDue = Math.ceil(
     (new Date(loan.endDate).getTime() - new Date().getTime()) /
-      (1000 * 60 * 60 * 24)
+    (1000 * 60 * 60 * 24)
   );
 
   return (
     <div
-      className={`bg-white dark:bg-slate-800 rounded-lg border-2 p-6 ${
-        isOverdue
+      className={`bg-white dark:bg-slate-800 rounded-lg border-2 p-6 ${isOverdue
           ? "border-orange-300 dark:border-orange-700"
           : isPaid
-          ? "border-green-300 dark:border-green-700"
-          : "border-slate-200 dark:border-slate-700"
-      }`}
+            ? "border-green-300 dark:border-green-700"
+            : "border-slate-200 dark:border-slate-700"
+        }`}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
@@ -338,19 +336,18 @@ const LoanCard: React.FC<{
               {loan.lenderName}
             </h3>
             <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                loan.loanType === "bank"
+              className={`px-2 py-1 rounded-full text-xs font-medium ${loan.loanType === "bank"
                   ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
                   : loan.loanType === "personal"
-                  ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
-                  : "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400"
-              }`}
+                    ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
+                    : "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-400"
+                }`}
             >
               {loan.loanType === "bank"
                 ? "Ngân hàng"
                 : loan.loanType === "personal"
-                ? "Cá nhân"
-                : "Khác"}
+                  ? "Cá nhân"
+                  : "Khác"}
             </span>
           </div>
           <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -367,12 +364,12 @@ const LoanCard: React.FC<{
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         <div>
           <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
             Số tiền vay
           </div>
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">
             {formatCurrency(loan.principal)}
           </div>
         </div>
@@ -380,7 +377,7 @@ const LoanCard: React.FC<{
           <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
             Còn nợ
           </div>
-          <div className="text-sm font-semibold text-red-600 dark:text-red-400">
+          <div className="text-sm font-semibold text-red-600 dark:text-red-400 truncate">
             {formatCurrency(loan.remainingAmount)}
           </div>
         </div>
@@ -396,7 +393,7 @@ const LoanCard: React.FC<{
           <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
             Trả hàng tháng
           </div>
-          <div className="text-sm font-semibold text-slate-900 dark:text-white">
+          <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">
             {formatCurrency(loan.monthlyPayment)}
           </div>
         </div>
@@ -411,19 +408,18 @@ const LoanCard: React.FC<{
               (isOverdue
                 ? "Quá hạn"
                 : daysUntilDue > 0
-                ? `Còn ${daysUntilDue} ngày`
-                : "Đến hạn hôm nay")}
+                  ? `Còn ${daysUntilDue} ngày`
+                  : "Đến hạn hôm nay")}
           </span>
         </div>
         <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
           <div
-            className={`h-full transition-all ${
-              isOverdue
+            className={`h-full transition-all ${isOverdue
                 ? "bg-orange-500"
                 : isPaid
-                ? "bg-green-500"
-                : "bg-blue-500"
-            }`}
+                  ? "bg-green-500"
+                  : "bg-blue-500"
+              }`}
             style={{ width: `${progressPercent}%` }}
           />
         </div>

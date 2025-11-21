@@ -183,24 +183,22 @@ const DebtManager: React.FC = () => {
       {/* Header with Tabs */}
       <div className="bg-primary-bg border-b border-primary-border">
         <div className="flex items-center justify-between px-6">
-          <div className="flex items-center">
+          <div className="flex items-center w-full md:w-auto">
             <button
               onClick={() => setActiveTab("customer")}
-              className={`px-6 py-4 font-medium text-sm transition-all ${
-                activeTab === "customer"
-                  ? "text-cyan-600 dark:text-cyan-400 border-b-2 border-cyan-600 dark:border-cyan-400"
-                  : "text-secondary-text hover:text-primary-text"
-              }`}
+              className={`flex-1 md:flex-none px-6 py-4 font-medium text-sm transition-all text-center ${activeTab === "customer"
+                ? "text-cyan-600 dark:text-cyan-400 border-b-2 border-cyan-600 dark:border-cyan-400"
+                : "text-secondary-text hover:text-primary-text"
+                }`}
             >
               Công nợ khách hàng
             </button>
             <button
               onClick={() => setActiveTab("supplier")}
-              className={`px-6 py-4 font-medium text-sm transition-all ${
-                activeTab === "supplier"
-                  ? "text-cyan-600 dark:text-cyan-400 border-b-2 border-cyan-600 dark:border-cyan-400"
-                  : "text-secondary-text hover:text-primary-text"
-              }`}
+              className={`flex-1 md:flex-none px-6 py-4 font-medium text-sm transition-all text-center ${activeTab === "supplier"
+                ? "text-cyan-600 dark:text-cyan-400 border-b-2 border-cyan-600 dark:border-cyan-400"
+                : "text-secondary-text hover:text-primary-text"
+                }`}
             >
               Công nợ nhà cung cấp
             </button>
@@ -218,8 +216,8 @@ const DebtManager: React.FC = () => {
             </span>
           </div>
         ) : (
-          <div className="flex items-center gap-4">
-            <div className="flex-1 relative">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+            <div className="w-full md:flex-1 relative">
               <svg
                 className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-tertiary-text"
                 fill="none"
@@ -245,59 +243,66 @@ const DebtManager: React.FC = () => {
                 className="w-full pl-10 pr-4 py-2.5 bg-primary-bg border border-secondary-border rounded-lg text-primary-text placeholder-tertiary-text focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
               />
             </div>
-            <div className="text-secondary-text text-sm">
-              Tổng công nợ:{" "}
-              <span className="font-bold text-red-600 dark:text-red-400">
-                {formatCurrency(
-                  activeTab === "customer" ? customerTotal : supplierTotal
-                )}
-              </span>
+
+            <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+              <div className="text-secondary-text text-sm whitespace-nowrap">
+                Tổng công nợ:{" "}
+                <span className="font-bold text-red-600 dark:text-red-400">
+                  {formatCurrency(
+                    activeTab === "customer" ? customerTotal : supplierTotal
+                  )}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
+                <button
+                  onClick={() => setShowAddDebtModal(true)}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
+                >
+                  <PlusIcon className="w-5 h-5" />
+                  <span>Thêm công nợ</span>
+                </button>
+                <button
+                  onClick={() =>
+                    activeTab === "customer"
+                      ? setShowCollectModal(true)
+                      : setShowPaymentModal(true)
+                  }
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>{activeTab === "customer" ? "Thu nợ" : "Chi trả nợ"}</span>
+                </button>
+              </div>
+
+              <button className="hidden md:block p-2.5 text-secondary-text hover:text-primary-text transition-colors">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                  />
+                </svg>
+              </button>
             </div>
-            <button
-              onClick={() => setShowAddDebtModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
-            >
-              <PlusIcon className="w-5 h-5" />
-              <span>Thêm công nợ</span>
-            </button>
-            <button
-              onClick={() =>
-                activeTab === "customer"
-                  ? setShowCollectModal(true)
-                  : setShowPaymentModal(true)
-              }
-              className="flex items-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-colors"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span>{activeTab === "customer" ? "Thu nợ" : "Chi trả nợ"}</span>
-            </button>
-            <button className="p-2.5 text-secondary-text hover:text-primary-text transition-colors">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                />
-              </svg>
-            </button>
           </div>
         )}
       </div>
@@ -312,8 +317,8 @@ const DebtManager: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {/* Header Row */}
-                <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-300">
+                {/* Header Row - Hidden on Mobile */}
+                <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-300">
                   <div className="col-span-4">Khách hàng nợ</div>
                   <div className="col-span-3">Nội dung</div>
                   <div className="col-span-1 text-right">Số tiền</div>
@@ -325,14 +330,14 @@ const DebtManager: React.FC = () => {
                 {filteredCustomerDebts.map((debt) => (
                   <div
                     key={debt.id}
-                    className="grid grid-cols-12 gap-4 items-start bg-primary-bg border border-primary-border rounded-lg p-4 hover:border-cyan-500 hover:shadow-md transition-all cursor-pointer group"
+                    className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start bg-primary-bg border border-primary-border rounded-lg p-4 hover:border-cyan-500 hover:shadow-md transition-all cursor-pointer group"
                     onClick={() => {
                       setSelectedDebt(debt);
                       setShowDetailModal(true);
                     }}
                   >
                     {/* Cột 1: Khách hàng nợ (4 cols) */}
-                    <div className="col-span-4 flex items-start gap-3">
+                    <div className="col-span-1 md:col-span-4 flex items-start gap-3">
                       <input
                         type="checkbox"
                         checked={selectedCustomerIds.includes(debt.customerId)}
@@ -443,7 +448,7 @@ const DebtManager: React.FC = () => {
                     </div>
 
                     {/* Cột 2: Nội dung - Chi tiết sửa chữa/mua hàng (3 cols) */}
-                    <div className="col-span-3">
+                    <div className="col-span-1 md:col-span-3">
                       <div className="text-sm text-primary-text space-y-1">
                         {(() => {
                           const lines = debt.description.split("\n");
@@ -456,16 +461,16 @@ const DebtManager: React.FC = () => {
                           );
                           const partsLines = partsSection
                             ? lines
-                                .slice(
-                                  lines.indexOf(partsSection) + 1,
-                                  lines.findIndex(
-                                    (l, i) =>
-                                      i > lines.indexOf(partsSection) &&
-                                      (l.includes("Dịch vụ:") ||
-                                        l.includes("Công lao động:"))
-                                  ) || lines.length
-                                )
-                                .filter((l) => l.trim().startsWith("•"))
+                              .slice(
+                                lines.indexOf(partsSection) + 1,
+                                lines.findIndex(
+                                  (l, i) =>
+                                    i > lines.indexOf(partsSection) &&
+                                    (l.includes("Dịch vụ:") ||
+                                      l.includes("Công lao động:"))
+                                ) || lines.length
+                              )
+                              .filter((l) => l.trim().startsWith("•"))
                             : [];
 
                           // Lấy dịch vụ (nếu có)
@@ -474,15 +479,15 @@ const DebtManager: React.FC = () => {
                           );
                           const serviceLines = serviceSection
                             ? lines
-                                .slice(
-                                  lines.indexOf(serviceSection) + 1,
-                                  lines.findIndex(
-                                    (l, i) =>
-                                      i > lines.indexOf(serviceSection) &&
-                                      l.includes("Công lao động:")
-                                  ) || lines.length
-                                )
-                                .filter((l) => l.trim().startsWith("•"))
+                              .slice(
+                                lines.indexOf(serviceSection) + 1,
+                                lines.findIndex(
+                                  (l, i) =>
+                                    i > lines.indexOf(serviceSection) &&
+                                    l.includes("Công lao động:")
+                                ) || lines.length
+                              )
+                              .filter((l) => l.trim().startsWith("•"))
                             : [];
 
                           // Lấy công lao động
@@ -521,28 +526,31 @@ const DebtManager: React.FC = () => {
                     </div>
 
                     {/* Cột 3: Số tiền (1 col) */}
-                    <div className="col-span-1 text-right">
+                    <div className="col-span-1 text-right md:text-right flex justify-between md:block">
+                      <span className="md:hidden text-sm text-secondary-text">Số tiền:</span>
                       <div className="text-sm font-semibold text-primary-text">
                         {formatCurrency(debt.totalAmount)}
                       </div>
                     </div>
 
                     {/* Cột 4: Đã trả (1 col) */}
-                    <div className="col-span-1 text-right">
+                    <div className="col-span-1 text-right md:text-right flex justify-between md:block">
+                      <span className="md:hidden text-sm text-secondary-text">Đã trả:</span>
                       <div className="text-sm font-semibold text-green-600 dark:text-green-400">
                         {formatCurrency(debt.paidAmount)}
                       </div>
                     </div>
 
                     {/* Cột 5: Còn nợ (2 cols) */}
-                    <div className="col-span-2 text-right">
+                    <div className="col-span-1 md:col-span-2 text-right md:text-right flex justify-between md:block">
+                      <span className="md:hidden text-sm font-bold text-secondary-text">Còn nợ:</span>
                       <div className="text-lg font-bold text-red-600 dark:text-red-400">
                         {formatCurrency(debt.remainingAmount)}
                       </div>
                     </div>
 
                     {/* Menu dropdown (1 col) */}
-                    <div className="col-span-1 flex justify-end">
+                    <div className="col-span-1 flex justify-end hidden md:flex">
                       <div className="relative debt-menu-dropdown">
                         <button
                           onClick={() =>
@@ -661,8 +669,8 @@ const DebtManager: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {/* Header Row */}
-                <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-300">
+                {/* Header Row - Hidden on Mobile */}
+                <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm font-semibold text-slate-700 dark:text-slate-300">
                   <div className="col-span-4">Nhà cung cấp</div>
                   <div className="col-span-3">Nội dung</div>
                   <div className="col-span-1 text-right">Số tiền</div>
@@ -674,14 +682,14 @@ const DebtManager: React.FC = () => {
                 {filteredSupplierDebts.map((debt) => (
                   <div
                     key={debt.id}
-                    className="grid grid-cols-12 gap-4 items-start bg-primary-bg border border-primary-border rounded-lg p-4 hover:border-cyan-500 hover:shadow-md transition-all cursor-pointer group"
+                    className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start bg-primary-bg border border-primary-border rounded-lg p-4 hover:border-cyan-500 hover:shadow-md transition-all cursor-pointer group"
                     onClick={() => {
                       setSelectedDebt(debt);
                       setShowDetailModal(true);
                     }}
                   >
                     {/* Cột 1: Nhà cung cấp (4 cols) */}
-                    <div className="col-span-4 flex items-start gap-3">
+                    <div className="col-span-1 md:col-span-4 flex items-start gap-3">
                       <input
                         type="checkbox"
                         checked={selectedSupplierIds.includes(debt.supplierId)}
@@ -723,35 +731,38 @@ const DebtManager: React.FC = () => {
                     </div>
 
                     {/* Cột 2: Nội dung (3 cols) */}
-                    <div className="col-span-3">
+                    <div className="col-span-1 md:col-span-3">
                       <div className="text-sm text-primary-text">
                         {debt.description}
                       </div>
                     </div>
 
                     {/* Cột 3: Số tiền (1 col) */}
-                    <div className="col-span-1 text-right">
+                    <div className="col-span-1 text-right md:text-right flex justify-between md:block">
+                      <span className="md:hidden text-sm text-secondary-text">Số tiền:</span>
                       <div className="text-sm text-primary-text font-semibold">
                         {formatCurrency(debt.totalAmount)}
                       </div>
                     </div>
 
                     {/* Cột 4: Đã trả (1 col) */}
-                    <div className="col-span-1 text-right">
+                    <div className="col-span-1 text-right md:text-right flex justify-between md:block">
+                      <span className="md:hidden text-sm text-secondary-text">Đã trả:</span>
                       <div className="text-sm text-green-600 dark:text-green-400 font-semibold">
                         {formatCurrency(debt.paidAmount)}
                       </div>
                     </div>
 
                     {/* Cột 5: Còn nợ (2 cols) */}
-                    <div className="col-span-2 text-right">
+                    <div className="col-span-1 md:col-span-2 text-right md:text-right flex justify-between md:block">
+                      <span className="md:hidden text-sm font-bold text-secondary-text">Còn nợ:</span>
                       <div className="text-base text-red-600 dark:text-red-400 font-bold">
                         {formatCurrency(debt.remainingAmount)}
                       </div>
                     </div>
 
                     {/* Cột 6: Menu actions (1 col) */}
-                    <div className="col-span-1 flex justify-end relative debt-menu-dropdown">
+                    <div className="col-span-1 flex justify-end relative debt-menu-dropdown hidden md:flex">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -870,44 +881,44 @@ const DebtManager: React.FC = () => {
       {/* Fixed Bottom Button - Pay All Selected */}
       {((activeTab === "customer" && selectedCustomerIds.length > 0) ||
         (activeTab === "supplier" && selectedSupplierIds.length > 0)) && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-          <button
-            onClick={handlePaySelectedDebts}
-            className="flex items-center gap-3 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold shadow-2xl transition-all hover:scale-105"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+            <button
+              onClick={handlePaySelectedDebts}
+              className="flex items-center gap-3 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold shadow-2xl transition-all hover:scale-105"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span>
-              Đã chọn{" "}
-              {activeTab === "customer"
-                ? selectedCustomerIds.length
-                : selectedSupplierIds.length}{" "}
-              đơn
-            </span>
-            <span className="mx-2">|</span>
-            <span className="text-xl font-bold">
-              Trả hết nợ (
-              {formatCurrency(
-                activeTab === "customer"
-                  ? selectedCustomerTotal
-                  : selectedSupplierTotal
-              )}
-              )
-            </span>
-          </button>
-        </div>
-      )}
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>
+                Đã chọn{" "}
+                {activeTab === "customer"
+                  ? selectedCustomerIds.length
+                  : selectedSupplierIds.length}{" "}
+                đơn
+              </span>
+              <span className="mx-2">|</span>
+              <span className="text-xl font-bold">
+                Trả hết nợ (
+                {formatCurrency(
+                  activeTab === "customer"
+                    ? selectedCustomerTotal
+                    : selectedSupplierTotal
+                )}
+                )
+              </span>
+            </button>
+          </div>
+        )}
 
       {/* Modals */}
       {showCollectModal && (
@@ -937,13 +948,13 @@ const DebtManager: React.FC = () => {
               paymentSources.map((ps) =>
                 ps.id === data.paymentMethod
                   ? {
-                      ...ps,
-                      balance: {
-                        ...ps.balance,
-                        [currentBranchId]:
-                          (ps.balance[currentBranchId] || 0) + data.amount,
-                      },
-                    }
+                    ...ps,
+                    balance: {
+                      ...ps.balance,
+                      [currentBranchId]:
+                        (ps.balance[currentBranchId] || 0) + data.amount,
+                    },
+                  }
                   : ps
               )
             );
@@ -963,11 +974,11 @@ const DebtManager: React.FC = () => {
           selectedDebts={
             activeTab === "customer"
               ? branchCustomerDebts.filter((d) =>
-                  selectedCustomerIds.includes(d.customerId)
-                )
+                selectedCustomerIds.includes(d.customerId)
+              )
               : branchSupplierDebts.filter((d) =>
-                  selectedSupplierIds.includes(d.supplierId)
-                )
+                selectedSupplierIds.includes(d.supplierId)
+              )
           }
           totalAmount={
             activeTab === "customer"
@@ -1021,8 +1032,7 @@ const DebtManager: React.FC = () => {
                   activeTab === "customer"
                     ? selectedCustomerTotal
                     : selectedSupplierTotal
-                )} qua ${
-                  paymentMethod === "cash" ? "Tiền mặt" : "Chuyển khoản"
+                )} qua ${paymentMethod === "cash" ? "Tiền mặt" : "Chuyển khoản"
                 }`
               );
             } catch (error: any) {
@@ -1059,13 +1069,13 @@ const DebtManager: React.FC = () => {
               paymentSources.map((ps) =>
                 ps.id === data.paymentMethod
                   ? {
-                      ...ps,
-                      balance: {
-                        ...ps.balance,
-                        [currentBranchId]:
-                          (ps.balance[currentBranchId] || 0) - data.amount,
-                      },
-                    }
+                    ...ps,
+                    balance: {
+                      ...ps.balance,
+                      [currentBranchId]:
+                        (ps.balance[currentBranchId] || 0) - data.amount,
+                    },
+                  }
                   : ps
               )
             );
@@ -1830,202 +1840,202 @@ const AddDebtModal: React.FC<{
   onClose,
   onSave,
 }) => {
-  const [formData, setFormData] = useState({
-    customerId: "",
-    supplierId: "",
-    description: "",
-    totalAmount: 0,
-    phone: "",
-    licensePlate: "",
-  });
+    const [formData, setFormData] = useState({
+      customerId: "",
+      supplierId: "",
+      description: "",
+      totalAmount: 0,
+      phone: "",
+      licensePlate: "",
+    });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
 
-    if (activeTab === "customer") {
-      const customer = customers.find((c) => c.id === formData.customerId);
-      if (!customer) {
-        showToast.error("Vui lòng chọn khách hàng");
-        return;
+      if (activeTab === "customer") {
+        const customer = customers.find((c) => c.id === formData.customerId);
+        if (!customer) {
+          showToast.error("Vui lòng chọn khách hàng");
+          return;
+        }
+
+        onSave({
+          customerId: formData.customerId,
+          customerName: customer.name,
+          phone: formData.phone || customer.phone,
+          licensePlate: formData.licensePlate || customer.licensePlate,
+          description: formData.description,
+          totalAmount: formData.totalAmount,
+          paidAmount: 0,
+          remainingAmount: formData.totalAmount,
+          createdDate: new Date().toISOString(),
+          branchId: currentBranchId,
+        });
+      } else {
+        const supplier = suppliers.find((s) => s.id === formData.supplierId);
+        if (!supplier) {
+          showToast.error("Vui lòng chọn nhà cung cấp");
+          return;
+        }
+
+        onSave({
+          supplierId: formData.supplierId,
+          supplierName: supplier.name,
+          description: formData.description,
+          totalAmount: formData.totalAmount,
+          paidAmount: 0,
+          remainingAmount: formData.totalAmount,
+          createdDate: new Date().toISOString(),
+          branchId: currentBranchId,
+        });
       }
+    };
 
-      onSave({
-        customerId: formData.customerId,
-        customerName: customer.name,
-        phone: formData.phone || customer.phone,
-        licensePlate: formData.licensePlate || customer.licensePlate,
-        description: formData.description,
-        totalAmount: formData.totalAmount,
-        paidAmount: 0,
-        remainingAmount: formData.totalAmount,
-        createdDate: new Date().toISOString(),
-        branchId: currentBranchId,
-      });
-    } else {
-      const supplier = suppliers.find((s) => s.id === formData.supplierId);
-      if (!supplier) {
-        showToast.error("Vui lòng chọn nhà cung cấp");
-        return;
-      }
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-lg w-full border border-slate-200 dark:border-slate-700">
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+              Thêm công nợ{" "}
+              {activeTab === "customer" ? "khách hàng" : "nhà cung cấp"}
+            </h2>
+          </div>
 
-      onSave({
-        supplierId: formData.supplierId,
-        supplierName: supplier.name,
-        description: formData.description,
-        totalAmount: formData.totalAmount,
-        paidAmount: 0,
-        remainingAmount: formData.totalAmount,
-        createdDate: new Date().toISOString(),
-        branchId: currentBranchId,
-      });
-    }
-  };
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            {activeTab === "customer" ? (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Khách hàng <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.customerId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, customerId: e.target.value })
+                  }
+                  required
+                  className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white"
+                >
+                  <option value="">Chọn khách hàng...</option>
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} - {c.phone}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Nhà cung cấp <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.supplierId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, supplierId: e.target.value })
+                  }
+                  required
+                  className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white"
+                >
+                  <option value="">Chọn nhà cung cấp...</option>
+                  {suppliers.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-lg w-full border border-slate-200 dark:border-slate-700">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-            Thêm công nợ{" "}
-            {activeTab === "customer" ? "khách hàng" : "nhà cung cấp"}
-          </h2>
+            {activeTab === "customer" && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Số điện thoại
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.phone}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Biển số xe
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.licensePlate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, licensePlate: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white"
+                  />
+                </div>
+              </>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Nội dung công nợ <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                required
+                rows={3}
+                className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white"
+                placeholder="Mô tả chi tiết công nợ..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Số tiền <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={formData.totalAmount || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    totalAmount: Number(e.target.value),
+                  })
+                }
+                required
+                min="0"
+                className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white"
+                placeholder="0"
+              />
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                {formatCurrency(formData.totalAmount || 0)}
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
+              >
+                Thêm công nợ
+              </button>
+            </div>
+          </form>
         </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {activeTab === "customer" ? (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Khách hàng <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.customerId}
-                onChange={(e) =>
-                  setFormData({ ...formData, customerId: e.target.value })
-                }
-                required
-                className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white"
-              >
-                <option value="">Chọn khách hàng...</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} - {c.phone}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Nhà cung cấp <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.supplierId}
-                onChange={(e) =>
-                  setFormData({ ...formData, supplierId: e.target.value })
-                }
-                required
-                className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white"
-              >
-                <option value="">Chọn nhà cung cấp...</option>
-                {suppliers.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {activeTab === "customer" && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Số điện thoại
-                </label>
-                <input
-                  type="text"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                  className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Biển số xe
-                </label>
-                <input
-                  type="text"
-                  value={formData.licensePlate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, licensePlate: e.target.value })
-                  }
-                  className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white"
-                />
-              </div>
-            </>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Nội dung công nợ <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              required
-              rows={3}
-              className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white"
-              placeholder="Mô tả chi tiết công nợ..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Số tiền <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              value={formData.totalAmount || ""}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  totalAmount: Number(e.target.value),
-                })
-              }
-              required
-              min="0"
-              className="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white"
-              placeholder="0"
-            />
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              {formatCurrency(formData.totalAmount || 0)}
-            </p>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors font-medium"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
-            >
-              Thêm công nợ
-            </button>
-          </div>
-        </form>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 // Edit Debt Modal
 const EditDebtModal: React.FC<{
@@ -2344,11 +2354,10 @@ const DetailDebtModal: React.FC<{
                   printWindow.document.write(`
                     <html>
                       <head>
-                        <title>Phiếu Công Nợ - ${
-                          isCustomerDebt
-                            ? (debt as CustomerDebt).customerName
-                            : (debt as SupplierDebt).supplierName
-                        }</title>
+                        <title>Phiếu Công Nợ - ${isCustomerDebt
+                      ? (debt as CustomerDebt).customerName
+                      : (debt as SupplierDebt).supplierName
+                    }</title>
                         <style>
                           body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
                           .store-header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #ddd; }
@@ -2375,62 +2384,53 @@ const DetailDebtModal: React.FC<{
                         </style>
                       </head>
                       <body>
-                        ${
-                          storeSettings
-                            ? `
+                        ${storeSettings
+                      ? `
                         <div class="store-header">
                           <h2>${storeSettings.store_name || "MOTOCARE"}</h2>
-                          ${
-                            storeSettings.address
-                              ? `<p>📍 ${storeSettings.address}</p>`
-                              : ""
-                          }
-                          ${
-                            storeSettings.phone
-                              ? `<p>📞 ${storeSettings.phone}</p>`
-                              : ""
-                          }
+                          ${storeSettings.address
+                        ? `<p>📍 ${storeSettings.address}</p>`
+                        : ""
+                      }
+                          ${storeSettings.phone
+                        ? `<p>📞 ${storeSettings.phone}</p>`
+                        : ""
+                      }
                         </div>
                         `
-                            : ""
-                        }
+                      : ""
+                    }
                         ${printContent.innerHTML}
-                        ${
-                          storeSettings &&
-                          (storeSettings.bank_name ||
-                            storeSettings.bank_account_number)
-                            ? `
+                        ${storeSettings &&
+                      (storeSettings.bank_name ||
+                        storeSettings.bank_account_number)
+                      ? `
                         <div class="bank-info">
                           <h3>💳 THÔNG TIN CHUYỂN KHOẢN</h3>
-                          ${
-                            storeSettings.bank_name
-                              ? `<p><strong>Ngân hàng:</strong> ${storeSettings.bank_name}</p>`
-                              : ""
-                          }
-                          ${
-                            storeSettings.bank_account_number
-                              ? `<p><strong>Số tài khoản:</strong> ${storeSettings.bank_account_number}</p>`
-                              : ""
-                          }
-                          ${
-                            storeSettings.bank_account_holder
-                              ? `<p><strong>Chủ tài khoản:</strong> ${storeSettings.bank_account_holder}</p>`
-                              : ""
-                          }
-                          ${
-                            storeSettings.bank_branch
-                              ? `<p><strong>Chi nhánh:</strong> ${storeSettings.bank_branch}</p>`
-                              : ""
-                          }
-                          ${
-                            storeSettings.bank_qr_url
-                              ? `<div class="bank-qr"><img src="${storeSettings.bank_qr_url}" alt="QR Code" /></div>`
-                              : ""
-                          }
+                          ${storeSettings.bank_name
+                        ? `<p><strong>Ngân hàng:</strong> ${storeSettings.bank_name}</p>`
+                        : ""
+                      }
+                          ${storeSettings.bank_account_number
+                        ? `<p><strong>Số tài khoản:</strong> ${storeSettings.bank_account_number}</p>`
+                        : ""
+                      }
+                          ${storeSettings.bank_account_holder
+                        ? `<p><strong>Chủ tài khoản:</strong> ${storeSettings.bank_account_holder}</p>`
+                        : ""
+                      }
+                          ${storeSettings.bank_branch
+                        ? `<p><strong>Chi nhánh:</strong> ${storeSettings.bank_branch}</p>`
+                        : ""
+                      }
+                          ${storeSettings.bank_qr_url
+                        ? `<div class="bank-qr"><img src="${storeSettings.bank_qr_url}" alt="QR Code" /></div>`
+                        : ""
+                      }
                         </div>
                         `
-                            : ""
-                        }
+                      : ""
+                    }
                         <div style="margin-top: 30px; text-align: center;">
                           <button onclick="window.print()" style="padding: 10px 20px; background: #0ea5e9; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">In Phiếu</button>
                         </div>

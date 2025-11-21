@@ -273,8 +273,127 @@ const ReportsManager: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Combined header: Tabs first, then Date Range */}
-      <div className="flex items-center gap-3 flex-wrap">
+      {/* Mobile Controls */}
+      <div className="md:hidden space-y-3 mb-4">
+        {/* Report Type Selector */}
+        <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 block uppercase tracking-wider">
+            Loại báo cáo
+          </label>
+          <div className="relative">
+            <select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value as ReportTab)}
+              className="w-full appearance-none p-3 pl-10 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            >
+              <option value="revenue">Doanh thu</option>
+              <option value="cashflow">Thu chi</option>
+              <option value="inventory">Tồn kho</option>
+              <option value="payroll">Lương nhân viên</option>
+              <option value="debt">Công nợ</option>
+            </select>
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none">
+              {activeTab === "revenue" && <DollarSign className="w-5 h-5" />}
+              {activeTab === "cashflow" && <Wallet className="w-5 h-5" />}
+              {activeTab === "inventory" && <Boxes className="w-5 h-5" />}
+              {activeTab === "payroll" && (
+                <BriefcaseBusiness className="w-5 h-5" />
+              )}
+              {activeTab === "debt" && <ClipboardList className="w-5 h-5" />}
+            </div>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Date Range Selector */}
+        <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2 block uppercase tracking-wider">
+            Thời gian
+          </label>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <select
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value as DateRange)}
+                className="w-full appearance-none p-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+              >
+                <option value="today">Hôm nay</option>
+                <option value="week">7 ngày qua</option>
+                <option value="month">Tháng này</option>
+                <option value="quarter">Quý này</option>
+                <option value="year">Năm nay</option>
+                <option value="custom">Tùy chỉnh</option>
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 pointer-events-none">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </div>
+            </div>
+            <button
+              onClick={exportToExcel}
+              className="px-4 bg-emerald-600 text-white rounded-lg shadow-sm hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center"
+              aria-label="Xuất Excel"
+            >
+              <FileSpreadsheet className="w-5 h-5" />
+            </button>
+          </div>
+
+          {dateRange === "custom" && (
+            <div className="grid grid-cols-2 gap-2 mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div>
+                <label className="text-[10px] text-slate-500 dark:text-slate-400 mb-1 block">
+                  Từ ngày
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-500 dark:text-slate-400 mb-1 block">
+                  Đến ngày
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop Controls - Hidden on Mobile */}
+      <div className="hidden md:flex items-center gap-3 flex-wrap">
         {/* Report Tabs */}
         {[
           {
@@ -306,11 +425,10 @@ const ReportsManager: React.FC = () => {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key as ReportTab)}
-            className={`px-6 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
-              activeTab === tab.key
+            className={`px-6 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${activeTab === tab.key
                 ? "bg-blue-600 text-white shadow-lg"
                 : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-            }`}
+              }`}
           >
             <span className="inline-flex items-center gap-1">
               {tab.icon}
@@ -328,23 +446,22 @@ const ReportsManager: React.FC = () => {
             <button
               key={range}
               onClick={() => setDateRange(range)}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                dateRange === range
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${dateRange === range
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-              }`}
+                }`}
             >
               {range === "today"
                 ? "Hôm nay"
                 : range === "week"
-                ? "7 ngày"
-                : range === "month"
-                ? "Tháng"
-                : range === "quarter"
-                ? "Quý"
-                : range === "year"
-                ? "Năm"
-                : "Tùy chỉnh"}
+                  ? "7 ngày"
+                  : range === "month"
+                    ? "Tháng"
+                    : range === "quarter"
+                      ? "Quý"
+                      : range === "year"
+                        ? "Năm"
+                        : "Tùy chỉnh"}
             </button>
           )
         )}
@@ -480,11 +597,10 @@ const ReportsManager: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              (sale as any).paymentStatus === "paid"
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${(sale as any).paymentStatus === "paid"
                                 ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                                 : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                            }`}
+                              }`}
                           >
                             {(sale as any).paymentStatus === "paid"
                               ? "Đã thanh toán"
@@ -548,38 +664,34 @@ const ReportsManager: React.FC = () => {
               </div>
 
               <div
-                className={`bg-gradient-to-br rounded-lg p-6 border ${
-                  cashflowReport.netCashFlow >= 0
+                className={`bg-gradient-to-br rounded-lg p-6 border ${cashflowReport.netCashFlow >= 0
                     ? "from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800"
                     : "from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-orange-200 dark:border-orange-800"
-                }`}
+                  }`}
               >
                 <div
-                  className={`text-sm font-medium mb-2 ${
-                    cashflowReport.netCashFlow >= 0
+                  className={`text-sm font-medium mb-2 ${cashflowReport.netCashFlow >= 0
                       ? "text-blue-700 dark:text-blue-400"
                       : "text-orange-700 dark:text-orange-400"
-                  }`}
+                    }`}
                 >
                   <span className="inline-flex items-center gap-1">
                     <DollarSign className="w-4 h-4" /> Dòng tiền ròng
                   </span>
                 </div>
                 <div
-                  className={`text-3xl font-bold ${
-                    cashflowReport.netCashFlow >= 0
+                  className={`text-3xl font-bold ${cashflowReport.netCashFlow >= 0
                       ? "text-blue-600 dark:text-blue-400"
                       : "text-orange-600 dark:text-orange-400"
-                  }`}
+                    }`}
                 >
                   {formatCurrency(cashflowReport.netCashFlow).replace("₫", "")}
                 </div>
                 <div
-                  className={`text-xs mt-1 ${
-                    cashflowReport.netCashFlow >= 0
+                  className={`text-xs mt-1 ${cashflowReport.netCashFlow >= 0
                       ? "text-blue-600 dark:text-blue-400"
                       : "text-orange-600 dark:text-orange-400"
-                  }`}
+                    }`}
                 >
                   đ
                 </div>
@@ -869,11 +981,10 @@ const ReportsManager: React.FC = () => {
                           </td>
                           <td className="px-4 py-2 text-center">
                             <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                record.paymentStatus === "paid"
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${record.paymentStatus === "paid"
                                   ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                                   : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                              }`}
+                                }`}
                             >
                               {record.paymentStatus === "paid"
                                 ? "Đã trả"

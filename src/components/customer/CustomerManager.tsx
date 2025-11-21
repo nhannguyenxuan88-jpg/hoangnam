@@ -136,19 +136,21 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
         <div className="flex gap-4 px-6 pt-4 border-b border-slate-200 dark:border-slate-700 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab("sales")}
-            className={`px-4 py-2 font-medium transition-colors ${activeTab === "sales"
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === "sales"
                 ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
-              }`}
+            }`}
           >
             🛒 Hóa đơn ({customerSales.length})
           </button>
           <button
             onClick={() => setActiveTab("workorders")}
-            className={`px-4 py-2 font-medium transition-colors ${activeTab === "workorders"
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === "workorders"
                 ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
-              }`}
+            }`}
           >
             🔧 Phiếu sửa chữa ({customerWorkOrders.length})
           </button>
@@ -221,13 +223,13 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
                   const statusClass = isCompleted
                     ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
                     : isInProgress
-                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                      : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300";
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                    : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300";
                   const statusLabel = isCompleted
                     ? "Hoàn thành"
                     : isInProgress
-                      ? "Đang SC"
-                      : "Chờ xử lý";
+                    ? "Đang SC"
+                    : "Chờ xử lý";
 
                   return (
                     <div
@@ -497,20 +499,22 @@ const CustomerManager: React.FC = () => {
         <div className="flex items-center px-6 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab("customers")}
-            className={`flex items-center gap-2 px-4 py-4 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${activeTab === "customers"
+            className={`flex items-center gap-2 px-4 py-4 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+              activeTab === "customers"
                 ? "border-blue-500 text-blue-600 dark:text-blue-400"
                 : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              }`}
+            }`}
           >
             <UsersIcon className="w-5 h-5" />
             <span>Khách hàng ({stats.total})</span>
           </button>
           <button
             onClick={() => setActiveTab("suppliers")}
-            className={`flex items-center gap-2 px-4 py-4 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${activeTab === "suppliers"
+            className={`flex items-center gap-2 px-4 py-4 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
+              activeTab === "suppliers"
                 ? "border-blue-500 text-blue-600 dark:text-blue-400"
                 : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              }`}
+            }`}
           >
             <svg
               className="w-5 h-5"
@@ -578,7 +582,10 @@ const CustomerManager: React.FC = () => {
                   </svg>
                   <span>Upload DS</span>
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors whitespace-nowrap shadow-sm" onClick={() => alert("Tính năng đang phát triển")}>
+                <button
+                  className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors whitespace-nowrap shadow-sm"
+                  onClick={() => alert("Tính năng đang phát triển")}
+                >
                   <svg
                     className="w-5 h-5"
                     fill="none"
@@ -605,30 +612,70 @@ const CustomerManager: React.FC = () => {
             </div>
 
             {/* Filters */}
-            <div className="flex overflow-x-auto pb-2 gap-2 md:flex-wrap md:overflow-visible md:pb-0 no-scrollbar">
+            <div className="flex flex-wrap gap-2">
               {[
-                { id: "all", label: "Tất cả khách hàng", color: "blue" },
-                { id: "vip", label: "VIP - Khách hàng quý", color: "purple" },
-                { id: "loyal", label: "Trung thành", color: "blue" },
-                { id: "potential", label: "Tiềm năng", color: "green" },
-                { id: "at-risk", label: "Cần chăm sóc", color: "orange" },
-                { id: "lost", label: "Đã mất", color: "red" },
-                { id: "new", label: "Khách mới", color: "cyan" },
+                {
+                  id: "all",
+                  label: "Tất cả",
+                  shortLabel: "Tất cả",
+                  color: "blue",
+                  icon: "●",
+                },
+                {
+                  id: "vip",
+                  label: "VIP",
+                  shortLabel: "VIP",
+                  color: "purple",
+                  icon: "👑",
+                },
+                {
+                  id: "loyal",
+                  label: "Trung thành",
+                  shortLabel: "Trung thành",
+                  color: "blue",
+                  icon: "💎",
+                },
+                {
+                  id: "potential",
+                  label: "Tiềm năng",
+                  shortLabel: "Tiềm năng",
+                  color: "green",
+                  icon: "⭐",
+                },
+                {
+                  id: "at-risk",
+                  label: "Cần chăm sóc",
+                  shortLabel: "Cần CS",
+                  color: "orange",
+                  icon: "⚠️",
+                },
+                {
+                  id: "lost",
+                  label: "Đã mất",
+                  shortLabel: "Đã mất",
+                  color: "red",
+                  icon: "❌",
+                },
+                {
+                  id: "new",
+                  label: "Khách mới",
+                  shortLabel: "Khách mới",
+                  color: "cyan",
+                  icon: "🆕",
+                },
               ].map((filter) => (
                 <button
                   key={filter.id}
                   onClick={() => setActiveFilter(filter.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap border ${activeFilter === filter.id
+                  className={`px-2 py-1 md:px-3 md:py-1.5 rounded-md text-[10px] md:text-xs font-medium transition-all whitespace-nowrap border flex items-center gap-0.5 md:gap-1 ${
+                    activeFilter === filter.id
                       ? `bg-${filter.color}-600 text-white border-${filter.color}-600 shadow-md`
                       : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
-                    }`}
+                  }`}
                 >
-                  {filter.id !== "all" && (
-                    <span
-                      className={`inline-block w-2 h-2 rounded-full bg-${filter.color}-500 mr-2`}
-                    ></span>
-                  )}
-                  {filter.label}
+                  <span className="text-xs md:text-sm">{filter.icon}</span>
+                  <span className="hidden sm:inline">{filter.label}</span>
+                  <span className="inline sm:hidden">{filter.shortLabel}</span>
                 </button>
               ))}
             </div>
@@ -862,10 +909,10 @@ const CustomerManager: React.FC = () => {
                   const config = customer.segment
                     ? segmentConfig[customer.segment]
                     : {
-                      bg: "bg-gradient-to-br from-slate-400 to-slate-600 dark:from-slate-500 dark:to-slate-700",
-                      text: "Khách hàng",
-                      icon: <User className="w-6 h-6" />,
-                    };
+                        bg: "bg-gradient-to-br from-slate-400 to-slate-600 dark:from-slate-500 dark:to-slate-700",
+                        text: "Khách hàng",
+                        icon: <User className="w-6 h-6" />,
+                      };
                   const points = calculateLoyaltyPoints(customer);
                   const pointsPercent = Math.min((points / 10000) * 100, 100);
 
@@ -1071,10 +1118,10 @@ const CustomerManager: React.FC = () => {
                             <div className="text-[10px] font-semibold text-slate-700 dark:text-slate-300">
                               {customer.lastVisit
                                 ? `${Math.floor(
-                                  (Date.now() -
-                                    new Date(customer.lastVisit).getTime()) /
-                                  (1000 * 60 * 60 * 24)
-                                )} ngày`
+                                    (Date.now() -
+                                      new Date(customer.lastVisit).getTime()) /
+                                      (1000 * 60 * 60 * 24)
+                                  )} ngày`
                                 : "—"}
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400">
@@ -1219,10 +1266,7 @@ const CustomerManager: React.FC = () => {
       )}
 
       {showImport && (
-        <ImportCSVModal
-          onClose={() => setShowImport(false)}
-          type={activeTab}
-        />
+        <ImportCSVModal onClose={() => setShowImport(false)} type={activeTab} />
       )}
     </div>
   );
@@ -1352,10 +1396,11 @@ const CustomerModal: React.FC<{
                     <button
                       type="button"
                       onClick={() => setPrimaryVehicle(vehicle.id)}
-                      className={`flex-shrink-0 ${vehicle.isPrimary
+                      className={`flex-shrink-0 ${
+                        vehicle.isPrimary
                           ? "text-yellow-400"
                           : "text-slate-500 hover:text-yellow-400"
-                        }`}
+                      }`}
                       title={
                         vehicle.isPrimary ? "Xe chính" : "Đặt làm xe chính"
                       }
@@ -1551,7 +1596,10 @@ const SupplierModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
 // --- UPDATED IMPORT MODAL ---
 
-const ImportCSVModal: React.FC<{ onClose: () => void; type: "customers" | "suppliers" }> = ({ onClose, type }) => {
+const ImportCSVModal: React.FC<{
+  onClose: () => void;
+  type: "customers" | "suppliers";
+}> = ({ onClose, type }) => {
   const createCustomersBulk = useCreateCustomersBulk();
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<
@@ -1607,9 +1655,10 @@ const ImportCSVModal: React.FC<{ onClose: () => void; type: "customers" | "suppl
       if (type === "customers") {
         // Import Khách hàng
         const newCustomers = preview.map((p) => ({
-          id: typeof crypto !== "undefined" && crypto.randomUUID
-            ? crypto.randomUUID()
-            : `CUS-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          id:
+            typeof crypto !== "undefined" && crypto.randomUUID
+              ? crypto.randomUUID()
+              : `CUS-${Date.now()}-${Math.random().toString(16).slice(2)}`,
           name: p.name,
           phone: p.phone || "",
           created_at: new Date().toISOString(),
@@ -1620,7 +1669,9 @@ const ImportCSVModal: React.FC<{ onClose: () => void; type: "customers" | "suppl
         // Import Nhà cung cấp
         // LƯU Ý: Hiện tại chưa có hook useCreateSuppliersBulk, nên mình để tạm alert
         // Bạn cần tạo hook này tương tự như useCreateCustomersBulk trong useSupabase.ts
-        alert("Chức năng import Nhà cung cấp đang được phát triển. Vui lòng thêm hook useCreateSuppliersBulk để kích hoạt.");
+        alert(
+          "Chức năng import Nhà cung cấp đang được phát triển. Vui lòng thêm hook useCreateSuppliersBulk để kích hoạt."
+        );
         // Ví dụ logic khi có hook:
         // await createSuppliersBulk.mutateAsync(newSuppliers);
       }
@@ -1652,7 +1703,8 @@ const ImportCSVModal: React.FC<{ onClose: () => void; type: "customers" | "suppl
         </div>
         <div className="space-y-3 text-sm">
           <p className="text-slate-600 dark:text-slate-300">
-            Chọn file CSV với cột đầu tiên là <strong>tên {isCustomer ? "khách hàng" : "nhà cung cấp"}</strong>,
+            Chọn file CSV với cột đầu tiên là{" "}
+            <strong>tên {isCustomer ? "khách hàng" : "nhà cung cấp"}</strong>,
             cột thứ hai là <strong>số điện thoại</strong> (tùy chọn).
           </p>
           <input

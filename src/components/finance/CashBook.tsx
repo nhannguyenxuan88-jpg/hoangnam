@@ -143,8 +143,8 @@ const CashBook: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="p-6">
-        <div className="grid grid-cols-5 gap-4 mb-6">
+      <div className="p-4 md:p-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6">
           <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border-2 border-green-200 dark:border-green-800">
             <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm font-medium mb-2">
               <svg
@@ -189,16 +189,15 @@ const CashBook: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border-2 border-blue-200 dark:border-blue-800">
+          <div className="col-span-2 md:col-span-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border-2 border-blue-200 dark:border-blue-800">
             <div className="text-blue-600 dark:text-blue-400 text-sm font-medium mb-2">
               Chênh lệch
             </div>
             <div
-              className={`text-2xl font-bold ${
-                summary.balance >= 0
+              className={`text-2xl font-bold ${summary.balance >= 0
                   ? "text-blue-900 dark:text-blue-100"
                   : "text-red-600 dark:text-red-400"
-              }`}
+                }`}
             >
               {formatCurrency(summary.balance)}
             </div>
@@ -224,7 +223,57 @@ const CashBook: React.FC = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 mb-4">
+        {/* Mobile Filters */}
+        <div className="md:hidden space-y-3 mb-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+                Loại
+              </label>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as any)}
+                className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+              >
+                <option value="all">Tất cả</option>
+                <option value="income">Thu</option>
+                <option value="expense">Chi</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+                Nguồn tiền
+              </label>
+              <select
+                value={filterPaymentSource}
+                onChange={(e) => setFilterPaymentSource(e.target.value)}
+                className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+              >
+                <option value="all">Tất cả</option>
+                <option value="cash">Tiền mặt</option>
+                <option value="bank">Ngân hàng</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+              Thời gian
+            </label>
+            <select
+              value={filterDateRange}
+              onChange={(e) => setFilterDateRange(e.target.value as any)}
+              className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+            >
+              <option value="today">Hôm nay</option>
+              <option value="week">7 ngày qua</option>
+              <option value="month">30 ngày qua</option>
+              <option value="all">Tất cả</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Desktop Filters */}
+        <div className="hidden md:block bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 mb-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -239,11 +288,10 @@ const CashBook: React.FC = () => {
                   <button
                     key={option.value}
                     onClick={() => setFilterType(option.value as any)}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                      filterType === option.value
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === option.value
                         ? "bg-blue-600 text-white"
                         : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
-                    }`}
+                      }`}
                   >
                     {option.label}
                   </button>
@@ -280,11 +328,10 @@ const CashBook: React.FC = () => {
                   <button
                     key={option.value}
                     onClick={() => setFilterDateRange(option.value as any)}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                      filterDateRange === option.value
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterDateRange === option.value
                         ? "bg-blue-600 text-white"
                         : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
-                    }`}
+                      }`}
                   >
                     {option.label}
                   </button>
@@ -294,8 +341,52 @@ const CashBook: React.FC = () => {
           </div>
         </div>
 
-        {/* Transactions Table */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+        {/* Transactions List (Mobile) */}
+        <div className="md:hidden space-y-3">
+          {filteredTransactions.length === 0 ? (
+            <div className="text-center py-8 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+              Không có giao dịch nào
+            </div>
+          ) : (
+            filteredTransactions.map((tx) => (
+              <div
+                key={tx.id}
+                className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="font-medium text-slate-900 dark:text-white">
+                      {getCategoryLabel(tx.category)}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {formatDate(new Date(tx.date))}
+                    </div>
+                  </div>
+                  <div
+                    className={`font-bold ${tx.type === "income"
+                        ? "text-green-600 dark:text-green-400"
+                        : "text-red-600 dark:text-red-400"
+                      }`}
+                  >
+                    {tx.type === "income" ? "+" : "-"}
+                    {formatCurrency(tx.amount)}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400 truncate max-w-[60%]">
+                    {tx.notes || "--"}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                    {tx.paymentSourceId === "cash" ? "Tiền mặt" : "Ngân hàng"}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Transactions Table (Desktop) */}
+        <div className="hidden md:block bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
           <table className="w-full">
             <thead className="bg-slate-50 dark:bg-slate-700">
               <tr>
@@ -346,11 +437,10 @@ const CashBook: React.FC = () => {
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                          tx.type === "income"
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${tx.type === "income"
                             ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                             : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                        }`}
+                          }`}
                       >
                         {tx.type === "income" ? "↑ Thu" : "↓ Chi"}
                       </span>
@@ -368,11 +458,10 @@ const CashBook: React.FC = () => {
                       {tx.paymentSourceId === "cash" ? "Tiền mặt" : "Ngân hàng"}
                     </td>
                     <td
-                      className={`px-4 py-3 text-right text-sm font-semibold ${
-                        tx.type === "income"
+                      className={`px-4 py-3 text-right text-sm font-semibold ${tx.type === "income"
                           ? "text-green-600 dark:text-green-400"
                           : "text-red-600 dark:text-red-400"
-                      }`}
+                        }`}
                     >
                       {tx.type === "income" ? "+" : "-"}
                       {formatCurrency(tx.amount)}
@@ -442,13 +531,13 @@ const CashBook: React.FC = () => {
                   prev.map((ps) =>
                     ps.id === transaction.paymentSourceId
                       ? {
-                          ...ps,
-                          balance: {
-                            ...ps.balance,
-                            [currentBranchId]:
-                              (ps.balance[currentBranchId] || 0) + delta,
-                          },
-                        }
+                        ...ps,
+                        balance: {
+                          ...ps.balance,
+                          [currentBranchId]:
+                            (ps.balance[currentBranchId] || 0) + delta,
+                        },
+                      }
                       : ps
                   )
                 );
