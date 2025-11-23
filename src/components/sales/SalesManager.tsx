@@ -2949,75 +2949,99 @@ const SalesManager: React.FC = () => {
                 )}
               </div>
               {selectedCustomer && (
-                <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <div className="font-medium text-blue-900 dark:text-blue-100">
-                    {selectedCustomer.name}
-                  </div>
-                  {selectedCustomer.phone && (
-                    <div className="text-sm text-blue-700 dark:text-blue-300">
-                      {selectedCustomer.phone}
+                <div className="mt-3 p-3.5 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl border-2 border-emerald-200 dark:border-emerald-800 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                      <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-emerald-900 dark:text-emerald-100 truncate">
+                          {selectedCustomer.name}
+                        </div>
+                        {selectedCustomer.phone && (
+                          <div className="text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-1 mt-0.5">
+                            <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            <span className="truncate">{selectedCustomer.phone}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  <button
-                    onClick={() => {
-                      setSelectedCustomer(null);
-                      setCustomerSearch("");
-                    }}
-                    className="text-xs text-blue-600 hover:text-blue-800 mt-1"
-                  >
-                    Xóa khách hàng
-                  </button>
+                    <button
+                      onClick={() => {
+                        setSelectedCustomer(null);
+                        setCustomerSearch("");
+                      }}
+                      className="w-8 h-8 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg flex items-center justify-center transition-all flex-shrink-0 shadow-sm hover:shadow-md"
+                      title="Xóa"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
           {/* Cart Items */}
-          <div className="flex-1 overflow-y-auto p-0 md:p-4 pb-24 md:pb-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                Giỏ hàng
-              </h3>
-              <span className="text-sm text-slate-500">
-                ({cartItems.length} sản phẩm)
+          <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-4">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b-2 border-slate-200/50 dark:border-slate-700/50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center shadow-lg">
+                  <ShoppingCart className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">
+                  Giỏ hàng
+                </h3>
+              </div>
+              <span className="px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-bold shadow-sm">
+                {cartItems.length} SP
               </span>
             </div>
 
             {cartItems.length === 0 ? (
-              <div className="text-center text-slate-400 py-12">
-                <div className="mb-2 flex items-center justify-center">
-                  <ShoppingCart className="w-10 h-10 text-slate-300" />
+              <div className="text-center py-16">
+                <div className="mb-4 flex items-center justify-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 rounded-3xl flex items-center justify-center shadow-lg">
+                    <ShoppingCart className="w-10 h-10 text-slate-400 dark:text-slate-500" />
+                  </div>
                 </div>
-                <div className="text-sm">Giỏ hàng trống</div>
-                <div className="text-xs text-slate-400 mt-1">
+                <div className="text-base font-bold text-slate-600 dark:text-slate-400 mb-1">Giỏ hàng trống</div>
+                <div className="text-xs text-slate-500 dark:text-slate-500">
                   Chọn sản phẩm để thêm vào giỏ
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {cartItems.map((item) => (
                   <div
                     key={item.partId}
-                    className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-600 rounded-lg"
+                    className="group flex items-center gap-3 p-3 border-2 border-slate-200/50 dark:border-slate-700/50 rounded-xl bg-white dark:bg-slate-800 hover:border-blue-400 dark:hover:border-blue-600 transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/10"
                   >
-                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Boxes className="w-6 h-6 text-slate-500" />
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                      <Boxes className="w-6 h-6 text-orange-500 dark:text-orange-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div
-                        className="font-medium text-sm text-slate-900 dark:text-slate-100 break-words"
+                        className="font-bold text-sm text-slate-900 dark:text-slate-100 line-clamp-1 mb-1"
                         title={item.partName}
                       >
                         {item.partName}
                       </div>
-                      <div className="text-xs text-slate-500">
-                        SKU: {item.sku}
+                      <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-md mb-1">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
+                          {item.sku}
+                        </span>
                       </div>
-                      <div className="text-sm text-blue-600 font-semibold">
+                      <div className="text-sm font-black bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
                         {formatCurrency(item.sellingPrice)}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
                       <button
                         onClick={() =>
                           updateCartQuantity(
@@ -3025,24 +3049,24 @@ const SalesManager: React.FC = () => {
                             Math.max(1, item.quantity - 1)
                           )
                         }
-                        className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-600 rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-500"
+                        className="w-8 h-8 flex items-center justify-center bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:from-slate-200 hover:to-slate-300 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all shadow-sm hover:shadow-md font-bold"
                       >
                         -
                       </button>
-                      <span className="w-8 text-center font-medium text-sm">
+                      <span className="w-10 text-center font-black text-sm text-slate-900 dark:text-slate-100 px-2 py-1 bg-slate-50 dark:bg-slate-700 rounded-lg">
                         {item.quantity}
                       </span>
                       <button
                         onClick={() =>
                           updateCartQuantity(item.partId, item.quantity + 1)
                         }
-                        className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-600 rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-500"
+                        className="w-8 h-8 flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-600 dark:to-indigo-600 rounded-lg text-white hover:from-blue-600 hover:to-indigo-600 dark:hover:from-blue-700 dark:hover:to-indigo-700 transition-all shadow-md hover:shadow-lg font-bold"
                       >
                         +
                       </button>
                       <button
                         onClick={() => removeFromCart(item.partId)}
-                        className="w-8 h-8 flex items-center justify-center bg-red-100 dark:bg-red-900/20 rounded-full text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/30 ml-1"
+                        className="w-8 h-8 flex items-center justify-center bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 rounded-lg text-white transition-all ml-1 shadow-md hover:shadow-lg font-bold text-lg"
                       >
                         ×
                       </button>
