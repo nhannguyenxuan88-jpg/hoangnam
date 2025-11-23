@@ -7,6 +7,7 @@ Scripts để kiểm tra, debug và maintenance hệ thống.
 ### 🔍 Check/Verify Scripts
 
 **Database Schema:**
+
 - **check-all-columns.mjs** - Kiểm tra tất cả columns trong database
 - **check-columns.mjs** - Kiểm tra columns của bảng cụ thể
 - **check-tables.mjs** - Kiểm tra cấu trúc tables
@@ -14,23 +15,27 @@ Scripts để kiểm tra, debug và maintenance hệ thống.
 - **check-vehicleid-column.mjs** - Check column vehicleId
 
 **Authentication:**
+
 - **check-auth-session.mjs** - Kiểm tra auth session
 - **check-current-user.mjs** - Kiểm tra user hiện tại
 - **check-user.mjs** - Kiểm tra thông tin user
 
 **Data Integrity:**
+
 - **check-debts.mjs** - Kiểm tra dữ liệu công nợ
 - **check-sales.mjs** - Kiểm tra dữ liệu sales
 - **check-stock-after-sale.mjs** - Kiểm tra tồn kho sau bán hàng
 - **check-payment-methods.mjs** - Kiểm tra payment methods
 
 **Functions:**
+
 - **check-function.mjs** - Kiểm tra function cụ thể
 - **check-functions.mjs** - Kiểm tra tất cả functions
 - **check-sale-atomic.mjs** - Kiểm tra sale_create_atomic function
 - **check-refund-function.mjs** - Kiểm tra refund function
 
 **System Status:**
+
 - **check-supabase-status.mjs** - Kiểm tra connection và status Supabase
 
 ### 🗑️ Cleanup Scripts
@@ -101,17 +106,19 @@ node scripts/maintenance/export-revenue.mjs
 
 ### 🟢 Scripts an toàn (read-only):
 
-- Tất cả check-*.mjs scripts (chỉ đọc, không sửa đổi)
-- get-*.mjs scripts
-- export-*.mjs scripts
+- Tất cả check-\*.mjs scripts (chỉ đọc, không sửa đổi)
+- get-\*.mjs scripts
+- export-\*.mjs scripts
 
 ## 📝 Best Practices
 
 1. **Trước khi chạy cleanup:**
+
    - Backup database
    - Chạy check scripts trước để xem sẽ xóa gì
 
 2. **Khi debug:**
+
    - Chạy check-supabase-status.mjs trước
    - Kiểm tra logs trong console
 
@@ -122,6 +129,7 @@ node scripts/maintenance/export-revenue.mjs
 ## 🔄 Workflow thường dùng
 
 ### Kiểm tra sức khỏe hệ thống:
+
 ```bash
 node scripts/maintenance/check-supabase-status.mjs
 node scripts/maintenance/check-tables.mjs
@@ -129,6 +137,7 @@ node scripts/maintenance/check-functions.mjs
 ```
 
 ### Debug lỗi bán hàng:
+
 ```bash
 node scripts/maintenance/check-sales.mjs
 node scripts/maintenance/check-stock-after-sale.mjs
@@ -136,6 +145,7 @@ node scripts/maintenance/check-sale-atomic.mjs
 ```
 
 ### Cleanup sau development:
+
 ```bash
 node scripts/maintenance/cleanup-test-data.mjs
 node scripts/maintenance/check-sales.mjs  # Verify

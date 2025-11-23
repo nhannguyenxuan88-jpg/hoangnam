@@ -5,10 +5,12 @@ Scripts để khởi tạo và cấu hình hệ thống.
 ## 📋 Danh sách Scripts
 
 ### Database Setup
+
 - **apply-sql.mjs** - Áp dụng SQL migrations lên Supabase
 - **apply-sql-direct.mjs** - Áp dụng SQL trực tiếp không qua file
 
 ### Data Bootstrap
+
 - **bootstrap-demo-users.mjs** - Tạo users demo để test
 - **apply-vehicle-migration.mjs** - Migration dữ liệu xe
 
@@ -41,10 +43,12 @@ node scripts/setup/apply-vehicle-migration.mjs
 ## 📝 Thứ tự Setup (First Time)
 
 1. **Cấu hình Supabase Project**
+
    - Tạo project trên Supabase
    - Copy URL và anon key
 
 2. **Cấu hình Environment**
+
    ```bash
    # Tạo file .env
    VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -52,11 +56,13 @@ node scripts/setup/apply-vehicle-migration.mjs
    ```
 
 3. **Chạy Migrations**
+
    ```bash
    node scripts/setup/apply-sql.mjs
    ```
 
 4. **Tạo Users Demo**
+
    ```bash
    node scripts/setup/bootstrap-demo-users.mjs
    ```
@@ -77,8 +83,8 @@ node scripts/setup/apply-vehicle-migration.mjs
 
 Sau khi chạy `bootstrap-demo-users.mjs`:
 
-| Email | Role | Password |
-|-------|------|----------|
-| owner@example.com | owner | (xem script) |
+| Email               | Role    | Password     |
+| ------------------- | ------- | ------------ |
+| owner@example.com   | owner   | (xem script) |
 | manager@example.com | manager | (xem script) |
-| staff@example.com | staff | (xem script) |
+| staff@example.com   | staff   | (xem script) |

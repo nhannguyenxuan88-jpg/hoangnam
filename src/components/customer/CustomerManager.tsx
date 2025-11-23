@@ -7,6 +7,7 @@ import {
   useCreateCustomersBulk,
 } from "../../hooks/useSupabase";
 import { formatDate, formatCurrency, formatAnyId } from "../../utils/format";
+import { validatePhoneNumber } from "../../utils/validation";
 import { PlusIcon, TrashIcon, XMarkIcon, UsersIcon } from "../Icons";
 import type { Customer, Sale, WorkOrder, Vehicle } from "../../types";
 import { useSalesRepo } from "../../hooks/useSalesRepository";
@@ -1329,7 +1330,20 @@ const CustomerModal: React.FC<{
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      showToast.error("Vui lòng nhập tên khách hàng");
+      return;
+    }
+
+    // Validate phone if provided
+    if (phone.trim()) {
+      const phoneValidation = validatePhoneNumber(phone.trim());
+      if (!phoneValidation.ok) {
+        showToast.error(phoneValidation.error || "Số điện thoại không hợp lệ");
+        return;
+      }
+    }
+
     const primaryVehicle = vehicles.find((v) => v.isPrimary) || vehicles[0];
     onSave({
       id: customer.id,

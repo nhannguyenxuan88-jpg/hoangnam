@@ -39,6 +39,10 @@ import { printElementById } from "../../utils/print";
 import { supabase } from "../../supabaseClient";
 import { WorkOrderMobileModal } from "./WorkOrderMobileModal";
 import { ServiceManagerMobile } from "./ServiceManagerMobile";
+import {
+  validatePhoneNumber,
+  validateDepositAmount,
+} from "../../utils/validation";
 
 interface StoreSettings {
   store_name?: string;
@@ -3550,8 +3554,22 @@ const WorkOrderModal: React.FC<{
       return;
     }
 
+    // Validate phone number format using utility
+    const phoneValidation = validatePhoneNumber(formData.customerPhone);
+    if (!phoneValidation.ok) {
+      showToast.error(phoneValidation.error || "Số điện thoại không hợp lệ");
+      return;
+    }
+
     if (depositAmount <= 0) {
       showToast.error("Vui lòng nhập số tiền đặt cọc");
+      return;
+    }
+
+    // Validate deposit amount using utility
+    const depositValidation = validateDepositAmount(depositAmount, total);
+    if (!depositValidation.ok) {
+      showToast.error(depositValidation.error || "Tiền đặt cọc không hợp lệ");
       return;
     }
 
