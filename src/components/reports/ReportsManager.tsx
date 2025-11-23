@@ -25,6 +25,9 @@ import {
   exportInventoryReport,
   exportPayrollReport,
   exportDebtReport,
+  exportTopProductsReport,
+  exportProductProfitReport,
+  exportDetailedInventoryReport,
 } from "../../utils/excelExport";
 
 type ReportTab = "revenue" | "cashflow" | "inventory" | "payroll" | "debt";
@@ -425,10 +428,11 @@ const ReportsManager: React.FC = () => {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key as ReportTab)}
-            className={`px-6 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${activeTab === tab.key
+            className={`px-6 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${
+              activeTab === tab.key
                 ? "bg-blue-600 text-white shadow-lg"
                 : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-              }`}
+            }`}
           >
             <span className="inline-flex items-center gap-1">
               {tab.icon}
@@ -446,22 +450,23 @@ const ReportsManager: React.FC = () => {
             <button
               key={range}
               onClick={() => setDateRange(range)}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${dateRange === range
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                dateRange === range
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-slate-100 dark:bg-slate-700/50 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                }`}
+              }`}
             >
               {range === "today"
                 ? "Hôm nay"
                 : range === "week"
-                  ? "7 ngày"
-                  : range === "month"
-                    ? "Tháng"
-                    : range === "quarter"
-                      ? "Quý"
-                      : range === "year"
-                        ? "Năm"
-                        : "Tùy chỉnh"}
+                ? "7 ngày"
+                : range === "month"
+                ? "Tháng"
+                : range === "quarter"
+                ? "Quý"
+                : range === "year"
+                ? "Năm"
+                : "Tùy chỉnh"}
             </button>
           )
         )}
@@ -492,6 +497,73 @@ const ReportsManager: React.FC = () => {
           >
             <FileSpreadsheet className="w-4 h-4" /> Xuất Excel
           </button>
+
+          {/* Advanced Reports Dropdown */}
+          {activeTab === "revenue" && (
+            <div className="relative group">
+              <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium shadow-md hover:shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4" /> Báo cáo nâng cao
+              </button>
+
+              {/* Dropdown menu */}
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <button
+                  onClick={() => {
+                    const startStr = start.toISOString().split("T")[0];
+                    const endStr = end.toISOString().split("T")[0];
+                    exportTopProductsReport(
+                      revenueReport.sales,
+                      startStr,
+                      endStr,
+                      20
+                    );
+                    showToast.success("Xuất Top sản phẩm thành công!");
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300 rounded-t-lg"
+                >
+                  <Tag className="w-4 h-4 text-blue-600" />
+                  <span>Top sản phẩm bán chạy</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const startStr = start.toISOString().split("T")[0];
+                    const endStr = end.toISOString().split("T")[0];
+                    exportProductProfitReport(
+                      revenueReport.sales,
+                      startStr,
+                      endStr
+                    );
+                    showToast.success("Xuất lợi nhuận sản phẩm thành công!");
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300 rounded-b-lg"
+                >
+                  <BadgePercent className="w-4 h-4 text-green-600" />
+                  <span>Lợi nhuận theo sản phẩm</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Inventory Advanced Report */}
+          {activeTab === "inventory" && (
+            <button
+              onClick={() => {
+                const startStr = start.toISOString().split("T")[0];
+                const endStr = end.toISOString().split("T")[0];
+                exportDetailedInventoryReport(
+                  partsData,
+                  currentBranchId,
+                  startStr,
+                  endStr
+                );
+                showToast.success("Xuất báo cáo tồn kho chi tiết thành công!");
+              }}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium shadow-md hover:shadow-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 flex items-center gap-2"
+            >
+              <Boxes className="w-4 h-4" /> Tồn kho chi tiết
+            </button>
+          )}
         </div>
       </div>
 
@@ -597,10 +669,11 @@ const ReportsManager: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${(sale as any).paymentStatus === "paid"
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              (sale as any).paymentStatus === "paid"
                                 ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                                 : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                              }`}
+                            }`}
                           >
                             {(sale as any).paymentStatus === "paid"
                               ? "Đã thanh toán"
@@ -664,34 +737,38 @@ const ReportsManager: React.FC = () => {
               </div>
 
               <div
-                className={`bg-gradient-to-br rounded-lg p-6 border ${cashflowReport.netCashFlow >= 0
+                className={`bg-gradient-to-br rounded-lg p-6 border ${
+                  cashflowReport.netCashFlow >= 0
                     ? "from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800"
                     : "from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-orange-200 dark:border-orange-800"
-                  }`}
+                }`}
               >
                 <div
-                  className={`text-sm font-medium mb-2 ${cashflowReport.netCashFlow >= 0
+                  className={`text-sm font-medium mb-2 ${
+                    cashflowReport.netCashFlow >= 0
                       ? "text-blue-700 dark:text-blue-400"
                       : "text-orange-700 dark:text-orange-400"
-                    }`}
+                  }`}
                 >
                   <span className="inline-flex items-center gap-1">
                     <DollarSign className="w-4 h-4" /> Dòng tiền ròng
                   </span>
                 </div>
                 <div
-                  className={`text-3xl font-bold ${cashflowReport.netCashFlow >= 0
+                  className={`text-3xl font-bold ${
+                    cashflowReport.netCashFlow >= 0
                       ? "text-blue-600 dark:text-blue-400"
                       : "text-orange-600 dark:text-orange-400"
-                    }`}
+                  }`}
                 >
                   {formatCurrency(cashflowReport.netCashFlow).replace("₫", "")}
                 </div>
                 <div
-                  className={`text-xs mt-1 ${cashflowReport.netCashFlow >= 0
+                  className={`text-xs mt-1 ${
+                    cashflowReport.netCashFlow >= 0
                       ? "text-blue-600 dark:text-blue-400"
                       : "text-orange-600 dark:text-orange-400"
-                    }`}
+                  }`}
                 >
                   đ
                 </div>
@@ -981,10 +1058,11 @@ const ReportsManager: React.FC = () => {
                           </td>
                           <td className="px-4 py-2 text-center">
                             <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${record.paymentStatus === "paid"
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                record.paymentStatus === "paid"
                                   ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                                   : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                                }`}
+                              }`}
                             >
                               {record.paymentStatus === "paid"
                                 ? "Đã trả"

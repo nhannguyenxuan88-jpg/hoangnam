@@ -446,3 +446,332 @@ export const exportDebtReport = (
   const fileName = `BaoCaoCongNo_${startDate}_${endDate}.xlsx`;
   XLSX.writeFile(wb, fileName);
 };
+
+// ==================== TOP SELLING PRODUCTS REPORT ====================
+export const exportTopProductsReport = (
+  sales: Sale[],
+  startDate: string,
+  endDate: string,
+  limit: number = 20
+) => {
+  const wb = XLSX.utils.book_new();
+
+  // Tính toán top sản phẩm
+  const productStats = new Map<
+    string,
+    {
+      name: string;
+      sku: string;
+      quantity: number;
+      revenue: number;
+      orders: number;
+    }
+  >();
+
+  sales.forEach((sale) => {
+    sale.items.forEach((item) => {
+      const existing = productStats.get(item.partId);
+      if (existing) {
+        existing.quantity += item.quantity;
+        existing.revenue += item.sellingPrice * item.quantity;
+        existing.orders += 1;
+      } else {
+        productStats.set(item.partId, {
+          name: item.partName,
+          sku: item.sku || "",
+          quantity: item.quantity,
+          revenue: item.sellingPrice * item.quantity,
+          orders: 1,
+        });
+      }
+    });
+  });
+
+  // Sort by quantity (best sellers)
+  const topProducts = Array.from(productStats.values())
+    .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, limit);
+
+  // Create Excel data
+  const summaryData = [
+    ["TOP SẢN PHẨM BÁN CHẠY"],
+    [`Từ ${formatDate(startDate)} đến ${formatDate(endDate)}`],
+    [],
+    [
+      "STT",
+      "Tên sản phẩm",
+      "SKU",
+      "Số lượng bán",
+      "Doanh thu",
+      "Số đơn",
+      "Trung bình/đơn",
+    ],
+  ];
+
+  topProducts.forEach((product, index) => {
+    summaryData.push([
+      index + 1,
+      product.name,
+      product.sku,
+      product.quantity,
+      formatCurrency(product.revenue),
+      product.orders,
+      formatCurrency(product.revenue / product.orders),
+    ]);
+  });
+
+  // Add totals
+  const totalQuantity = topProducts.reduce((sum, p) => sum + p.quantity, 0);
+  const totalRevenue = topProducts.reduce((sum, p) => sum + p.revenue, 0);
+  const totalOrders = topProducts.reduce((sum, p) => sum + p.orders, 0);
+
+  summaryData.push([]);
+  summaryData.push([
+    "TỔNG",
+    "",
+    "",
+    totalQuantity,
+    formatCurrency(totalRevenue),
+    totalOrders,
+    formatCurrency(totalRevenue / totalOrders),
+  ]);
+
+  const ws = XLSX.utils.aoa_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(wb, ws, "Top sản phẩm");
+
+  const fileName = `TopSanPhamBanChay_${startDate}_${endDate}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+};
+
+// ==================== PRODUCT PROFIT REPORT ====================
+export const exportProductProfitReport = (
+  sales: Sale[],
+  startDate: string,
+  endDate: string
+) => {
+  const wb = XLSX.utils.book_new();
+
+  // Tính toán lợi nhuận theo sản phẩm
+  const productProfit = new Map<
+    string,
+    {
+      name: string;
+      sku: string;
+      quantity: number;
+      revenue: number;
+      cost: number;
+      profit: number;
+      margin: number;
+    }
+  >();
+
+  sales.forEach((sale) => {
+    sale.items.forEach((item) => {
+      const cost = ((item as any).costPrice || 0) * item.quantity;
+      const revenue = item.sellingPrice * item.quantity;
+      const profit = revenue - cost;
+
+      const existing = productProfit.get(item.partId);
+      if (existing) {
+        existing.quantity += item.quantity;
+        existing.revenue += revenue;
+        existing.cost += cost;
+        existing.profit += profit;
+        existing.margin =
+          existing.revenue > 0 ? (existing.profit / existing.revenue) * 100 : 0;
+      } else {
+        productProfit.set(item.partId, {
+          name: item.partName,
+          sku: item.sku || "",
+          quantity: item.quantity,
+          revenue,
+          cost,
+          profit,
+          margin: revenue > 0 ? (profit / revenue) * 100 : 0,
+        });
+      }
+    });
+  });
+
+  // Sort by profit (highest first)
+  const profitData = Array.from(productProfit.values()).sort(
+    (a, b) => b.profit - a.profit
+  );
+
+  // Create Excel data
+  const summaryData = [
+    ["BÁO CÁO LỢI NHUẬN THEO SẢN PHẨM"],
+    [`Từ ${formatDate(startDate)} đến ${formatDate(endDate)}`],
+    [],
+    [
+      "STT",
+      "Tên sản phẩm",
+      "SKU",
+      "SL",
+      "Doanh thu",
+      "Giá vốn",
+      "Lợi nhuận",
+      "Biên LN (%)",
+    ],
+  ];
+
+  profitData.forEach((product, index) => {
+    summaryData.push([
+      index + 1,
+      product.name,
+      product.sku,
+      product.quantity,
+      formatCurrency(product.revenue),
+      formatCurrency(product.cost),
+      formatCurrency(product.profit),
+      product.margin.toFixed(2) + "%",
+    ]);
+  });
+
+  // Add totals
+  const totalQuantity = profitData.reduce((sum, p) => sum + p.quantity, 0);
+  const totalRevenue = profitData.reduce((sum, p) => sum + p.revenue, 0);
+  const totalCost = profitData.reduce((sum, p) => sum + p.cost, 0);
+  const totalProfit = profitData.reduce((sum, p) => sum + p.profit, 0);
+  const avgMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
+  summaryData.push([]);
+  summaryData.push([
+    "TỔNG",
+    "",
+    "",
+    totalQuantity,
+    formatCurrency(totalRevenue),
+    formatCurrency(totalCost),
+    formatCurrency(totalProfit),
+    avgMargin.toFixed(2) + "%",
+  ]);
+
+  const ws = XLSX.utils.aoa_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(wb, ws, "Lợi nhuận sản phẩm");
+
+  const fileName = `LoiNhuanTheoSanPham_${startDate}_${endDate}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+};
+
+// ==================== DETAILED INVENTORY REPORT ====================
+export const exportDetailedInventoryReport = (
+  parts: Part[],
+  branchId: string,
+  startDate: string,
+  endDate: string
+) => {
+  const wb = XLSX.utils.book_new();
+
+  // 1. Summary Sheet
+  const totalParts = parts.length;
+  const totalStock = parts.reduce(
+    (sum, p) => sum + (p.stock?.[branchId] || 0),
+    0
+  );
+  const totalValue = parts.reduce((sum, p) => {
+    const stock = p.stock?.[branchId] || 0;
+    const price = p.costPrice || p.retailPrice?.[branchId] || 0;
+    return sum + stock * price;
+  }, 0);
+
+  const lowStockParts = parts.filter((p) => {
+    const stock = p.stock?.[branchId] || 0;
+    return stock > 0 && stock <= 5;
+  });
+
+  const outOfStockParts = parts.filter((p) => (p.stock?.[branchId] || 0) === 0);
+
+  const summaryData = [
+    ["BÁO CÁO TỒN KHO CHI TIẾT"],
+    [`Ngày: ${formatDate(new Date().toISOString())}`],
+    [`Chi nhánh: ${branchId}`],
+    [],
+    ["Chỉ tiêu", "Giá trị"],
+    ["Tổng số mặt hàng", totalParts],
+    ["Tổng số lượng tồn", totalStock],
+    ["Giá trị tồn kho", formatCurrency(totalValue)],
+    ["Sản phẩm tồn thấp (≤5)", lowStockParts.length],
+    ["Sản phẩm hết hàng", outOfStockParts.length],
+  ];
+
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+  XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng quan");
+
+  // 2. All Products Sheet
+  const allPartsData = [
+    [
+      "SKU",
+      "Tên sản phẩm",
+      "Danh mục",
+      "Tồn kho",
+      "Giá vốn",
+      "Giá bán",
+      "Giá trị tồn",
+      "Trạng thái",
+    ],
+  ];
+
+  parts.forEach((part) => {
+    const stock = part.stock?.[branchId] || 0;
+    const costPrice = part.costPrice || 0;
+    const retailPrice = part.retailPrice?.[branchId] || 0;
+    const stockValue = stock * costPrice;
+    let status = "Bình thường";
+    if (stock === 0) status = "Hết hàng";
+    else if (stock <= 5) status = "Tồn thấp";
+
+    allPartsData.push([
+      part.sku || "",
+      part.name,
+      part.category || "",
+      stock,
+      formatCurrency(costPrice),
+      formatCurrency(retailPrice),
+      formatCurrency(stockValue),
+      status,
+    ]);
+  });
+
+  const wsAll = XLSX.utils.aoa_to_sheet(allPartsData);
+  XLSX.utils.book_append_sheet(wb, wsAll, "Tất cả sản phẩm");
+
+  // 3. Low Stock Sheet
+  if (lowStockParts.length > 0) {
+    const lowStockData = [["SKU", "Tên sản phẩm", "Tồn kho", "Cần nhập"]];
+
+    lowStockParts.forEach((part) => {
+      const stock = part.stock?.[branchId] || 0;
+      const needToOrder = Math.max(10 - stock, 0); // Đề xuất nhập về 10
+
+      lowStockData.push([part.sku || "", part.name, stock, needToOrder]);
+    });
+
+    const wsLowStock = XLSX.utils.aoa_to_sheet(lowStockData);
+    XLSX.utils.book_append_sheet(wb, wsLowStock, "Tồn thấp");
+  }
+
+  // 4. Out of Stock Sheet
+  if (outOfStockParts.length > 0) {
+    const outOfStockData = [["SKU", "Tên sản phẩm", "Giá bán", "Đề xuất"]];
+
+    outOfStockParts.forEach((part) => {
+      const retailPrice = part.retailPrice?.[branchId] || 0;
+
+      outOfStockData.push([
+        part.sku || "",
+        part.name,
+        formatCurrency(retailPrice),
+        "Cần nhập ngay",
+      ]);
+    });
+
+    const wsOutOfStock = XLSX.utils.aoa_to_sheet(outOfStockData);
+    XLSX.utils.book_append_sheet(wb, wsOutOfStock, "Hết hàng");
+  }
+
+  const fileName = `TonKhoChiTiet_${branchId}_${formatDate(
+    new Date().toISOString()
+  )}.xlsx`;
+  XLSX.writeFile(wb, fileName);
+};
