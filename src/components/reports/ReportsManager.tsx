@@ -97,8 +97,51 @@ const ReportsManager: React.FC = () => {
     }, 0);
     const totalProfit = totalRevenue - totalCost;
 
+    // Group sales by date for daily report
+    const salesByDate = new Map<
+      string,
+      {
+        date: string;
+        sales: Sale[];
+        totalRevenue: number;
+        totalCost: number;
+        totalProfit: number;
+        orderCount: number;
+      }
+    >();
+
+    filteredSales.forEach((sale) => {
+      const dateKey = new Date(sale.date).toISOString().split("T")[0];
+      if (!salesByDate.has(dateKey)) {
+        salesByDate.set(dateKey, {
+          date: dateKey,
+          sales: [],
+          totalRevenue: 0,
+          totalCost: 0,
+          totalProfit: 0,
+          orderCount: 0,
+        });
+      }
+      const dayData = salesByDate.get(dateKey)!;
+      const saleCost = sale.items.reduce(
+        (c: number, it: any) => c + ((it as any).costPrice || 0) * it.quantity,
+        0
+      );
+      dayData.sales.push(sale);
+      dayData.totalRevenue += sale.total;
+      dayData.totalCost += saleCost;
+      dayData.totalProfit += sale.total - saleCost;
+      dayData.orderCount += 1;
+    });
+
+    // Convert to array and sort by date
+    const dailyReport = Array.from(salesByDate.values()).sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
     return {
       sales: filteredSales,
+      dailyReport,
       totalRevenue,
       totalCost,
       totalProfit,
@@ -627,65 +670,229 @@ const ReportsManager: React.FC = () => {
               </div>
             </div>
 
-            {/* Bảng chi tiết */}
+            {/* Bảng chi tiết theo ngày - Giống Excel */}
             <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
               <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                  Chi tiết đơn hàng ({revenueReport.orderCount} đơn)
+                  Chi tiết đơn hàng theo ngày (
+                  {revenueReport.dailyReport.length} ngày)
                 </h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-slate-50 dark:bg-slate-700/50">
+                  <thead className="bg-blue-600 text-white">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-center text-xs font-bold uppercase">
+                        #
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-bold uppercase">
                         Ngày
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Khách hàng
+                      <th className="px-4 py-3 text-right text-xs font-bold uppercase">
+                        Vốn nhập kho
+                        <br />
+                        (1)
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Tổng tiền
+                      <th className="px-4 py-3 text-right text-xs font-bold uppercase">
+                        Tiền hàng
+                        <br />
+                        (2)
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Trạng thái
+                      <th className="px-4 py-3 text-right text-xs font-bold uppercase">
+                        Vốn sửa chữa
+                        <br />
+                        (3)
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-bold uppercase">
+                        Công sửa chữa
+                        <br />
+                        (4)
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-bold uppercase">
+                        Doanh thu
+                        <br />
+                        (5 = 2 + 3 + 4)
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-bold uppercase">
+                        Lợi nhuận
+                        <br />
+                        (6 = 2 - 1 - 4)
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-bold uppercase">
+                        Thu khác
+                        <br />
+                        (7)
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-bold uppercase">
+                        Chi khác
+                        <br />
+                        (8)
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-bold uppercase bg-green-700">
+                        Lợi nhuận ròng
+                        <br />
+                        (9 = (6 + 7) - 8)
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                    {revenueReport.sales.map((sale) => (
-                      <tr
-                        key={sale.id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-700/30"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
-                          {formatDate(sale.date)}
+                    {revenueReport.dailyReport.map((day, index) => {
+                      // Tính toán giống như Excel
+                      const vonNhapKho = 0; // Cần lấy từ inventory transactions
+                      const tienHang = day.totalRevenue; // Doanh thu từ bán hàng
+                      const vonSuaChua = 0; // Vốn phụ tùng sửa chữa
+                      const congSuaChua = 0; // Công thợ sửa chữa
+                      const doanhThu = tienHang + vonSuaChua + congSuaChua;
+                      const loiNhuan = tienHang - vonNhapKho - congSuaChua;
+                      const thuKhac = 0; // Thu khác
+                      const chiKhac = 0; // Chi khác
+                      const loiNhuanRong = loiNhuan + thuKhac - chiKhac;
+
+                      return (
+                        <tr
+                          key={day.date}
+                          className="hover:bg-slate-50 dark:hover:bg-slate-700/30"
+                        >
+                          <td className="px-4 py-3 text-center text-sm font-medium text-slate-900 dark:text-white">
+                            {index + 1}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-900 dark:text-white">
+                            {new Date(day.date).toLocaleDateString("vi-VN")}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-white">
+                            {formatCurrency(vonNhapKho)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm font-semibold text-blue-600 dark:text-blue-400">
+                            {formatCurrency(tienHang)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-white">
+                            {formatCurrency(vonSuaChua)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-white">
+                            {formatCurrency(congSuaChua)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm font-bold text-blue-600 dark:text-blue-400">
+                            {formatCurrency(doanhThu)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm font-bold text-orange-600 dark:text-orange-400">
+                            {formatCurrency(loiNhuan)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-white">
+                            {formatCurrency(thuKhac)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-red-600 dark:text-red-400">
+                            {formatCurrency(chiKhac)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm font-black text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20">
+                            {formatCurrency(loiNhuanRong)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {/* Tổng hàng */}
+                    {revenueReport.dailyReport.length > 0 && (
+                      <tr className="bg-blue-50 dark:bg-blue-900/20 font-bold border-t-2 border-blue-600">
+                        <td
+                          colSpan={2}
+                          className="px-4 py-3 text-left text-sm font-black text-slate-900 dark:text-white"
+                        >
+                          Tổng:
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
-                          {sale.customer.name}
+                        <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-white">
+                          {formatCurrency(0)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-slate-900 dark:text-white">
-                          {formatCurrency(sale.total)}
+                        <td className="px-4 py-3 text-right text-sm font-black text-blue-600 dark:text-blue-400">
+                          {formatCurrency(revenueReport.totalRevenue)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              (sale as any).paymentStatus === "paid"
-                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                            }`}
-                          >
-                            {(sale as any).paymentStatus === "paid"
-                              ? "Đã thanh toán"
-                              : "Chưa thanh toán"}
-                          </span>
+                        <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-white">
+                          {formatCurrency(0)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-white">
+                          {formatCurrency(0)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm font-black text-blue-600 dark:text-blue-400">
+                          {formatCurrency(revenueReport.totalRevenue)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm font-black text-orange-600 dark:text-orange-400">
+                          {formatCurrency(revenueReport.totalProfit)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm text-slate-900 dark:text-white">
+                          {formatCurrency(0)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm text-red-600 dark:text-red-400">
+                          {formatCurrency(0)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm font-black text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30">
+                          {formatCurrency(revenueReport.totalProfit)}
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
+
+            {/* Bảng chi tiết đơn hàng - Ẩn vì không cần thiết */}
+            {false && (
+              <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    Chi tiết tất cả đơn hàng ({revenueReport.orderCount} đơn)
+                  </h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 dark:bg-slate-700/50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          Ngày
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          Khách hàng
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          Tổng tiền
+                        </th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          Trạng thái
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                      {revenueReport.sales.map((sale) => (
+                        <tr
+                          key={sale.id}
+                          className="hover:bg-slate-50 dark:hover:bg-slate-700/30"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
+                            {formatDate(sale.date)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
+                            {sale.customer.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-slate-900 dark:text-white">
+                            {formatCurrency(sale.total)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                (sale as any).paymentStatus === "paid"
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                              }`}
+                            >
+                              {(sale as any).paymentStatus === "paid"
+                                ? "Đã thanh toán"
+                                : "Chưa thanh toán"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

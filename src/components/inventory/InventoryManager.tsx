@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { canDo } from "../../utils/permissions";
 import {
@@ -550,6 +550,8 @@ const GoodsReceiptModal: React.FC<{
   ) => void;
 }> = ({ isOpen, onClose, parts, currentBranchId, onSave }) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
   const [selectedSupplier, setSelectedSupplier] = useState("");
   const [step, setStep] = useState<1 | 2>(1); // 1: Chọn hàng, 2: Thanh toán
   const { data: suppliers = [] } = useSuppliers();
@@ -626,6 +628,7 @@ const GoodsReceiptModal: React.FC<{
             : item
         )
       );
+      showToast.success(`Đã tăng số lượng ${part.name}`);
     } else {
       setReceiptItems([
         ...receiptItems,
@@ -636,6 +639,43 @@ const GoodsReceiptModal: React.FC<{
           quantity: 1,
           importPrice: part.costPrice?.[currentBranchId] || 0,
           sellingPrice: part.retailPrice[currentBranchId] || 0,
+          wholesalePrice: part.wholesalePrice?.[currentBranchId] || 0,
+        },
+      ]);
+      showToast.success(`Đã thêm ${part.name} vào phiếu nhập`);
+    }
+    setSearchTerm("");
+    // Auto focus back to barcode input
+    setTimeout(() => barcodeInputRef.current?.focus(), 100);
+  };
+
+  // Handle barcode scan
+  const handleBarcodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!barcodeInput.trim()) return;
+
+    const barcode = barcodeInput.trim();
+    const foundPart = parts.find(
+      (p) =>
+        p.sku?.toLowerCase() === barcode.toLowerCase() ||
+        p.name?.toLowerCase().includes(barcode.toLowerCase())
+    );
+
+    if (foundPart) {
+      addToReceipt(foundPart);
+      setBarcodeInput("");
+    } else {
+      showToast.error(`Không tìm thấy sản phẩm có mã: ${barcode}`);
+      setBarcodeInput("");
+    }
+  };
+
+  // Auto focus barcode input when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => barcodeInputRef.current?.focus(), 300);
+    }
+  }, [isOpen]);
           wholesalePrice: part.wholesalePrice?.[currentBranchId] || 0,
         },
       ]);
@@ -802,7 +842,46 @@ const GoodsReceiptModal: React.FC<{
             </div>
 
             {/* Search Bar with Icon */}
-            <div className="p-3 bg-white/50 dark:bg-slate-800/50">
+            <div className="p-3 bg-white/50 dark:bg-slate-800/50 space-y-2">
+              {/* Barcode Scanner Input - Quick Entry */}
+              <form onSubmit={handleBarcodeSubmit}>
+                <div className="relative">
+                  <svg
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                    />
+                  </svg>
+                  <input
+                    ref={barcodeInputRef}
+                    type="text"
+                    placeholder="Quét mã vạch hoặc nhập SKU để thêm nhanh..."
+                    value={barcodeInput}
+                    onChange={(e) => setBarcodeInput(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 border-2 border-blue-300 dark:border-blue-600 rounded-xl bg-blue-50/50 dark:bg-blue-900/20 text-slate-900 dark:text-slate-100 text-sm placeholder:text-blue-500/60 dark:placeholder:text-blue-400/60 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono"
+                  />
+                  {barcodeInput && (
+                    <button
+                      type="button"
+                      onClick={() => setBarcodeInput("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </form>
+              
+              {/* Manual Search */}
               <div className="relative">
                 <svg
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
@@ -819,7 +898,7 @@ const GoodsReceiptModal: React.FC<{
                 </svg>
                 <input
                   type="text"
-                  placeholder="Tìm kiếm tên, SKU, mã sản phẩm..."
+                  placeholder="Hoặc tìm kiếm thủ công..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
@@ -4439,9 +4518,6 @@ const InventoryManager: React.FC = () => {
                         />
                       </th>
                       <th className="text-left px-6 py-4 text-xs font-semibold text-secondary-text uppercase tracking-wider">
-                        STT
-                      </th>
-                      <th className="text-left px-6 py-4 text-xs font-semibold text-secondary-text uppercase tracking-wider">
                         Tên sản phẩm
                       </th>
                       <th className="text-left px-6 py-4 text-xs font-semibold text-secondary-text uppercase tracking-wider">
@@ -4471,7 +4547,7 @@ const InventoryManager: React.FC = () => {
                     {filteredParts.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={10}
+                          colSpan={9}
                           className="px-6 py-8 text-center text-tertiary-text"
                         >
                           <div className="text-6xl mb-4">🗂️</div>
@@ -4514,9 +4590,6 @@ const InventoryManager: React.FC = () => {
                                 }
                                 className="w-4 h-4 text-blue-600 rounded border-secondary-border focus:ring-blue-500"
                               />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-text">
-                              {index + 1}
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2">

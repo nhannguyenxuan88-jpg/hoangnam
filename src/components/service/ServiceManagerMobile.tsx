@@ -140,8 +140,127 @@ export function ServiceManagerMobile({
 
   return (
     <div className="md:hidden flex flex-col h-screen bg-[#151521]">
+      {/* KPI CARDS - Clickable for filtering */}
+      <div className="bg-[#1e1e2d] border-b border-gray-800 p-3">
+        <div className="grid grid-cols-2 gap-2">
+          {/* Tiếp nhận */}
+          <button
+            onClick={() =>
+              setStatusFilter(
+                statusFilter === "Tiếp nhận" ? "all" : "Tiếp nhận"
+              )
+            }
+            className={`p-3 rounded-xl text-left transition-all ${
+              statusFilter === "Tiếp nhận"
+                ? "bg-gradient-to-br from-[#009ef7]/20 to-[#009ef7]/10 border-2 border-[#009ef7] shadow-lg shadow-[#009ef7]/20"
+                : "bg-[#2b2b40] border border-gray-700 hover:border-[#009ef7]/50"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-gray-400 font-medium">
+                Tiếp nhận
+              </span>
+              <FileText className="w-4 h-4 text-[#009ef7]" />
+            </div>
+            <div className="text-2xl font-black text-white">
+              {kpis.tiepNhan}
+            </div>
+          </button>
+
+          {/* Đang sửa */}
+          <button
+            onClick={() =>
+              setStatusFilter(statusFilter === "Đang sửa" ? "all" : "Đang sửa")
+            }
+            className={`p-3 rounded-xl text-left transition-all ${
+              statusFilter === "Đang sửa"
+                ? "bg-gradient-to-br from-[#f1416c]/20 to-[#f1416c]/10 border-2 border-[#f1416c] shadow-lg shadow-[#f1416c]/20"
+                : "bg-[#2b2b40] border border-gray-700 hover:border-[#f1416c]/50"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-gray-400 font-medium">
+                Đang sửa
+              </span>
+              <Wrench className="w-4 h-4 text-[#f1416c]" />
+            </div>
+            <div className="text-2xl font-black text-white">{kpis.dangSua}</div>
+          </button>
+
+          {/* Đã sửa xong */}
+          <button
+            onClick={() =>
+              setStatusFilter(
+                statusFilter === "Đã sửa xong" ? "all" : "Đã sửa xong"
+              )
+            }
+            className={`p-3 rounded-xl text-left transition-all ${
+              statusFilter === "Đã sửa xong"
+                ? "bg-gradient-to-br from-[#50cd89]/20 to-[#50cd89]/10 border-2 border-[#50cd89] shadow-lg shadow-[#50cd89]/20"
+                : "bg-[#2b2b40] border border-gray-700 hover:border-[#50cd89]/50"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-gray-400 font-medium">
+                Đã sửa xong
+              </span>
+              <Check className="w-4 h-4 text-[#50cd89]" />
+            </div>
+            <div className="text-2xl font-black text-white">
+              {kpis.daHoanThanh}
+            </div>
+          </button>
+
+          {/* Trả máy */}
+          <button
+            onClick={() =>
+              setStatusFilter(statusFilter === "Trả máy" ? "all" : "Trả máy")
+            }
+            className={`p-3 rounded-xl text-left transition-all ${
+              statusFilter === "Trả máy"
+                ? "bg-gradient-to-br from-purple-500/20 to-purple-500/10 border-2 border-purple-500 shadow-lg shadow-purple-500/20"
+                : "bg-[#2b2b40] border border-gray-700 hover:border-purple-500/50"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-gray-400 font-medium">
+                Trả máy
+              </span>
+              <Key className="w-4 h-4 text-purple-500" />
+            </div>
+            <div className="text-2xl font-black text-white">{kpis.traMay}</div>
+          </button>
+        </div>
+
+        {/* Doanh thu & Lợi nhuận */}
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-900/30 to-emerald-800/20 border border-emerald-700">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-emerald-400 font-medium">
+                Doanh thu hôm nay
+              </span>
+              <DollarSign className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div className="text-base font-black text-emerald-300">
+              {formatCurrency(kpis.doanhThu)}
+            </div>
+          </div>
+          <div className="p-3 rounded-xl bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-blue-400 font-medium">
+                Lợi nhuận hôm nay
+              </span>
+              <TrendingUp className="w-4 h-4 text-blue-400" />
+            </div>
+            <div className="text-base font-black text-blue-300">
+              {formatCurrency(kpis.loiNhuan)}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* SEARCH BAR */}
-      <div className="bg-[#1e1e2d] border-b border-gray-800 px-0 py-2">
+      <div className="bg-[#1e1e2d] border-b border-gray-800 px-3 py-2">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
           <input
@@ -151,75 +270,6 @@ export function ServiceManagerMobile({
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-3 py-2.5 bg-[#2b2b40] border border-gray-700 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:border-[#009ef7]"
           />
-        </div>
-      </div>
-
-      {/* STATUS TABS */}
-      <div className="bg-[#1e1e2d] border-b border-gray-800">
-        <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex gap-2 py-2 min-w-max">
-            <button
-              onClick={() => setStatusFilter("all")}
-              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-                statusFilter === "all"
-                  ? "bg-[#009ef7] text-white shadow-lg shadow-[#009ef7]/30"
-                  : "bg-[#2b2b40] text-gray-400"
-              }`}
-            >
-              Tất cả ({workOrders.length})
-            </button>
-            <button
-              onClick={() => setStatusFilter("Tiếp nhận")}
-              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-                statusFilter === "Tiếp nhận"
-                  ? "bg-[#009ef7] text-white shadow-lg shadow-[#009ef7]/30"
-                  : "bg-[#2b2b40] text-gray-400"
-              }`}
-            >
-              Tiếp nhận ({kpis.tiepNhan})
-            </button>
-            <button
-              onClick={() => setStatusFilter("Đang sửa")}
-              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-                statusFilter === "Đang sửa"
-                  ? "bg-[#f1416c] text-white shadow-lg shadow-[#f1416c]/30"
-                  : "bg-[#2b2b40] text-gray-400"
-              }`}
-            >
-              Đang sửa ({kpis.dangSua})
-            </button>
-            <button
-              onClick={() => setStatusFilter("Đã sửa xong")}
-              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-                statusFilter === "Đã sửa xong"
-                  ? "bg-[#50cd89] text-white shadow-lg shadow-[#50cd89]/30"
-                  : "bg-[#2b2b40] text-gray-400"
-              }`}
-            >
-              Đã sửa xong ({kpis.daHoanThanh})
-            </button>
-            <button
-              onClick={() => setStatusFilter("Trả máy")}
-              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-                statusFilter === "Trả máy"
-                  ? "bg-purple-500 text-white shadow-lg shadow-purple-500/30"
-                  : "bg-[#2b2b40] text-gray-400"
-              }`}
-            >
-              Trả máy ({kpis.traMay})
-            </button>
-            <button
-              onClick={() => setShowFilterPopup(!showFilterPopup)}
-              className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
-                showFilterPopup
-                  ? "bg-[#009ef7] text-white"
-                  : "bg-[#2b2b40] text-gray-400"
-              }`}
-            >
-              <Filter className="w-4 h-4" />
-              <span className="text-sm font-medium">Lọc</span>
-            </button>
-          </div>
         </div>
       </div>
 

@@ -13,6 +13,7 @@ import {
   HandCoins,
   Printer,
   MapPin,
+  History,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAppContext } from "../../contexts/AppContext";
@@ -846,31 +847,45 @@ export default function ServiceManager() {
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
+      {/* Stats Cards - Clickable for filtering */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <StatCard
           label="Tiếp nhận"
           value={stats.pending}
           icon={<ClipboardList className="w-5 h-5" />}
           color="blue"
+          onClick={() =>
+            setActiveTab(activeTab === "pending" ? "all" : "pending")
+          }
+          active={activeTab === "pending"}
         />
         <StatCard
           label="Đang sửa"
           value={stats.inProgress}
           icon={<Wrench className="w-5 h-5" />}
           color="orange"
+          onClick={() =>
+            setActiveTab(activeTab === "inProgress" ? "all" : "inProgress")
+          }
+          active={activeTab === "inProgress"}
         />
         <StatCard
           label="Đã sửa xong"
           value={stats.done}
           icon={<Check className="w-5 h-5" />}
           color="green"
+          onClick={() => setActiveTab(activeTab === "done" ? "all" : "done")}
+          active={activeTab === "done"}
         />
         <StatCard
           label="Trả máy"
           value={stats.delivered}
           icon={<ReceiptText className="w-5 h-5" />}
           color="purple"
+          onClick={() =>
+            setActiveTab(activeTab === "delivered" ? "all" : "delivered")
+          }
+          active={activeTab === "delivered"}
         />
         <StatCard
           label="Doanh thu hôm nay"
@@ -939,6 +954,13 @@ export default function ServiceManager() {
             <FileText className="w-4 h-4" /> Mẫu SC
           </button>
 
+          <Link
+            to="/service-history"
+            className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+          >
+            <History className="w-4 h-4" /> Lịch sử SC
+          </Link>
+
           <button
             onClick={() => {
               // Mobile: open mobile modal, Desktop: open desktop modal
@@ -963,46 +985,8 @@ export default function ServiceManager() {
         </div>
       </div>
 
-      {/* Tabs and Table */}
+      {/* Table */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-        {/* Tabs */}
-        <div className="flex items-center border-b border-slate-200 dark:border-slate-700">
-          <TabButton
-            label="Tất cả"
-            active={activeTab === "all"}
-            onClick={() => setActiveTab("all")}
-          />
-          <TabButton
-            label="Tiếp nhận"
-            active={activeTab === "pending"}
-            onClick={() => setActiveTab("pending")}
-          />
-          <TabButton
-            label="Đang sửa"
-            active={activeTab === "inProgress"}
-            onClick={() => setActiveTab("inProgress")}
-          />
-          <TabButton
-            label="Đã sửa xong"
-            active={activeTab === "done"}
-            onClick={() => setActiveTab("done")}
-          />
-          <TabButton
-            label="Trả máy"
-            active={activeTab === "delivered"}
-            onClick={() => setActiveTab("delivered")}
-          />
-
-          <div className="ml-auto px-4 py-3">
-            <Link
-              to="/service-history"
-              className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-600 text-white rounded text-sm flex items-center gap-1 transition-colors"
-            >
-              🕐 Lịch sử SC
-            </Link>
-          </div>
-        </div>
-
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -6076,7 +6060,9 @@ const StatCard: React.FC<{
   value: React.ReactNode;
   icon: React.ReactNode;
   color: string;
-}> = ({ label, value, icon, color }) => {
+  onClick?: () => void;
+  active?: boolean;
+}> = ({ label, value, icon, color, onClick, active }) => {
   const colorClasses = {
     blue: "bg-blue-500/20 text-blue-600 dark:text-blue-400",
     orange: "bg-orange-500/20 text-orange-600 dark:text-orange-400",
@@ -6084,8 +6070,19 @@ const StatCard: React.FC<{
     purple: "bg-purple-500/20 text-purple-600 dark:text-purple-400",
   };
 
+  const Component = onClick ? "button" : "div";
+
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+    <Component
+      onClick={onClick}
+      className={`bg-white dark:bg-slate-800 rounded-xl p-4 border transition-all ${
+        active
+          ? "border-blue-500 ring-2 ring-blue-500/20 shadow-lg"
+          : "border-slate-200 dark:border-slate-700"
+      } ${
+        onClick ? "hover:border-blue-400 hover:shadow-md cursor-pointer" : ""
+      }`}
+    >
       <div className="flex items-center gap-3">
         <div
           className={`w-12 h-12 rounded-lg ${
@@ -6101,7 +6098,7 @@ const StatCard: React.FC<{
           </p>
         </div>
       </div>
-    </div>
+    </Component>
   );
 };
 
