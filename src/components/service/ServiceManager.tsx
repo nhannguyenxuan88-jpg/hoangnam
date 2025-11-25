@@ -925,6 +925,7 @@ export default function ServiceManager() {
             parts={fetchedParts || []}
             employees={displayEmployees}
             currentBranchId={currentBranchId}
+            upsertCustomer={upsertCustomer}
           />
         )}
 
