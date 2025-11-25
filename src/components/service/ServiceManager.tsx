@@ -938,40 +938,70 @@ export default function ServiceManager() {
                   Xem trước phiếu
                 </h2>
                 <div className="flex items-center gap-2">
-                  {/* Share Button */}
+                  {/* Share Button - Share as Image */}
                   <button
                     onClick={async () => {
-                      const shareData = {
-                        title: `Phiếu sửa chữa - ${formatWorkOrderId(printOrder.id, storeSettings?.work_order_prefix)}`,
-                        text: `PHIẾU DỊCH VỤ SỬA CHỮA
-${storeSettings?.store_name || "Nhạn Lâm SmartCare"}
-📞 ${storeSettings?.phone || "0947.747.907"}
-
-Mã phiếu: ${formatWorkOrderId(printOrder.id, storeSettings?.work_order_prefix)}
-Khách hàng: ${printOrder.customerName} - ${printOrder.customerPhone}
-Xe: ${printOrder.vehicleModel} - ${printOrder.licensePlate}
-
-${printOrder.partsUsed && printOrder.partsUsed.length > 0 ? `Phụ tùng:\n${printOrder.partsUsed.map((p: WorkOrderPart) => `- ${p.partName} x${p.quantity}: ${formatCurrency(p.price * p.quantity)}`).join('\n')}` : ''}
-${printOrder.additionalServices && printOrder.additionalServices.length > 0 ? `\nDịch vụ bổ sung:\n${printOrder.additionalServices.map((s: any) => `- ${s.description}: ${formatCurrency(s.price * (s.quantity || 1))}`).join('\n')}` : ''}
-
-💰 TỔNG CỘNG: ${formatCurrency(printOrder.total || 0)}
-${printOrder.depositAmount ? `Đã đặt cọc: ${formatCurrency(printOrder.depositAmount)}\nCòn lại: ${formatCurrency(printOrder.remainingAmount || (printOrder.total - printOrder.depositAmount))}` : ''}
-
-${storeSettings?.bank_name ? `\n🏦 Thanh toán:\n${storeSettings.bank_name}\nSTK: ${storeSettings.bank_account_number || ''}\nChủ TK: ${storeSettings.bank_account_holder || ''}` : ''}
-
-Cảm ơn quý khách đã sử dụng dịch vụ!`,
-                      };
-                      
                       try {
-                        if (navigator.share) {
-                          await navigator.share(shareData);
+                        showToast.loading("Đang tạo hình ảnh...");
+                        
+                        // Import html2canvas dynamically
+                        const html2canvas = (await import("html2canvas")).default;
+                        
+                        const element = document.getElementById("mobile-print-preview-content");
+                        if (!element) {
+                          showToast.error("Không tìm thấy nội dung phiếu!");
+                          return;
+                        }
+                        
+                        // Capture the element as canvas
+                        const canvas = await html2canvas(element, {
+                          scale: 2, // Higher quality
+                          backgroundColor: "#ffffff",
+                          useCORS: true,
+                          logging: false,
+                        });
+                        
+                        // Convert canvas to blob
+                        const blob = await new Promise<Blob>((resolve) => {
+                          canvas.toBlob((b) => resolve(b!), "image/png", 1.0);
+                        });
+                        
+                        const fileName = `Phieu_${formatWorkOrderId(printOrder.id, storeSettings?.work_order_prefix)}.png`;
+                        
+                        // Try to share as image file
+                        if (navigator.share && navigator.canShare) {
+                          const file = new File([blob], fileName, { type: "image/png" });
+                          const shareData = {
+                            files: [file],
+                            title: `Phiếu sửa chữa - ${formatWorkOrderId(printOrder.id, storeSettings?.work_order_prefix)}`,
+                          };
+                          
+                          if (navigator.canShare(shareData)) {
+                            await navigator.share(shareData);
+                            showToast.success("Chia sẻ thành công!");
+                          } else {
+                            // Fallback: download the image
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = fileName;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            showToast.success("Đã tải hình ảnh!");
+                          }
                         } else {
-                          // Fallback: copy to clipboard
-                          await navigator.clipboard.writeText(shareData.text);
-                          showToast.success("Đã sao chép nội dung phiếu!");
+                          // Fallback: download the image
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = fileName;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          showToast.success("Đã tải hình ảnh!");
                         }
                       } catch (err) {
                         console.error("Share failed:", err);
+                        showToast.error("Không thể chia sẻ. Vui lòng thử lại!");
                       }
                     }}
                     className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-1.5 transition text-sm"
@@ -1015,6 +1045,7 @@ Cảm ơn quý khách đã sử dụng dịch vụ!`,
               {/* Print Preview Content - Mobile optimized */}
               <div className="flex-1 overflow-y-auto p-3 bg-slate-100 dark:bg-slate-900">
                 <div
+                  id="mobile-print-preview-content"
                   className="bg-white shadow-lg mx-auto"
                   style={{ maxWidth: "100%", color: "#000", padding: "4mm" }}
                 >
@@ -1027,6 +1058,7 @@ Cảm ơn quý khách đã sử dụng dịch vụ!`,
                           src={storeSettings.logo_url}
                           alt="Logo"
                           style={{ height: "15mm", width: "auto", objectFit: "contain" }}
+                          crossOrigin="anonymous"
                         />
                       </div>
                     )}
@@ -1184,6 +1216,7 @@ Cảm ơn quý khách đã sử dụng dịch vụ!`,
                               src={storeSettings.bank_qr_url}
                               alt="QR Banking"
                               style={{ height: "20mm", width: "20mm", objectFit: "contain" }}
+                              crossOrigin="anonymous"
                             />
                           </div>
                         )}
