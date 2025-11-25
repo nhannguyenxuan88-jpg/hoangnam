@@ -527,7 +527,7 @@ const Dashboard: React.FC = () => {
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <h1 className="text-lg md:text-xl font-semibold mb-1">
-              Xin chào, @{profile?.full_name || profile?.email || "Người dùng"}{" "}
+              Xin chào, {profile?.full_name || profile?.email?.split('@')[0] || "Người dùng"}{" "}
               👋
             </h1>
             <p className="text-sm md:text-base text-blue-100 dark:text-violet-100">

@@ -12,6 +12,7 @@ import {
   Printer,
   History,
   ChevronDown,
+  Share2,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAppContext } from "../../contexts/AppContext";
@@ -900,6 +901,7 @@ export default function ServiceManager() {
           }}
           onDeleteWorkOrder={handleDelete}
           onCallCustomer={handleCallCustomer}
+          onPrintWorkOrder={handlePrintOrder}
           currentBranchId={currentBranchId}
         />
 
@@ -924,6 +926,285 @@ export default function ServiceManager() {
             employees={displayEmployees}
             currentBranchId={currentBranchId}
           />
+        )}
+
+        {/* Mobile Print Preview Modal */}
+        {showPrintPreview && printOrder && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-2">
+            <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-full max-h-[95vh] flex flex-col">
+              {/* Modal Header */}
+              <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between rounded-t-xl flex-shrink-0">
+                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Xem trước phiếu
+                </h2>
+                <div className="flex items-center gap-2">
+                  {/* Share Button */}
+                  <button
+                    onClick={async () => {
+                      const shareData = {
+                        title: `Phiếu sửa chữa - ${formatWorkOrderId(printOrder.id, storeSettings?.work_order_prefix)}`,
+                        text: `PHIẾU DỊCH VỤ SỬA CHỮA
+${storeSettings?.store_name || "Nhạn Lâm SmartCare"}
+📞 ${storeSettings?.phone || "0947.747.907"}
+
+Mã phiếu: ${formatWorkOrderId(printOrder.id, storeSettings?.work_order_prefix)}
+Khách hàng: ${printOrder.customerName} - ${printOrder.customerPhone}
+Xe: ${printOrder.vehicleModel} - ${printOrder.licensePlate}
+
+${printOrder.partsUsed && printOrder.partsUsed.length > 0 ? `Phụ tùng:\n${printOrder.partsUsed.map((p: WorkOrderPart) => `- ${p.partName} x${p.quantity}: ${formatCurrency(p.price * p.quantity)}`).join('\n')}` : ''}
+${printOrder.additionalServices && printOrder.additionalServices.length > 0 ? `\nDịch vụ bổ sung:\n${printOrder.additionalServices.map((s: any) => `- ${s.description}: ${formatCurrency(s.price * (s.quantity || 1))}`).join('\n')}` : ''}
+
+💰 TỔNG CỘNG: ${formatCurrency(printOrder.total || 0)}
+${printOrder.depositAmount ? `Đã đặt cọc: ${formatCurrency(printOrder.depositAmount)}\nCòn lại: ${formatCurrency(printOrder.remainingAmount || (printOrder.total - printOrder.depositAmount))}` : ''}
+
+${storeSettings?.bank_name ? `\n🏦 Thanh toán:\n${storeSettings.bank_name}\nSTK: ${storeSettings.bank_account_number || ''}\nChủ TK: ${storeSettings.bank_account_holder || ''}` : ''}
+
+Cảm ơn quý khách đã sử dụng dịch vụ!`,
+                      };
+                      
+                      try {
+                        if (navigator.share) {
+                          await navigator.share(shareData);
+                        } else {
+                          // Fallback: copy to clipboard
+                          await navigator.clipboard.writeText(shareData.text);
+                          showToast.success("Đã sao chép nội dung phiếu!");
+                        }
+                      } catch (err) {
+                        console.error("Share failed:", err);
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-1.5 transition text-sm"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Chia sẻ
+                  </button>
+                  <button
+                    onClick={handleDoPrint}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-1.5 transition text-sm"
+                  >
+                    <Printer className="w-4 h-4" />
+                    In
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowPrintPreview(false);
+                      setPrintOrder(null);
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-lg"
+                    aria-label="Đóng"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Print Preview Content - Mobile optimized */}
+              <div className="flex-1 overflow-y-auto p-3 bg-slate-100 dark:bg-slate-900">
+                <div
+                  className="bg-white shadow-lg mx-auto"
+                  style={{ maxWidth: "100%", color: "#000", padding: "4mm" }}
+                >
+                  {/* Store Info Header with Logo */}
+                  <div style={{ display: "flex", gap: "3mm", marginBottom: "3mm", borderBottom: "2px solid #3b82f6", paddingBottom: "2mm", alignItems: "flex-start" }}>
+                    {/* Logo */}
+                    {storeSettings?.logo_url && (
+                      <div style={{ flexShrink: 0 }}>
+                        <img
+                          src={storeSettings.logo_url}
+                          alt="Logo"
+                          style={{ height: "15mm", width: "auto", objectFit: "contain" }}
+                        />
+                      </div>
+                    )}
+                    {/* Store Info */}
+                    <div style={{ flex: 1, fontSize: "9pt" }}>
+                      <div style={{ fontWeight: "bold", fontSize: "12pt", color: "#1e40af", marginBottom: "1mm" }}>
+                        {storeSettings?.store_name || "Nhạn Lâm SmartCare"}
+                      </div>
+                      <div style={{ color: "#000" }}>
+                        📍 {storeSettings?.address || "Ấp Phú Lợi B, Xã Long Phú Thuận, Đông Tháp"}
+                      </div>
+                      <div style={{ color: "#000" }}>
+                        📞 {storeSettings?.phone || "0947.747.907"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <div style={{ textAlign: "center", marginBottom: "3mm" }}>
+                    <h1 style={{ fontSize: "14pt", fontWeight: "bold", margin: "0", color: "#1e40af" }}>
+                      PHIẾU DỊCH VỤ SỬA CHỮA
+                    </h1>
+                    <div style={{ fontSize: "9pt", color: "#666", marginTop: "1mm" }}>
+                      Mã: {formatWorkOrderId(printOrder.id, storeSettings?.work_order_prefix)}
+                    </div>
+                    <div style={{ fontSize: "8pt", color: "#666" }}>
+                      {new Date(printOrder.creationDate).toLocaleString("vi-VN")}
+                    </div>
+                  </div>
+
+                  {/* Customer Info */}
+                  <div style={{ border: "1px solid #ddd", padding: "2mm", marginBottom: "2mm", borderRadius: "2mm", backgroundColor: "#f8fafc", fontSize: "9pt" }}>
+                    <div><strong>Khách hàng:</strong> {printOrder.customerName} - {printOrder.customerPhone}</div>
+                    <div><strong>Xe:</strong> {printOrder.vehicleModel} - <span style={{ color: "#3b82f6" }}>{printOrder.licensePlate}</span></div>
+                  </div>
+
+                  {/* Issue Description */}
+                  {printOrder.issueDescription && (
+                    <div style={{ border: "1px solid #ddd", padding: "2mm", marginBottom: "2mm", borderRadius: "2mm", fontSize: "9pt" }}>
+                      <strong>Mô tả sự cố:</strong> {printOrder.issueDescription}
+                    </div>
+                  )}
+
+                  {/* Parts Table */}
+                  {printOrder.partsUsed && printOrder.partsUsed.length > 0 && (
+                    <div style={{ marginBottom: "2mm" }}>
+                      <p style={{ fontWeight: "bold", margin: "0 0 1mm 0", fontSize: "10pt" }}>Phụ tùng:</p>
+                      <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #ddd", fontSize: "9pt" }}>
+                        <thead>
+                          <tr style={{ backgroundColor: "#f5f5f5" }}>
+                            <th style={{ border: "1px solid #ddd", padding: "1.5mm", textAlign: "left" }}>Tên</th>
+                            <th style={{ border: "1px solid #ddd", padding: "1.5mm", textAlign: "center", width: "12%" }}>SL</th>
+                            <th style={{ border: "1px solid #ddd", padding: "1.5mm", textAlign: "right", width: "28%" }}>Thành tiền</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {printOrder.partsUsed.map((part: WorkOrderPart, idx: number) => (
+                            <tr key={idx}>
+                              <td style={{ border: "1px solid #ddd", padding: "1.5mm" }}>{part.partName}</td>
+                              <td style={{ border: "1px solid #ddd", padding: "1.5mm", textAlign: "center" }}>{part.quantity}</td>
+                              <td style={{ border: "1px solid #ddd", padding: "1.5mm", textAlign: "right", fontWeight: "bold" }}>
+                                {formatCurrency(part.price * part.quantity)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Additional Services */}
+                  {printOrder.additionalServices && printOrder.additionalServices.length > 0 && (
+                    <div style={{ marginBottom: "2mm", fontSize: "9pt" }}>
+                      <p style={{ fontWeight: "bold", margin: "0 0 1mm 0", fontSize: "10pt" }}>Dịch vụ bổ sung:</p>
+                      {printOrder.additionalServices.map((service: any, idx: number) => (
+                        <div key={idx} style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span>{service.description}</span>
+                          <span style={{ fontWeight: "bold" }}>{formatCurrency(service.price * (service.quantity || 1))}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Cost Summary */}
+                  <div style={{ border: "1px solid #ddd", padding: "2mm", borderRadius: "2mm", backgroundColor: "#f9f9f9", fontSize: "9pt" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1mm" }}>
+                      <span>Tiền phụ tùng:</span>
+                      <span>{formatCurrency(printOrder.partsUsed?.reduce((sum: number, p: WorkOrderPart) => sum + p.price * p.quantity, 0) || 0)}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1mm" }}>
+                      <span>Phí dịch vụ:</span>
+                      <span>{formatCurrency(printOrder.laborCost || 0)}</span>
+                    </div>
+                    {printOrder.additionalServices && printOrder.additionalServices.length > 0 && (
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1mm" }}>
+                        <span>Giá công/Đặt hàng:</span>
+                        <span>{formatCurrency(printOrder.additionalServices.reduce((sum: number, s: any) => sum + (s.price || 0) * (s.quantity || 1), 0))}</span>
+                      </div>
+                    )}
+                    {printOrder.discount != null && printOrder.discount > 0 && (
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1mm", color: "#e74c3c" }}>
+                        <span>Giảm giá:</span>
+                        <span>-{formatCurrency(printOrder.discount)}</span>
+                      </div>
+                    )}
+                    <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "2mm", borderTop: "2px solid #3b82f6", fontSize: "12pt", fontWeight: "bold", color: "#1e40af" }}>
+                      <span>TỔNG CỘNG:</span>
+                      <span>{formatCurrency(printOrder.total || 0)}</span>
+                    </div>
+                    {printOrder.depositAmount != null && printOrder.depositAmount > 0 && (
+                      <>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "1mm", color: "#16a34a" }}>
+                          <span>Đã đặt cọc:</span>
+                          <span>{formatCurrency(printOrder.depositAmount)}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", color: "#dc2626" }}>
+                          <span>Còn lại:</span>
+                          <span>{formatCurrency(printOrder.remainingAmount || (printOrder.total - printOrder.depositAmount))}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Bank Info Section */}
+                  {storeSettings?.bank_name && (
+                    <div style={{ marginTop: "3mm", border: "1px solid #ddd", padding: "2mm", borderRadius: "2mm", backgroundColor: "#f0f9ff", fontSize: "9pt" }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: "3mm" }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: "bold", marginBottom: "1mm", color: "#1e40af" }}>
+                            🏦 Thông tin thanh toán
+                          </div>
+                          <div style={{ color: "#000" }}>
+                            Ngân hàng: {storeSettings.bank_name}
+                          </div>
+                          {storeSettings.bank_account_number && (
+                            <div style={{ color: "#000" }}>
+                              STK: <strong>{storeSettings.bank_account_number}</strong>
+                            </div>
+                          )}
+                          {storeSettings.bank_account_holder && (
+                            <div style={{ color: "#000" }}>
+                              Chủ TK: {storeSettings.bank_account_holder}
+                            </div>
+                          )}
+                          {storeSettings.bank_branch && (
+                            <div style={{ color: "#666", fontSize: "8pt" }}>
+                              Chi nhánh: {storeSettings.bank_branch}
+                            </div>
+                          )}
+                        </div>
+                        {/* QR Code */}
+                        {storeSettings.bank_qr_url && (
+                          <div style={{ flexShrink: 0 }}>
+                            <img
+                              src={storeSettings.bank_qr_url}
+                              alt="QR Banking"
+                              style={{ height: "20mm", width: "20mm", objectFit: "contain" }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Footer Note */}
+                  <div style={{ marginTop: "3mm", padding: "2mm", backgroundColor: "#fff9e6", border: "1px solid #ffd700", borderRadius: "2mm", fontSize: "8pt", textAlign: "center" }}>
+                    <p style={{ margin: "0", fontStyle: "italic" }}>Cảm ơn quý khách đã sử dụng dịch vụ!</p>
+                    <p style={{ margin: "1mm 0 0 0", fontStyle: "italic" }}>Vui lòng giữ phiếu này để đối chiếu khi nhận xe</p>
+                  </div>
+
+                  {/* KTV Info */}
+                  <div style={{ marginTop: "2mm", fontSize: "9pt", textAlign: "right", color: "#666" }}>
+                    KTV: {printOrder.technicianName || "Chưa phân công"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </>
     );
