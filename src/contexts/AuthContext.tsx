@@ -61,26 +61,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       event: AuthChangeEvent,
       nextSession: Session | null
     ) => {
-      if (event === "TOKEN_REFRESH_FAILED") {
-        console.warn("Supabase refresh token invalid, forcing sign-out");
-        const message = "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.";
-        setError(message);
-        showToast.error(message);
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        setLoading(false);
-        try {
-          await supabase.auth.signOut();
-        } catch (signOutError) {
-          console.error(
-            "Failed to sign out after refresh failure",
-            signOutError
-          );
-        }
-        return;
-      }
-
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       if (nextSession?.user) {

@@ -12,6 +12,7 @@ import {
   Package,
   Search,
   FileText,
+  Filter,
   Edit,
   Trash2,
   Plus,
@@ -57,6 +58,49 @@ import FormattedNumberInput from "../common/FormattedNumberInput";
 import { validatePriceAndQty } from "../../utils/validation";
 import { GoodsReceiptMobileModal } from "./GoodsReceiptMobileModal";
 import InventoryHistorySectionMobile from "./InventoryHistorySectionMobile";
+
+const LOW_STOCK_THRESHOLD = 5;
+const FILTER_THEME_STYLES: Record<
+  "neutral" | "success" | "warning" | "danger",
+  {
+    buttonActive: string;
+    buttonInactive: string;
+    badgeActive: string;
+    badgeInactive: string;
+  }
+> = {
+  neutral: {
+    buttonActive:
+      "border-blue-500 bg-blue-500/10 shadow-[0_5px_25px_rgba(59,130,246,0.15)] text-primary-text",
+    buttonInactive:
+      "border-primary-border bg-primary-bg hover:border-blue-300/70",
+    badgeActive:
+      "border-blue-500 text-blue-600 bg-white/60 dark:bg-slate-900/40",
+    badgeInactive: "border-secondary-border text-secondary-text",
+  },
+  success: {
+    buttonActive:
+      "border-emerald-500 bg-emerald-50 shadow-[0_5px_25px_rgba(16,185,129,0.2)] text-emerald-900",
+    buttonInactive:
+      "border-emerald-200 bg-emerald-50/40 hover:border-emerald-400/70",
+    badgeActive: "border-emerald-500 text-emerald-700 bg-emerald-50",
+    badgeInactive: "border-emerald-200 text-emerald-600",
+  },
+  warning: {
+    buttonActive:
+      "border-amber-500 bg-amber-50 shadow-[0_5px_25px_rgba(245,158,11,0.25)] text-amber-900",
+    buttonInactive: "border-amber-200 bg-amber-50/40 hover:border-amber-400/70",
+    badgeActive: "border-amber-500 text-amber-700 bg-amber-50",
+    badgeInactive: "border-amber-200 text-amber-600",
+  },
+  danger: {
+    buttonActive:
+      "border-red-500 bg-red-50 shadow-[0_5px_25px_rgba(239,68,68,0.25)] text-red-900",
+    buttonInactive: "border-red-200 bg-red-50/40 hover:border-red-400/70",
+    badgeActive: "border-red-500 text-red-700 bg-red-50",
+    badgeInactive: "border-red-200 text-red-600",
+  },
+};
 // Add New Product Modal Component
 const AddProductModal: React.FC<{
   isOpen: boolean;
@@ -433,10 +477,13 @@ const GoodsReceiptMobileWrapper: React.FC<{
             [currentBranchId]: productData.wholesalePrice || 0,
           },
         });
+        if (!newPart.ok) {
+          throw new Error(newPart.error?.message || "Failed to create part");
+        }
         setReceiptItems((items) => [
           ...items,
           {
-            partId: newPart.id,
+            partId: newPart.data.id,
             partName: productData.name,
             sku: productData.sku || `SKU-${Date.now()}`,
             quantity: productData.quantity,
@@ -732,8 +779,8 @@ const GoodsReceiptModal: React.FC<{
         : 0;
 
     onSave(receiptItems, selectedSupplier, totalAmount, "", {
-      paymentMethod,
-      paymentType,
+      paymentMethod: paymentMethod || "cash",
+      paymentType: paymentType || "full",
       paidAmount: calculatedPaidAmount,
       discount,
     });
@@ -3701,6 +3748,8 @@ const InventoryManager: React.FC = () => {
   const [mobileMenuOpenIndex, setMobileMenuOpenIndex] = useState<number | null>(
     null
   );
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [openActionRow, setOpenActionRow] = useState<string | null>(null);
 
   // Generate a color from category string for placeholder avatar
   const getCategoryColor = (name: string) => {
@@ -3756,6 +3805,68 @@ const InventoryManager: React.FC = () => {
     staleTime: 5_000, // Reduced from 30s to 5s for faster updates
   });
 
+  const stockHealth = useMemo(() => {
+    if (!allPartsData) {
+      return {
+        totalProducts: 0,
+        inStock: 0,
+        lowStock: 0,
+        outOfStock: 0,
+      };
+    }
+
+    const summary = {
+      totalProducts: allPartsData.length,
+      inStock: 0,
+      lowStock: 0,
+      outOfStock: 0,
+    };
+
+    const branchKey = currentBranchId || "";
+
+    allPartsData.forEach((part) => {
+      const qty = part.stock?.[branchKey] || 0;
+      if (qty > 0) summary.inStock += 1;
+      if (qty === 0) summary.outOfStock += 1;
+      if (qty > 0 && qty <= LOW_STOCK_THRESHOLD) summary.lowStock += 1;
+    });
+
+    return summary;
+  }, [allPartsData, currentBranchId]);
+
+  const stockQuickFilters = useMemo(
+    () => [
+      {
+        id: "all",
+        label: "Tất cả",
+        description: "Toàn bộ kho",
+        count: stockHealth.totalProducts,
+        variant: "neutral" as const,
+      },
+      {
+        id: "in-stock",
+        label: "Còn hàng",
+        description: "> 0",
+        count: stockHealth.inStock,
+        variant: "success" as const,
+      },
+      {
+        id: "low-stock",
+        label: "Sắp hết",
+        description: `<= ${LOW_STOCK_THRESHOLD}`,
+        count: stockHealth.lowStock,
+        variant: "warning" as const,
+      },
+      {
+        id: "out-of-stock",
+        label: "Hết hàng",
+        description: "= 0",
+        count: stockHealth.outOfStock,
+        variant: "danger" as const,
+      },
+    ],
+    [stockHealth]
+  );
   // Detect duplicate product names
   const duplicateNames = useMemo(() => {
     if (!allPartsData) return new Set<string>();
@@ -3813,14 +3924,33 @@ const InventoryManager: React.FC = () => {
 
   // Sau khi chuyển sang server filter, filteredParts = repoParts (có thể thêm client filter tồn kho nếu cần)
   const filteredParts = useMemo(() => {
-    // If showing duplicates only, use the duplicate parts data
-    if (showDuplicatesOnly && duplicateNames.size > 0) {
-      return duplicatePartsData || [];
+    const baseList =
+      showDuplicatesOnly && duplicateNames.size > 0
+        ? duplicatePartsData || []
+        : repoParts;
+
+    if (stockFilter === "all") {
+      return baseList;
     }
 
-    // Otherwise use the paginated results
-    return repoParts;
-  }, [repoParts, showDuplicatesOnly, duplicateNames, duplicatePartsData]);
+    const branchKey = currentBranchId || "";
+
+    return baseList.filter((part: any) => {
+      const qty = part.stock?.[branchKey] || 0;
+      if (stockFilter === "in-stock") return qty > 0;
+      if (stockFilter === "low-stock")
+        return qty > 0 && qty <= LOW_STOCK_THRESHOLD;
+      if (stockFilter === "out-of-stock") return qty === 0;
+      return true;
+    });
+  }, [
+    repoParts,
+    showDuplicatesOnly,
+    duplicateNames,
+    duplicatePartsData,
+    stockFilter,
+    currentBranchId,
+  ]);
 
   // Auto-disable duplicate filter when no duplicates remain
   useEffect(() => {
@@ -4109,6 +4239,35 @@ const InventoryManager: React.FC = () => {
     setSelectedItems([]);
   };
 
+  const handleStockFilterChange = (value: string) => {
+    setPage(1);
+    setStockFilter(value);
+  };
+
+  const handleCategoryFilterChange = (value: string) => {
+    setPage(1);
+    setCategoryFilter(value);
+  };
+
+  const resetFilters = () => {
+    setStockFilter("all");
+    setCategoryFilter("all");
+    setShowDuplicatesOnly(false);
+    setPage(1);
+    setShowAdvancedFilters(false);
+  };
+
+  const advancedFiltersActive =
+    stockFilter !== "all" || categoryFilter !== "all" || showDuplicatesOnly;
+
+  const shouldShowLowStockBanner =
+    stockHealth.lowStock > 0 && stockFilter !== "low-stock";
+
+  const lowStockPercent =
+    stockHealth.totalProducts > 0
+      ? Math.round((stockHealth.lowStock / stockHealth.totalProducts) * 100)
+      : 0;
+
   // Handle export to Excel
   const handleExportExcel = () => {
     try {
@@ -4136,6 +4295,13 @@ const InventoryManager: React.FC = () => {
       showToast.error("Có lỗi khi tải template");
     }
   };
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const handleDocumentClick = () => setOpenActionRow(null);
+    document.addEventListener("click", handleDocumentClick);
+    return () => document.removeEventListener("click", handleDocumentClick);
+  }, []);
 
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900 sm:bg-[#1e293b]">
@@ -4187,29 +4353,47 @@ const InventoryManager: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowGoodsReceipt(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold shadow-lg shadow-blue-500/30 hover:brightness-110 transition"
             >
               <Plus className="w-4 h-4" />
               Tạo phiếu nhập
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors">
-              <Repeat className="w-4 h-4" />
-              Chuyển kho
-            </button>
-            <button
-              onClick={handleExportExcel}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
-            >
-              <UploadCloud className="w-4 h-4" />
-              Xuất Excel
-            </button>
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-            >
-              <DownloadCloud className="w-4 h-4" />
-              Nhập CSV
-            </button>
+            <div className="flex items-center gap-1 rounded-2xl border border-primary-border bg-tertiary-bg px-1.5 py-1">
+              <button
+                onClick={() => {
+                  showToast.info("Tính năng chuyển kho đang phát triển");
+                }}
+                className="p-2 rounded-xl text-secondary-text hover:text-blue-600 hover:bg-primary-bg transition"
+                title="Chuyển kho"
+              >
+                <Repeat className="w-4 h-4" />
+                <span className="sr-only">Chuyển kho</span>
+              </button>
+              <button
+                onClick={handleExportExcel}
+                className="p-2 rounded-xl text-secondary-text hover:text-emerald-600 hover:bg-primary-bg transition"
+                title="Xuất Excel"
+              >
+                <UploadCloud className="w-4 h-4" />
+                <span className="sr-only">Xuất Excel</span>
+              </button>
+              <button
+                onClick={() => setShowImportModal(true)}
+                className="p-2 rounded-xl text-secondary-text hover:text-blue-600 hover:bg-primary-bg transition"
+                title="Nhập CSV"
+              >
+                <DownloadCloud className="w-4 h-4" />
+                <span className="sr-only">Nhập CSV</span>
+              </button>
+              <button
+                onClick={handleDownloadTemplate}
+                className="p-2 rounded-xl text-secondary-text hover:text-amber-600 hover:bg-primary-bg transition"
+                title="Tải mẫu import"
+              >
+                <FileText className="w-4 h-4" />
+                <span className="sr-only">Tải template</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -4266,75 +4450,219 @@ const InventoryManager: React.FC = () => {
 
       {/* Desktop Filters - Hidden on Mobile - Only for Stock Tab */}
       {activeTab === "stock" && (
-        <div className="hidden sm:block bg-primary-bg border-b border-primary-border px-4 py-4">
-          <div className="flex items-start gap-4">
-            {/* Left Side - Stats Cards */}
-            <div className="flex gap-4">
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 min-w-[140px]">
-                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
-                  Tổng SL tồn
-                </p>
-                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                  {totalStockQuantity.toLocaleString()}
-                </p>
+        <div className="hidden sm:block bg-primary-bg border-b border-primary-border px-5 py-5">
+          <div className="space-y-4">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-500/15 via-blue-500/5 to-transparent p-4 shadow-inner">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-300">
+                        Tổng số lượng tồn
+                      </p>
+                      <p className="mt-2 text-3xl font-bold text-primary-text">
+                        {totalStockQuantity.toLocaleString()} sp
+                      </p>
+                      <p className="text-xs text-secondary-text mt-1">
+                        {stockHealth.inStock} sản phẩm còn hàng •{" "}
+                        {stockHealth.outOfStock} hết hàng
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-white/70 dark:bg-slate-900/40 text-blue-600">
+                      <Boxes className="w-6 h-6" />
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/15 via-emerald-500/5 to-transparent p-4 shadow-inner">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-300">
+                        Tổng giá trị tồn
+                      </p>
+                      <p className="mt-2 text-3xl font-bold text-primary-text">
+                        {formatCurrency(totalStockValue)}
+                      </p>
+                      <p className="text-xs text-secondary-text mt-1">
+                        Trung bình{" "}
+                        {formatCurrency(
+                          totalStockQuantity > 0
+                            ? totalStockValue / totalStockQuantity
+                            : 0
+                        )}{" "}
+                        / sản phẩm
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-white/70 dark:bg-slate-900/40 text-emerald-600">
+                      <Package className="w-6 h-6" />
+                    </div>
+                  </div>
+                </div>
               </div>
-
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4 min-w-[140px]">
-                <p className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">
-                  Tổng giá trị tồn
-                </p>
-                <p className="text-2xl font-bold text-green-900 dark:text-green-100">
-                  {formatCurrency(totalStockValue)}
-                </p>
+              <div className="flex flex-col gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm theo tên hoặc SKU..."
+                    value={search}
+                    onChange={(e) => {
+                      setPage(1);
+                      setSearch(e.target.value);
+                    }}
+                    className="w-full pl-10 pr-12 py-2.5 border border-primary-border rounded-xl bg-primary-bg text-primary-text focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-secondary-text">
+                    {filteredParts.length}/{totalParts}
+                  </span>
+                </div>
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => setShowAdvancedFilters((prev) => !prev)}
+                    className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl border transition ${
+                      showAdvancedFilters
+                        ? "border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                        : "border-primary-border text-secondary-text hover:text-primary-text"
+                    }`}
+                  >
+                    <Filter className="w-4 h-4" />
+                    Bộ lọc nâng cao
+                    {advancedFiltersActive && (
+                      <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                    )}
+                  </button>
+                  {advancedFiltersActive && (
+                    <button
+                      onClick={resetFilters}
+                      className="px-3 py-2 text-sm font-medium text-red-500 hover:text-red-600"
+                    >
+                      Xóa bộ lọc
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Right Side - Search and Filters */}
-            <div className="flex-1 flex gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm theo tên hoặc SKU..."
-                  value={search}
-                  onChange={(e) => {
-                    setPage(1);
-                    setSearch(e.target.value);
-                  }}
-                  className="w-full pl-10 pr-4 py-2.5 border border-primary-border rounded-lg bg-primary-bg text-primary-text focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+            {shouldShowLowStockBanner && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">⚠️</span>
+                  <div>
+                    <p className="font-semibold">
+                      {stockHealth.lowStock} sản phẩm sắp hết hàng
+                    </p>
+                    <p className="text-xs text-amber-700">
+                      Chiếm {lowStockPercent}% danh mục hiện tại
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleStockFilterChange("low-stock")}
+                    className="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition"
+                  >
+                    Lọc nhanh
+                  </button>
+                  <button
+                    onClick={() => setShowGoodsReceipt(true)}
+                    className="px-3 py-1.5 rounded-lg border border-amber-400 text-sm font-medium text-amber-800 hover:bg-amber-100 transition"
+                  >
+                    Tạo phiếu nhập
+                  </button>
+                </div>
               </div>
+            )}
 
-              <select
-                value={stockFilter}
-                onChange={(e) => {
-                  setPage(1);
-                  setStockFilter(e.target.value);
-                }}
-                className="px-4 py-2.5 border border-primary-border rounded-lg bg-primary-bg text-primary-text focus:ring-2 focus:ring-blue-500 focus:border-transparent whitespace-nowrap"
-              >
-                <option value="all">Tất cả tồn kho</option>
-                <option value="in-stock">Còn hàng</option>
-                <option value="low-stock">Sắp hết</option>
-                <option value="out-of-stock">Hết hàng</option>
-              </select>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+              {stockQuickFilters.map((filter) => {
+                const isActive = stockFilter === filter.id;
+                const theme =
+                  FILTER_THEME_STYLES[filter.variant ?? "neutral"] ||
+                  FILTER_THEME_STYLES.neutral;
+                const buttonClasses = `text-left rounded-2xl border px-4 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  isActive ? theme.buttonActive : theme.buttonInactive
+                }`;
+                const badgeClasses = `inline-flex items-center justify-center rounded-xl border px-3 py-1 text-xs font-semibold ${
+                  isActive ? theme.badgeActive : theme.badgeInactive
+                }`;
 
-              <select
-                value={categoryFilter}
-                onChange={(e) => {
-                  setPage(1);
-                  setCategoryFilter(e.target.value);
-                }}
-                className="px-4 py-2.5 border border-primary-border rounded-lg bg-primary-bg text-primary-text focus:ring-2 focus:ring-blue-500 focus:border-transparent whitespace-nowrap"
-              >
-                <option value="all">Tất cả danh mục</option>
-                {allCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+                return (
+                  <button
+                    key={filter.id}
+                    onClick={() => handleStockFilterChange(filter.id)}
+                    className={buttonClasses}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-secondary-text">
+                          {filter.label}
+                        </p>
+                        <p className="mt-1 text-2xl font-bold text-primary-text">
+                          {(filter.count || 0).toLocaleString()}
+                        </p>
+                      </div>
+                      <span className={badgeClasses}>{filter.description}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-tertiary-text">
+                      Trạng thái kho tương ứng
+                    </p>
+                  </button>
+                );
+              })}
             </div>
+
+            {showAdvancedFilters && (
+              <div className="rounded-2xl border border-primary-border bg-white/70 dark:bg-slate-900/40 p-4 grid gap-4 md:grid-cols-3">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-secondary-text">
+                    Trạng thái tồn kho
+                  </label>
+                  <select
+                    value={stockFilter}
+                    onChange={(e) => handleStockFilterChange(e.target.value)}
+                    className="mt-2 w-full rounded-xl border border-secondary-border bg-primary-bg px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40"
+                  >
+                    <option value="all">Tất cả tồn kho</option>
+                    <option value="in-stock">Còn hàng</option>
+                    <option value="low-stock">Sắp hết</option>
+                    <option value="out-of-stock">Hết hàng</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-secondary-text">
+                    Danh mục
+                  </label>
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => handleCategoryFilterChange(e.target.value)}
+                    className="mt-2 w-full rounded-xl border border-secondary-border bg-primary-bg px-4 py-2.5 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40"
+                  >
+                    <option value="all">Tất cả danh mục</option>
+                    {allCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col justify-end">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-secondary-text">
+                    Phát hiện trùng tên
+                  </label>
+                  <button
+                    onClick={() => setShowDuplicatesOnly((prev) => !prev)}
+                    className={`mt-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
+                      showDuplicatesOnly
+                        ? "border-orange-500 text-orange-600 bg-orange-50 dark:bg-orange-900/20"
+                        : "border-secondary-border text-secondary-text hover:text-primary-text"
+                    }`}
+                  >
+                    {showDuplicatesOnly
+                      ? "Đang hiển thị sản phẩm trùng tên"
+                      : "Lọc sản phẩm trùng tên"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -4515,7 +4843,7 @@ const InventoryManager: React.FC = () => {
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-tertiary-bg">
-                    <tr className="border-b border-primary-border">
+                    <tr className="border-b border-primary-border text-xs font-semibold uppercase tracking-wider text-secondary-text">
                       <th className="px-6 py-4 text-center w-12">
                         <input
                           type="checkbox"
@@ -4527,37 +4855,20 @@ const InventoryManager: React.FC = () => {
                           className="w-4 h-4 text-blue-600 rounded border-secondary-border focus:ring-blue-500"
                         />
                       </th>
-                      <th className="text-left px-6 py-4 text-xs font-semibold text-secondary-text uppercase tracking-wider">
-                        Tên sản phẩm
-                      </th>
-                      <th className="text-left px-6 py-4 text-xs font-semibold text-secondary-text uppercase tracking-wider">
-                        Danh mục
-                      </th>
-                      <th className="text-center px-6 py-4 text-xs font-semibold text-secondary-text uppercase tracking-wider">
-                        Tồn kho
-                      </th>
-                      <th className="text-right px-6 py-4 text-xs font-semibold text-secondary-text uppercase tracking-wider">
-                        Giá nhập
-                      </th>
-                      <th className="text-right px-6 py-4 text-xs font-semibold text-secondary-text uppercase tracking-wider">
-                        Giá bán lẻ
-                      </th>
-                      <th className="text-right px-6 py-4 text-xs font-semibold text-secondary-text uppercase tracking-wider">
-                        Giá bán sỉ
-                      </th>
-                      <th className="text-right px-6 py-4 text-xs font-semibold text-secondary-text uppercase tracking-wider">
-                        Giá trị
-                      </th>
-                      <th className="text-center px-6 py-4 text-xs font-semibold text-secondary-text uppercase tracking-wider">
-                        Thao tác
-                      </th>
+                      <th className="px-6 py-4 text-left">Sản phẩm</th>
+                      <th className="px-6 py-4 text-center">Tồn kho</th>
+                      <th className="px-6 py-4 text-right">Giá nhập</th>
+                      <th className="px-6 py-4 text-right">Giá bán lẻ</th>
+                      <th className="px-6 py-4 text-right">Giá bán sỉ</th>
+                      <th className="px-6 py-4 text-right">Giá trị tồn</th>
+                      <th className="px-6 py-4 text-center w-16">Hành động</th>
                     </tr>
                   </thead>
                   <tbody className="bg-primary-bg divide-y divide-primary-border">
                     {filteredParts.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={9}
+                          colSpan={8}
                           className="px-6 py-8 text-center text-tertiary-text"
                         >
                           <div className="text-6xl mb-4">🗂️</div>
@@ -4568,28 +4879,46 @@ const InventoryManager: React.FC = () => {
                         </td>
                       </tr>
                     ) : (
-                      filteredParts.map((part, index) => {
-                        const stock = part.stock[currentBranchId] || 0;
-                        const retailPrice =
-                          part.retailPrice[currentBranchId] || 0;
+                      filteredParts.map((part) => {
+                        const branchKey = currentBranchId || "";
+                        const stock = part.stock?.[branchKey] || 0;
+                        const retailPrice = part.retailPrice?.[branchKey] || 0;
                         const wholesalePrice =
-                          part.wholesalePrice?.[currentBranchId] || 0;
-                        const costPrice =
-                          part.costPrice?.[currentBranchId] || 0;
+                          part.wholesalePrice?.[branchKey] || 0;
+                        const costPrice = part.costPrice?.[branchKey] || 0;
                         const value = stock * retailPrice;
                         const isSelected = selectedItems.includes(part.id);
                         const isDuplicate = hasDuplicateName(part.name);
+                        const stockStatusClass =
+                          stock === 0
+                            ? "border-red-300 bg-red-50 text-red-700"
+                            : stock <= LOW_STOCK_THRESHOLD
+                            ? "border-amber-300 bg-amber-50 text-amber-700"
+                            : "border-emerald-300 bg-emerald-50 text-emerald-700";
+                        const stockStatusLabel =
+                          stock === 0
+                            ? "Hết hàng"
+                            : stock <= LOW_STOCK_THRESHOLD
+                            ? "Sắp hết"
+                            : "Ổn định";
+                        const stockQtyClass =
+                          stock === 0
+                            ? "text-red-600"
+                            : stock <= LOW_STOCK_THRESHOLD
+                            ? "text-amber-600"
+                            : "text-emerald-700";
+                        const productInitial =
+                          part.name?.charAt(0)?.toUpperCase() || "?";
+                        const rowHighlight = isSelected
+                          ? "bg-blue-900/20 dark:bg-blue-900/20"
+                          : isDuplicate
+                          ? "bg-orange-500/10 border-l-4 border-l-orange-500"
+                          : "";
 
                         return (
                           <tr
                             key={part.id}
-                            className={`border-b border-primary-border hover:bg-tertiary-bg transition-colors ${
-                              isSelected
-                                ? "bg-blue-900/20 dark:bg-blue-900/20"
-                                : isDuplicate
-                                ? "bg-orange-500/10 border-l-4 border-l-orange-500"
-                                : ""
-                            }`}
+                            className={`border-b border-primary-border hover:bg-tertiary-bg transition-colors ${rowHighlight}`}
                           >
                             <td className="px-6 py-4 text-center">
                               <input
@@ -4601,46 +4930,78 @@ const InventoryManager: React.FC = () => {
                                 className="w-4 h-4 text-blue-600 rounded border-secondary-border focus:ring-blue-500"
                               />
                             </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2">
-                                <div>
-                                  <div className="text-sm font-medium text-primary-text">
+                            <td className="px-6 py-4 min-w-[220px]">
+                              <div className="flex items-center gap-4">
+                                <div
+                                  className="h-12 w-12 rounded-xl overflow-hidden flex items-center justify-center text-base font-semibold text-white"
+                                  style={
+                                    part.imageUrl
+                                      ? undefined
+                                      : {
+                                          backgroundColor: getCategoryColor(
+                                            part.category
+                                          ),
+                                        }
+                                  }
+                                >
+                                  {part.imageUrl ? (
+                                    <img
+                                      src={part.imageUrl}
+                                      alt={part.name}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <span>{productInitial}</span>
+                                  )}
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex items-center gap-2 text-sm font-semibold text-primary-text">
                                     {part.name}
+                                    {isDuplicate && (
+                                      <span
+                                        className="inline-flex items-center gap-1 rounded-full border border-orange-300 bg-orange-50 px-2 py-0.5 text-[11px] font-semibold text-orange-700 dark:bg-orange-900/30"
+                                        title="Sản phẩm có tên trùng lặp"
+                                      >
+                                        ⚠️ Trùng
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="text-xs text-tertiary-text">
-                                    SKU: {part.sku}
+                                    SKU: {part.sku || "N/A"}
+                                  </div>
+                                  <div className="text-xs text-tertiary-text">
+                                    {part.category || "Chưa phân loại"}
                                   </div>
                                 </div>
-                                {isDuplicate && (
-                                  <span
-                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border border-orange-300 dark:border-orange-700"
-                                    title="Sản phẩm có tên trùng lặp"
-                                  >
-                                    ⚠️ Trùng
-                                  </span>
-                                )}
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-text">
-                              {part.category}
-                            </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
-                              <span
-                                className={`inline-flex px-3 py-1 text-sm font-bold rounded ${
-                                  stock === 0
-                                    ? "text-red-600 dark:text-red-400"
-                                    : stock < 10
-                                    ? "text-yellow-600 dark:text-yellow-400"
-                                    : "text-emerald-600 dark:text-emerald-400"
-                                }`}
-                              >
-                                {stock}
-                              </span>
+                              <div className="flex flex-col items-center gap-1">
+                                <span
+                                  className={`text-lg font-semibold ${stockQtyClass}`}
+                                >
+                                  {stock.toLocaleString()}
+                                </span>
+                                <span
+                                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${stockStatusClass}`}
+                                >
+                                  <span
+                                    className={`h-1.5 w-1.5 rounded-full ${
+                                      stock === 0
+                                        ? "bg-red-500"
+                                        : stock <= LOW_STOCK_THRESHOLD
+                                        ? "bg-amber-500"
+                                        : "bg-emerald-500"
+                                    }`}
+                                  ></span>
+                                  {stockStatusLabel}
+                                </span>
+                              </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-secondary-text">
                               {formatCurrency(costPrice)}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-primary-text font-medium">
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-primary-text">
                               {formatCurrency(retailPrice)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-secondary-text">
@@ -4650,45 +5011,50 @@ const InventoryManager: React.FC = () => {
                               {formatCurrency(value)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
-                              <div className="flex items-center justify-center gap-2">
+                              <div className="relative flex justify-end">
                                 <button
-                                  onClick={() => setEditingPart(part)}
-                                  className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded transition-colors"
-                                  title="Chỉnh sửa"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setOpenActionRow((prev) =>
+                                      prev === part.id ? null : part.id
+                                    );
+                                  }}
+                                  className="rounded-full border border-transparent p-2 text-secondary-text hover:border-secondary-border hover:text-primary-text transition"
+                                  aria-haspopup="menu"
+                                  aria-expanded={openActionRow === part.id}
+                                  title="Thao tác nhanh"
                                 >
-                                  <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                    />
-                                  </svg>
+                                  <MoreHorizontal className="w-5 h-5" />
                                 </button>
-                                <button
-                                  onClick={() => handleDeleteItem(part.id)}
-                                  className="p-1.5 text-red-400 hover:bg-red-500/20 rounded transition-colors"
-                                  title="Xóa"
-                                >
-                                  <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
+                                {openActionRow === part.id && (
+                                  <div
+                                    className="absolute right-0 top-full z-10 mt-2 w-44 overflow-hidden rounded-xl border border-primary-border bg-white shadow-xl dark:bg-slate-800"
+                                    onClick={(event) => event.stopPropagation()}
                                   >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                    />
-                                  </svg>
-                                </button>
+                                    <button
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        setEditingPart(part);
+                                        setOpenActionRow(null);
+                                      }}
+                                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-blue-50 dark:hover:bg-slate-700"
+                                    >
+                                      <Edit className="h-4 w-4 text-blue-500" />
+                                      Chỉnh sửa
+                                    </button>
+                                    <button
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        setOpenActionRow(null);
+                                        handleDeleteItem(part.id);
+                                      }}
+                                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-500 hover:bg-red-50 dark:hover:bg-slate-700/70"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      Xóa
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </td>
                           </tr>

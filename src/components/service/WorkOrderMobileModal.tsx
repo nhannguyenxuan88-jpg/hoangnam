@@ -46,7 +46,6 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                 id: `temp-veh-${Date.now()}`,
                 licensePlate: workOrder.licensePlate,
                 model: workOrder.vehicleModel || "",
-                customerId: `temp-${Date.now()}`,
               },
             ]
           : [],
@@ -120,9 +119,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     }
   }, [workOrder, initialCustomer, initialVehicle]);
 
-  const [currentKm, setCurrentKm] = useState(
-    workOrder?.currentKm?.toString() || ""
-  );
+  const [currentKm, setCurrentKm] = useState("");
   const [issueDescription, setIssueDescription] = useState(
     workOrder?.issueDescription || ""
   );
@@ -133,7 +130,14 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
       quantity: number;
       sellingPrice: number;
     }>
-  >(workOrder?.partsUsed || []);
+  >(
+    workOrder?.partsUsed?.map((p) => ({
+      partId: p.partId || "",
+      partName: p.partName,
+      quantity: p.quantity,
+      sellingPrice: p.price || 0,
+    })) || []
+  );
   const [additionalServices, setAdditionalServices] = useState<
     Array<{
       id: string;
@@ -141,7 +145,14 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
       costPrice: number;
       sellingPrice: number;
     }>
-  >(workOrder?.additionalServices || []);
+  >(
+    workOrder?.additionalServices?.map((s) => ({
+      id: s.id || `srv-${Date.now()}-${Math.random()}`,
+      name: s.description || "",
+      costPrice: s.costPrice || 0,
+      sellingPrice: s.price || 0,
+    })) || []
+  );
   const [laborCost, setLaborCost] = useState(workOrder?.laborCost || 0);
   const [discount, setDiscount] = useState(workOrder?.discount || 0);
   const [discountType, setDiscountType] = useState<"amount" | "percent">(
@@ -321,10 +332,8 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     if (!newVehiclePlate || !newVehicleName) return;
     const newVehicle: Vehicle = {
       id: `veh-${Date.now()}`,
-      customerId: selectedCustomer!.id,
       licensePlate: newVehiclePlate,
-      vehicleName: newVehicleName,
-      createdAt: new Date().toISOString(),
+      model: newVehicleName,
     };
 
     // Add to customer vehicles
@@ -507,11 +516,6 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                     <div className="text-xs text-slate-400">
                       📞 {selectedCustomer.phone}
                     </div>
-                    {selectedCustomer.address && (
-                      <div className="text-xs text-slate-400">
-                        📍 {selectedCustomer.address}
-                      </div>
-                    )}
                   </div>
                 </div>
                 <button
@@ -562,7 +566,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                                   isActive ? "text-blue-400" : "text-white"
                                 }`}
                               >
-                                {vehicle.vehicleName}
+                                {vehicle.model}
                                 {isActive && " (ĐANG CHỌN)"}
                               </div>
                               <div className="text-xs text-slate-400">

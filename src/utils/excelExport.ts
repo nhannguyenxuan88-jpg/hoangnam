@@ -510,12 +510,12 @@ export const exportTopProductsReport = (
 
   topProducts.forEach((product, index) => {
     summaryData.push([
-      index + 1,
+      String(index + 1),
       product.name,
       product.sku,
-      product.quantity,
+      String(product.quantity),
       formatCurrency(product.revenue),
-      product.orders,
+      String(product.orders),
       formatCurrency(product.revenue / product.orders),
     ]);
   });
@@ -530,9 +530,9 @@ export const exportTopProductsReport = (
     "TỔNG",
     "",
     "",
-    totalQuantity,
+    String(totalQuantity),
     formatCurrency(totalRevenue),
-    totalOrders,
+    String(totalOrders),
     formatCurrency(totalRevenue / totalOrders),
   ]);
 
@@ -617,10 +617,10 @@ export const exportProductProfitReport = (
 
   profitData.forEach((product, index) => {
     summaryData.push([
-      index + 1,
+      String(index + 1),
       product.name,
       product.sku,
-      product.quantity,
+      String(product.quantity),
       formatCurrency(product.revenue),
       formatCurrency(product.cost),
       formatCurrency(product.profit),
@@ -640,7 +640,7 @@ export const exportProductProfitReport = (
     "TỔNG",
     "",
     "",
-    totalQuantity,
+    String(totalQuantity),
     formatCurrency(totalRevenue),
     formatCurrency(totalCost),
     formatCurrency(totalProfit),
@@ -671,7 +671,10 @@ export const exportDetailedInventoryReport = (
   );
   const totalValue = parts.reduce((sum, p) => {
     const stock = p.stock?.[branchId] || 0;
-    const price = p.costPrice || p.retailPrice?.[branchId] || 0;
+    const price =
+      typeof p.costPrice === "number"
+        ? p.costPrice
+        : p.retailPrice?.[branchId] || 0;
     return sum + stock * price;
   }, 0);
 
@@ -714,7 +717,7 @@ export const exportDetailedInventoryReport = (
 
   parts.forEach((part) => {
     const stock = part.stock?.[branchId] || 0;
-    const costPrice = part.costPrice || 0;
+    const costPrice = typeof part.costPrice === "number" ? part.costPrice : 0;
     const retailPrice = part.retailPrice?.[branchId] || 0;
     const stockValue = stock * costPrice;
     let status = "Bình thường";
@@ -725,7 +728,7 @@ export const exportDetailedInventoryReport = (
       part.sku || "",
       part.name,
       part.category || "",
-      stock,
+      String(stock),
       formatCurrency(costPrice),
       formatCurrency(retailPrice),
       formatCurrency(stockValue),
@@ -744,7 +747,12 @@ export const exportDetailedInventoryReport = (
       const stock = part.stock?.[branchId] || 0;
       const needToOrder = Math.max(10 - stock, 0); // Đề xuất nhập về 10
 
-      lowStockData.push([part.sku || "", part.name, stock, needToOrder]);
+      lowStockData.push([
+        part.sku || "",
+        part.name,
+        String(stock),
+        String(needToOrder),
+      ]);
     });
 
     const wsLowStock = XLSX.utils.aoa_to_sheet(lowStockData);

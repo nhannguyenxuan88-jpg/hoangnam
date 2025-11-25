@@ -12,6 +12,7 @@ import { PlusIcon, TrashIcon, XMarkIcon, UsersIcon } from "../Icons";
 import type { Customer, Sale, WorkOrder, Vehicle } from "../../types";
 import { useSalesRepo } from "../../hooks/useSalesRepository";
 import { useWorkOrdersRepo } from "../../hooks/useWorkOrdersRepository";
+import { showToast } from "../../utils/toast";
 
 // --- COMPONENTS ---
 
@@ -1527,8 +1528,8 @@ const CustomerModal: React.FC<{
       name: name.trim(),
       phone: phone.trim(),
       vehicles: vehicles,
-      vehiclemodel: primaryVehicle?.model || "",
-      licenseplate: primaryVehicle?.licensePlate || "",
+      vehicleModel: primaryVehicle?.model || "",
+      licensePlate: primaryVehicle?.licensePlate || "",
     });
     onClose();
   };
