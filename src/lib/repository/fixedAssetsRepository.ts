@@ -22,7 +22,7 @@ export async function fetchFixedAssets(): Promise<RepoResult<FixedAsset[]>> {
     // Map database fields to FixedAsset type
     const assets: FixedAsset[] = (data || []).map((item: any) => ({
       id: item.id,
-      name: item.asset_name,
+      name: item.name,
       assetType: item.asset_type,
       purchasePrice: parseFloat(item.purchase_price),
       currentValue: parseFloat(item.current_value),
@@ -58,7 +58,7 @@ export async function createFixedAsset(
     const { data, error } = await supabase
       .from("fixed_assets")
       .insert({
-        asset_name: asset.name,
+        name: asset.name,
         asset_type: asset.assetType,
         purchase_price: asset.purchasePrice,
         current_value: asset.currentValue,
@@ -87,7 +87,7 @@ export async function createFixedAsset(
 
     return success({
       id: data.id,
-      name: data.asset_name,
+      name: data.name,
       assetType: data.asset_type,
       purchasePrice: parseFloat(data.purchase_price),
       currentValue: parseFloat(data.current_value),
@@ -120,7 +120,7 @@ export async function updateFixedAsset(
 ): Promise<RepoResult<FixedAsset>> {
   try {
     const updateData: any = {};
-    if (updates.name !== undefined) updateData.asset_name = updates.name;
+    if (updates.name !== undefined) updateData.name = updates.name;
     if (updates.assetType !== undefined)
       updateData.asset_type = updates.assetType;
     if (updates.purchasePrice !== undefined)
@@ -160,7 +160,7 @@ export async function updateFixedAsset(
 
     return success({
       id: data.id,
-      name: data.asset_name,
+      name: data.name,
       assetType: data.asset_type,
       purchasePrice: parseFloat(data.purchase_price),
       currentValue: parseFloat(data.current_value),

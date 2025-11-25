@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import type { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { safeAudit } from "../lib/repository/auditLogsRepository";
+import { showToast } from "../utils/toast";
 
 export type UserRole = "owner" | "manager" | "staff";
 
@@ -56,20 +57,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     // Listen for auth changes
+    const handleAuthEvent = async (
+      event: AuthChangeEvent,
+      nextSession: Session | null
+    ) => {
+      if (event === "TOKEN_REFRESH_FAILED") {
+        console.warn("Supabase refresh token invalid, forcing sign-out");
+        const message = "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.";
+        setError(message);
+        showToast.error(message);
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        try {
+          await supabase.auth.signOut();
+        } catch (signOutError) {
+          console.error(
+            "Failed to sign out after refresh failure",
+            signOutError
+          );
+        }
+        return;
+      }
+
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      if (nextSession?.user) {
+        loadUserProfile(nextSession.user.id);
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
+    };
+
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event: AuthChangeEvent, session: Session | null) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          loadUserProfile(session.user.id);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-      }
-    );
+    } = supabase.auth.onAuthStateChange(handleAuthEvent);
 
     return () => subscription.unsubscribe();
   }, []);
