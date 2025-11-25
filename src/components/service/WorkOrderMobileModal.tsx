@@ -52,6 +52,29 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
       } as Customer;
     }
 
+    // If found customer, check if workOrder's vehicle exists in customer's vehicles
+    // If not, add it as a temporary vehicle
+    if (foundCustomer && workOrder.licensePlate) {
+      const vehicleExists = foundCustomer.vehicles?.some(
+        v => v.licensePlate === workOrder.licensePlate
+      );
+      
+      if (!vehicleExists) {
+        // Clone customer and add temp vehicle
+        return {
+          ...foundCustomer,
+          vehicles: [
+            ...(foundCustomer.vehicles || []),
+            {
+              id: `temp-veh-${Date.now()}`,
+              licensePlate: workOrder.licensePlate,
+              model: workOrder.vehicleModel || "",
+            },
+          ],
+        } as Customer;
+      }
+    }
+
     return foundCustomer || null;
   }, [workOrder, customers]);
 
@@ -113,9 +136,12 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     if (workOrder) {
       setSelectedCustomer(initialCustomer);
       setSelectedVehicle(initialVehicle);
+      // Nếu đang edit và có initialCustomer, ẩn form tìm kiếm
+      setShowCustomerSearch(!initialCustomer);
     } else {
       setSelectedCustomer(null);
       setSelectedVehicle(null);
+      setShowCustomerSearch(true);
     }
   }, [workOrder, initialCustomer, initialVehicle]);
 
@@ -162,9 +188,9 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   const [depositAmount, setDepositAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank">("cash");
 
-  // UI States
+  // UI States - khởi tạo showCustomerSearch dựa trên initialCustomer để đảm bảo đúng khi edit
   const [showCustomerSearch, setShowCustomerSearch] = useState(
-    !selectedCustomer
+    !initialCustomer
   );
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [showPartSearch, setShowPartSearch] = useState(false);
@@ -226,11 +252,19 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     );
   }, [parts, partSearchTerm]);
 
-  // Customer vehicles
+  // Customer vehicles - bao gồm cả xe từ workOrder nếu đang edit
   const customerVehicles = useMemo(() => {
     if (!selectedCustomer) return [];
-    return selectedCustomer.vehicles || [];
-  }, [selectedCustomer]);
+    const existingVehicles = selectedCustomer.vehicles || [];
+    
+    // Nếu đang edit workOrder và có selectedVehicle là temp vehicle (không có trong danh sách)
+    // thì thêm nó vào để hiển thị
+    if (selectedVehicle && !existingVehicles.find(v => v.id === selectedVehicle.id)) {
+      return [...existingVehicles, selectedVehicle];
+    }
+    
+    return existingVehicles;
+  }, [selectedCustomer, selectedVehicle]);
 
   // Auto-select vehicle if customer has only one
   React.useEffect(() => {
