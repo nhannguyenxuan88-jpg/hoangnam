@@ -3,7 +3,7 @@ import { formatCurrency } from "../../utils/format";
 import { SupplierSelectionModal } from "./SupplierSelectionModal";
 import { useSuppliers } from "../../hooks/useSuppliers";
 import { showToast } from "../../utils/toast";
-import { BarcodeScanner } from "../common/BarcodeScanner";
+import BarcodeScannerModal from "../common/BarcodeScannerModal";
 
 interface Part {
   id: string;
@@ -165,8 +165,10 @@ export const GoodsReceiptMobileModal: React.FC<Props> = ({
     }
   };
 
-  // Handle camera scan result - KHÔNG hiện toast để tránh spam
+  // Handle camera scan result - Modal tự đóng sau khi quét
   const handleCameraScan = (barcode: string) => {
+    console.log("📷 Camera scanned:", barcode);
+    
     // Normalize barcode để so sánh
     const normalizeCode = (code: string): string =>
       code.toLowerCase().replace(/[-\s./\\]/g, "");
@@ -180,8 +182,7 @@ export const GoodsReceiptMobileModal: React.FC<Props> = ({
         p.sku?.toLowerCase() === barcode.toLowerCase()
     );
 
-    // Đóng scanner trước
-    setShowCameraScanner(false);
+    // KHÔNG cần đóng scanner - BarcodeScannerModal tự đóng
 
     if (foundPart) {
       // Kiểm tra đã có trong phiếu chưa
@@ -840,10 +841,11 @@ export const GoodsReceiptMobileModal: React.FC<Props> = ({
       />
 
       {/* Camera Barcode Scanner */}
-      <BarcodeScanner
+      <BarcodeScannerModal
         isOpen={showCameraScanner}
         onClose={() => setShowCameraScanner(false)}
         onScan={handleCameraScan}
+        title="Quét mã vạch sản phẩm"
       />
     </>
   );

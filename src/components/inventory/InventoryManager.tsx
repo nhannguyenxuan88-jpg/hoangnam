@@ -747,8 +747,10 @@ const GoodsReceiptModal: React.FC<{
     }
   };
 
-  // Handle camera barcode scan
+  // Handle camera barcode scan - Modal tự đóng sau khi quét
   const handleCameraScan = (barcode: string) => {
+    console.log("📷 Camera scanned:", barcode);
+    
     const normalizeCode = (code: string): string =>
       code.toLowerCase().replace(/[-\s./\\]/g, "");
     const normalizedBarcode = normalizeCode(barcode);
@@ -761,8 +763,7 @@ const GoodsReceiptModal: React.FC<{
         p.sku?.toLowerCase() === barcode.toLowerCase()
     );
 
-    // Đóng scanner trước
-    setShowCameraScanner(false);
+    // KHÔNG cần đóng scanner - BarcodeScannerModal tự đóng
 
     if (foundPart) {
       // Kiểm tra đã có trong phiếu chưa

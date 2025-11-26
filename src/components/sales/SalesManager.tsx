@@ -2177,8 +2177,10 @@ const SalesManager: React.FC = () => {
     }
   };
 
-  // Handle camera barcode scan
+  // Handle camera barcode scan - Modal tự đóng sau khi quét
   const handleCameraScan = (barcode: string) => {
+    console.log("📷 Camera scanned:", barcode);
+    
     const normalizedBarcode = normalizeCode(barcode);
 
     const foundPart = filteredParts.find(
@@ -2189,8 +2191,7 @@ const SalesManager: React.FC = () => {
         p.sku?.toLowerCase() === barcode.toLowerCase()
     );
 
-    // Đóng scanner trước
-    setShowCameraScanner(false);
+    // KHÔNG cần đóng scanner - BarcodeScannerModal tự đóng
 
     if (foundPart) {
       // Kiểm tra đã có trong giỏ chưa
