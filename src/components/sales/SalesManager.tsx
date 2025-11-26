@@ -3533,7 +3533,7 @@ const SalesManager: React.FC = () => {
                         setPaymentType("full");
                         setPartialAmount(0);
                       }}
-                      className={`px-2 md:px-3 py-2 md:py-2.5 text-[10px] md:text-xs rounded-lg md:rounded-xl border md:border-2 transition-all font-semibold md:font-bold md:shadow-sm ${
+                      className={`px-2 md:px-3 py-2 md:py-2.5 text-xs md:text-sm rounded-lg md:rounded-xl border md:border-2 transition-all font-bold md:shadow-sm ${
                         paymentType === "full"
                           ? "border-orange-500 bg-orange-50 md:bg-gradient-to-r md:from-orange-50 md:to-amber-50 dark:from-orange-900/30 dark:to-amber-900/30 text-orange-700 dark:text-orange-400 md:shadow-lg"
                           : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:border-orange-400"
@@ -3543,7 +3543,7 @@ const SalesManager: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setPaymentType("partial")}
-                      className={`px-2 md:px-3 py-2 md:py-2.5 text-[10px] md:text-xs rounded-lg md:rounded-xl border md:border-2 transition-all font-semibold md:font-bold md:shadow-sm ${
+                      className={`px-2 md:px-3 py-2 md:py-2.5 text-xs md:text-sm rounded-lg md:rounded-xl border md:border-2 transition-all font-bold md:shadow-sm ${
                         paymentType === "partial"
                           ? "border-orange-500 bg-orange-50 md:bg-gradient-to-r md:from-orange-50 md:to-amber-50 dark:from-orange-900/30 dark:to-amber-900/30 text-orange-700 dark:text-orange-400 md:shadow-lg"
                           : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:border-orange-400"
@@ -3556,7 +3556,7 @@ const SalesManager: React.FC = () => {
                         setPaymentType("note");
                         setPartialAmount(0);
                       }}
-                      className={`px-2 md:px-3 py-2 md:py-2.5 text-[10px] md:text-xs rounded-lg md:rounded-xl border md:border-2 transition-all font-semibold md:font-bold md:shadow-sm ${
+                      className={`px-2 md:px-3 py-2 md:py-2.5 text-xs md:text-sm rounded-lg md:rounded-xl border md:border-2 transition-all font-bold md:shadow-sm ${
                         paymentType === "note"
                           ? "border-orange-500 bg-orange-50 md:bg-gradient-to-r md:from-orange-50 md:to-amber-50 dark:from-orange-900/30 dark:to-amber-900/30 text-orange-700 dark:text-orange-400 md:shadow-lg"
                           : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:border-orange-400"
@@ -3603,7 +3603,7 @@ const SalesManager: React.FC = () => {
                     type="radio"
                     name="salesTime"
                     defaultChecked
-                    className="w-3 h-3 md:w-3.5 md:h-3.5 text-pink-600 focus:ring-pink-500"
+                    className="w-1.5 h-1.5 md:w-3.5 md:h-3.5 text-pink-600 focus:ring-pink-500"
                   />
                   <span className="text-xs md:text-sm text-slate-700 dark:text-slate-300">
                     Thời gian hiện tại
@@ -3613,7 +3613,7 @@ const SalesManager: React.FC = () => {
                   <input
                     type="radio"
                     name="salesTime"
-                    className="w-3 h-3 md:w-3.5 md:h-3.5 text-blue-600 focus:ring-blue-500"
+                    className="w-1.5 h-1.5 md:w-3.5 md:h-3.5 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-xs md:text-sm text-slate-700 dark:text-slate-300">
                     Tùy chỉnh
@@ -3622,7 +3622,7 @@ const SalesManager: React.FC = () => {
                 <label className="flex items-center gap-1.5 cursor-pointer">
                   <input
                     type="checkbox"
-                    className="w-3 h-3 md:w-3.5 md:h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="w-1.5 h-1.5 md:w-3.5 md:h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-sm md:text-sm text-slate-700 dark:text-slate-300">
                     Ghi chú riêng cho đơn hàng
@@ -3633,7 +3633,7 @@ const SalesManager: React.FC = () => {
                     type="checkbox"
                     checked={autoPrintReceipt}
                     onChange={(e) => setAutoPrintReceipt(e.target.checked)}
-                    className="w-3 h-3 md:w-3.5 md:h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="w-1.5 h-1.5 md:w-3.5 md:h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="text-xs md:text-sm text-slate-700 dark:text-slate-300">
                     Đóng thời in hoá đơn

@@ -714,7 +714,7 @@ const BottomNav: React.FC = () => {
       {/* Backdrop blur effect for modern look */}
       <div className="absolute inset-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg -z-10"></div>
 
-      <div className="grid grid-cols-5 gap-1 px-2 py-1.5">
+      <div className="grid grid-cols-5 gap-1 px-2 py-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
           const colorKey = item.color as ColorKey;
@@ -723,7 +723,7 @@ const BottomNav: React.FC = () => {
             <Link
               key={item.to}
               to={item.to}
-              className={`flex flex-col items-center gap-0.5 px-1 py-1 rounded-lg transition-all duration-200 ${
+              className={`flex flex-col items-center gap-1 px-1 py-1.5 rounded-lg transition-all duration-200 ${
                 isActive
                   ? `${NAV_COLORS[colorKey].bg} ${NAV_COLORS[colorKey].text}`
                   : "text-slate-600 dark:text-slate-400 active:scale-95"
@@ -737,7 +737,7 @@ const BottomNav: React.FC = () => {
                 {React.cloneElement(
                   item.icon as React.ReactElement<{ className?: string }>,
                   {
-                    className: "w-5 h-5",
+                    className: "w-6 h-6",
                   }
                 )}
               </div>
