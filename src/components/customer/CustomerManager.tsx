@@ -70,8 +70,8 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
   const actualLoyaltyPoints = Math.floor(actualTotalSpent / 10000);
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 rounded-lg w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-0 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
           <div>
@@ -1881,7 +1881,7 @@ const ImportCSVModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-h-[90vh] overflow-y-auto p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
             Import {isCustomer ? "khách hàng" : "nhà cung cấp"} từ CSV
