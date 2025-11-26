@@ -3271,56 +3271,119 @@ const SalesManager: React.FC = () => {
                 {cartItems.map((item) => (
                   <div
                     key={item.partId}
-                    className="group flex items-center gap-2 md:gap-3 p-2 md:p-3 border md:border-2 border-slate-200 md:border-slate-200/50 dark:border-slate-700/50 rounded-lg md:rounded-xl bg-white dark:bg-slate-800 md:hover:border-blue-400 dark:hover:border-blue-600 transition-all duration-200 md:hover:shadow-lg md:hover:shadow-blue-500/10"
+                    className="group p-2.5 md:p-3 border md:border-2 border-slate-200 md:border-slate-200/50 dark:border-slate-700/50 rounded-xl md:rounded-xl bg-white dark:bg-slate-800 md:hover:border-blue-400 dark:hover:border-blue-600 transition-all duration-200 md:hover:shadow-lg md:hover:shadow-blue-500/10"
                   >
-                    <div className="w-10 h-10 md:w-12 md:h-12 bg-orange-50 md:bg-gradient-to-br md:from-orange-100 md:to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-lg md:rounded-xl flex items-center justify-center flex-shrink-0 md:shadow-sm md:group-hover:scale-110 transition-transform">
-                      <Boxes className="w-5 h-5 md:w-6 md:h-6 text-orange-500 dark:text-orange-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div
-                        className="font-medium md:font-bold text-xs md:text-sm text-slate-900 dark:text-slate-100 line-clamp-1 mb-0.5 md:mb-1"
-                        title={item.partName}
-                      >
-                        {item.partName}
+                    {/* Mobile: Vertical layout */}
+                    <div className="md:hidden">
+                      {/* Header: Icon + Name + SKU */}
+                      <div className="flex items-start gap-2.5 mb-2">
+                        <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Boxes className="w-5 h-5 text-orange-500 dark:text-orange-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div
+                            className="font-semibold text-sm text-slate-900 dark:text-slate-100 leading-tight mb-1"
+                            title={item.partName}
+                          >
+                            {item.partName}
+                          </div>
+                          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-md">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                              {item.sku}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="inline-flex items-center gap-1 px-1.5 md:px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-md mb-0.5 md:mb-1">
-                        <span className="text-[9px] md:text-[10px] text-slate-500 dark:text-slate-400 font-medium md:font-semibold">
-                          {item.sku}
+                      
+                      {/* Footer: Price + Quantity controls */}
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                          {formatCurrency(item.sellingPrice)}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() =>
+                              updateCartQuantity(
+                                item.partId,
+                                Math.max(1, item.quantity - 1)
+                              )
+                            }
+                            className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all font-bold text-lg"
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center font-bold text-sm text-slate-900 dark:text-slate-100 px-1 py-1 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() =>
+                              updateCartQuantity(item.partId, item.quantity + 1)
+                            }
+                            className="w-8 h-8 flex items-center justify-center bg-blue-500 dark:bg-blue-600 rounded-lg text-white hover:bg-blue-600 dark:hover:bg-blue-700 transition-all font-bold text-lg"
+                          >
+                            +
+                          </button>
+                          <button
+                            onClick={() => removeFromCart(item.partId)}
+                            className="w-8 h-8 flex items-center justify-center bg-red-500 hover:bg-red-600 rounded-lg text-white transition-all ml-1 font-bold text-lg"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Desktop: Horizontal layout (original) */}
+                    <div className="hidden md:flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                        <Boxes className="w-6 h-6 text-orange-500 dark:text-orange-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div
+                          className="font-bold text-sm text-slate-900 dark:text-slate-100 line-clamp-1 mb-1"
+                          title={item.partName}
+                        >
+                          {item.partName}
+                        </div>
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-md mb-1">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
+                            {item.sku}
+                          </span>
+                        </div>
+                        <div className="text-sm font-black bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                          {formatCurrency(item.sellingPrice)}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          onClick={() =>
+                            updateCartQuantity(
+                              item.partId,
+                              Math.max(1, item.quantity - 1)
+                            )
+                          }
+                          className="w-8 h-8 flex items-center justify-center bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:from-slate-200 hover:to-slate-300 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all shadow-sm hover:shadow-md font-bold"
+                        >
+                          -
+                        </button>
+                        <span className="w-10 text-center font-black text-sm text-slate-900 dark:text-slate-100 px-2 py-1 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                          {item.quantity}
                         </span>
+                        <button
+                          onClick={() =>
+                            updateCartQuantity(item.partId, item.quantity + 1)
+                          }
+                          className="w-8 h-8 flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-600 dark:to-indigo-600 rounded-lg text-white hover:from-blue-600 hover:to-indigo-600 dark:hover:from-blue-700 dark:hover:to-indigo-700 transition-all shadow-md hover:shadow-lg font-bold"
+                        >
+                          +
+                        </button>
+                        <button
+                          onClick={() => removeFromCart(item.partId)}
+                          className="w-8 h-8 flex items-center justify-center bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 rounded-lg text-white transition-all ml-1 shadow-md hover:shadow-lg font-bold text-lg"
+                        >
+                          ×
+                        </button>
                       </div>
-                      <div className="text-xs md:text-sm font-bold md:font-black text-blue-600 md:bg-gradient-to-r md:from-blue-600 md:to-indigo-600 dark:from-blue-400 dark:to-indigo-400 md:bg-clip-text md:text-transparent">
-                        {formatCurrency(item.sellingPrice)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 md:gap-1.5 flex-shrink-0">
-                      <button
-                        onClick={() =>
-                          updateCartQuantity(
-                            item.partId,
-                            Math.max(1, item.quantity - 1)
-                          )
-                        }
-                        className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center bg-slate-100 md:bg-gradient-to-r md:from-slate-100 md:to-slate-200 dark:from-slate-700 dark:to-slate-600 rounded-md md:rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-200 md:hover:from-slate-200 md:hover:to-slate-300 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all md:shadow-sm md:hover:shadow-md font-bold"
-                      >
-                        -
-                      </button>
-                      <span className="w-8 md:w-10 text-center font-bold md:font-black text-xs md:text-sm text-slate-900 dark:text-slate-100 px-1 md:px-2 py-1 bg-slate-50 dark:bg-slate-700 rounded-md md:rounded-lg">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() =>
-                          updateCartQuantity(item.partId, item.quantity + 1)
-                        }
-                        className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center bg-blue-500 md:bg-gradient-to-r md:from-blue-500 md:to-indigo-500 dark:from-blue-600 dark:to-indigo-600 rounded-md md:rounded-lg text-white hover:bg-blue-600 md:hover:from-blue-600 md:hover:to-indigo-600 dark:hover:from-blue-700 dark:hover:to-indigo-700 transition-all md:shadow-md md:hover:shadow-lg font-bold"
-                      >
-                        +
-                      </button>
-                      <button
-                        onClick={() => removeFromCart(item.partId)}
-                        className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center bg-red-500 md:bg-gradient-to-r md:from-red-500 md:to-pink-500 hover:bg-red-600 md:hover:from-red-600 md:hover:to-pink-600 rounded-md md:rounded-lg text-white transition-all ml-0.5 md:ml-1 md:shadow-md md:hover:shadow-lg font-bold text-base md:text-lg"
-                      >
-                        ×
-                      </button>
                     </div>
                   </div>
                 ))}

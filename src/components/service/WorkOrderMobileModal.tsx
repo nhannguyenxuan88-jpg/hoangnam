@@ -12,6 +12,7 @@ interface WorkOrderMobileModalProps {
   parts: Part[];
   employees: Employee[];
   currentBranchId: string;
+  upsertCustomer?: (customer: any) => void;
 }
 
 type WorkOrderStatus = "Tiếp nhận" | "Đang sửa" | "Chờ vật tư" | "Trả máy";
@@ -25,6 +26,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   parts,
   employees,
   currentBranchId,
+  upsertCustomer,
 }) => {
   // Find customer and vehicle from workOrder data
   const initialCustomer = useMemo(() => {
@@ -50,6 +52,29 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
             ]
           : [],
       } as Customer;
+    }
+
+    // If found customer, check if workOrder's vehicle exists in customer's vehicles
+    // If not, add it as a temporary vehicle
+    if (foundCustomer && workOrder.licensePlate) {
+      const vehicleExists = foundCustomer.vehicles?.some(
+        v => v.licensePlate === workOrder.licensePlate
+      );
+      
+      if (!vehicleExists) {
+        // Clone customer and add temp vehicle
+        return {
+          ...foundCustomer,
+          vehicles: [
+            ...(foundCustomer.vehicles || []),
+            {
+              id: `temp-veh-${Date.now()}`,
+              licensePlate: workOrder.licensePlate,
+              model: workOrder.vehicleModel || "",
+            },
+          ],
+        } as Customer;
+      }
     }
 
     return foundCustomer || null;
@@ -113,9 +138,12 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     if (workOrder) {
       setSelectedCustomer(initialCustomer);
       setSelectedVehicle(initialVehicle);
+      // Nếu đang edit và có initialCustomer, ẩn form tìm kiếm
+      setShowCustomerSearch(!initialCustomer);
     } else {
       setSelectedCustomer(null);
       setSelectedVehicle(null);
+      setShowCustomerSearch(true);
     }
   }, [workOrder, initialCustomer, initialVehicle]);
 
@@ -162,9 +190,9 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   const [depositAmount, setDepositAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "bank">("cash");
 
-  // UI States
+  // UI States - khởi tạo showCustomerSearch dựa trên initialCustomer để đảm bảo đúng khi edit
   const [showCustomerSearch, setShowCustomerSearch] = useState(
-    !selectedCustomer
+    !initialCustomer
   );
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [showPartSearch, setShowPartSearch] = useState(false);
@@ -177,6 +205,11 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   const [showAddVehicle, setShowAddVehicle] = useState(false);
   const [newVehiclePlate, setNewVehiclePlate] = useState("");
   const [newVehicleName, setNewVehicleName] = useState("");
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [newCustomerVehicleModel, setNewCustomerVehicleModel] = useState("");
+  const [newCustomerLicensePlate, setNewCustomerLicensePlate] = useState("");
 
   // Helper functions for number formatting
   const formatNumberWithDots = (value: number | string): string => {
@@ -226,11 +259,19 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     );
   }, [parts, partSearchTerm]);
 
-  // Customer vehicles
+  // Customer vehicles - bao gồm cả xe từ workOrder nếu đang edit
   const customerVehicles = useMemo(() => {
     if (!selectedCustomer) return [];
-    return selectedCustomer.vehicles || [];
-  }, [selectedCustomer]);
+    const existingVehicles = selectedCustomer.vehicles || [];
+    
+    // Nếu đang edit workOrder và có selectedVehicle là temp vehicle (không có trong danh sách)
+    // thì thêm nó vào để hiển thị
+    if (selectedVehicle && !existingVehicles.find(v => v.id === selectedVehicle.id)) {
+      return [...existingVehicles, selectedVehicle];
+    }
+    
+    return existingVehicles;
+  }, [selectedCustomer, selectedVehicle]);
 
   // Auto-select vehicle if customer has only one
   React.useEffect(() => {
@@ -348,6 +389,61 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     setNewVehiclePlate("");
     setNewVehicleName("");
     setShowAddVehicle(false);
+  };
+
+  const handleAddNewCustomer = () => {
+    if (!newCustomerName || !newCustomerPhone) return;
+    
+    const customerId = `CUST-${Date.now()}`;
+    const vehicleId = `VEH-${Date.now()}`;
+    
+    // Create vehicles array if vehicle info provided
+    const vehicles: Vehicle[] = [];
+    if (newCustomerVehicleModel || newCustomerLicensePlate) {
+      vehicles.push({
+        id: vehicleId,
+        model: newCustomerVehicleModel || "",
+        licensePlate: newCustomerLicensePlate || "",
+        isPrimary: true,
+      } as Vehicle);
+    }
+    
+    // Create new customer object
+    const newCustomerObj: Customer = {
+      id: customerId,
+      name: newCustomerName,
+      phone: newCustomerPhone,
+      vehicles: vehicles,
+      vehicleModel: newCustomerVehicleModel,
+      licensePlate: newCustomerLicensePlate,
+      status: "active",
+      segment: "New",
+      loyaltyPoints: 0,
+      totalSpent: 0,
+      visitCount: 1,
+      lastVisit: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    };
+    
+    // Save to database if upsertCustomer is available
+    if (upsertCustomer) {
+      upsertCustomer(newCustomerObj);
+    }
+    
+    // Set selected customer and vehicle
+    setSelectedCustomer(newCustomerObj);
+    if (vehicles.length > 0) {
+      setSelectedVehicle(vehicles[0]);
+    }
+    
+    // Reset form and close modal
+    setShowCustomerSearch(false);
+    setShowAddCustomer(false);
+    setNewCustomerName("");
+    setNewCustomerPhone("");
+    setNewCustomerVehicleModel("");
+    setNewCustomerLicensePlate("");
+    setCustomerSearchTerm("");
   };
 
   const handleSave = () => {
@@ -501,6 +597,33 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                       </div>
                     </div>
                   ))}
+                  
+                  {/* Show add new customer when no results or always at bottom */}
+                  {customerSearchTerm && filteredCustomers.length === 0 && (
+                    <div className="text-center py-3 text-slate-400 text-xs">
+                      Không tìm thấy khách hàng
+                    </div>
+                  )}
+                  
+                  {/* Add new customer button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddCustomer(true);
+                      // Pre-fill phone if search term looks like a phone number
+                      if (/^[0-9]+$/.test(customerSearchTerm)) {
+                        setNewCustomerPhone(customerSearchTerm);
+                        setNewCustomerName("");
+                      } else {
+                        setNewCustomerName(customerSearchTerm);
+                        setNewCustomerPhone("");
+                      }
+                    }}
+                    className="w-full p-3 bg-green-500/20 border-2 border-dashed border-green-500/50 rounded-lg text-green-400 font-medium flex items-center justify-center gap-2 hover:bg-green-500/30 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Thêm khách hàng mới
+                  </button>
                 </div>
               </div>
             ) : selectedCustomer ? (
@@ -1315,6 +1438,118 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                   className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-medium text-xs"
                 >
                   Thêm xe
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Customer Modal */}
+      {showAddCustomer && (
+        <div className="fixed inset-0 bg-black/70 z-[110] flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-[#1e1e2d] rounded-xl p-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-semibold">Thêm khách hàng mới</h3>
+              <button
+                onClick={() => {
+                  setShowAddCustomer(false);
+                  setNewCustomerName("");
+                  setNewCustomerPhone("");
+                  setNewCustomerVehicleModel("");
+                  setNewCustomerLicensePlate("");
+                }}
+                className="p-1.5 text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {/* Customer Info Section */}
+              <div className="bg-[#2b2b40]/50 rounded-lg p-3 space-y-3">
+                <h4 className="text-xs font-semibold text-blue-400 uppercase tracking-wide">
+                  Thông tin khách hàng
+                </h4>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">
+                    Tên khách hàng <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomerName}
+                    onChange={(e) => setNewCustomerName(e.target.value)}
+                    placeholder="Nguyễn Văn A"
+                    className="w-full px-3 py-2.5 bg-[#2b2b40] rounded-lg text-white text-sm"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">
+                    Số điện thoại <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={newCustomerPhone}
+                    onChange={(e) => setNewCustomerPhone(e.target.value)}
+                    placeholder="0901234567"
+                    className="w-full px-3 py-2.5 bg-[#2b2b40] rounded-lg text-white text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Vehicle Info Section */}
+              <div className="bg-[#2b2b40]/50 rounded-lg p-3 space-y-3">
+                <h4 className="text-xs font-semibold text-green-400 uppercase tracking-wide">
+                  🏍️ Thông tin xe
+                </h4>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">
+                    Loại xe
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomerVehicleModel}
+                    onChange={(e) => setNewCustomerVehicleModel(e.target.value)}
+                    placeholder="Wave, Exciter, Vision..."
+                    className="w-full px-3 py-2.5 bg-[#2b2b40] rounded-lg text-white text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">
+                    Biển số xe
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomerLicensePlate}
+                    onChange={(e) => setNewCustomerLicensePlate(e.target.value.toUpperCase())}
+                    placeholder="59G1-12345"
+                    className="w-full px-3 py-2.5 bg-[#2b2b40] rounded-lg text-white text-sm uppercase"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => {
+                    setShowAddCustomer(false);
+                    setNewCustomerName("");
+                    setNewCustomerPhone("");
+                    setNewCustomerVehicleModel("");
+                    setNewCustomerLicensePlate("");
+                  }}
+                  className="flex-1 py-2.5 bg-[#2b2b40] text-slate-300 rounded-lg font-medium text-sm"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleAddNewCustomer}
+                  disabled={!newCustomerName || !newCustomerPhone}
+                  className="flex-1 py-2.5 bg-green-600 text-white rounded-lg font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  💾 Lưu khách hàng
                 </button>
               </div>
             </div>

@@ -247,6 +247,21 @@ body {
 }
 
 /* ==================== MOBILE OPTIMIZATIONS ==================== */
+/* Prevent iOS Safari from zooming in on input focus */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="search"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* Touch-friendly tap targets */
 @media (max-width: 768px) {
   /* Minimum touch target size 44x44px */

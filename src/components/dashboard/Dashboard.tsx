@@ -390,19 +390,19 @@ const Dashboard: React.FC = () => {
   // Thống kê work orders (phiếu sửa chữa)
   const workOrderStats = useMemo(() => {
     const newOrders = (workOrders || []).filter(
-      (wo) => wo.status === "new"
+      (wo) => wo.status === "Tiếp nhận"
     ).length;
     const inProgress = (workOrders || []).filter(
-      (wo) => wo.status === "in_progress"
+      (wo) => wo.status === "Đang sửa"
     ).length;
     const completed = (workOrders || []).filter(
-      (wo) => wo.status === "completed"
+      (wo) => wo.status === "Đã sửa xong"
     ).length;
     const cancelled = (workOrders || []).filter(
-      (wo) => wo.status === "cancelled"
+      (wo) => wo.status === "Trả máy"
     ).length;
     const notRepairable = (workOrders || []).filter(
-      (wo) => wo.status === "not_repairable"
+      (wo) => wo.status === "Đã hủy"
     ).length;
 
     return { newOrders, inProgress, completed, cancelled, notRepairable };
@@ -527,7 +527,7 @@ const Dashboard: React.FC = () => {
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <h1 className="text-lg md:text-xl font-semibold mb-1">
-              Xin chào, @{profile?.full_name || profile?.email || "Người dùng"}{" "}
+              Xin chào, {profile?.full_name || profile?.email?.split('@')[0] || "Người dùng"}{" "}
               👋
             </h1>
             <p className="text-sm md:text-base text-blue-100 dark:text-violet-100">

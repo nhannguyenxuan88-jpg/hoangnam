@@ -12,6 +12,7 @@ import {
   Phone,
   Edit2,
   Trash2,
+  Printer,
   ChevronRight,
   MoreVertical,
   Menu,
@@ -31,6 +32,7 @@ interface ServiceManagerMobileProps {
   onEditWorkOrder: (workOrder: WorkOrder) => void;
   onDeleteWorkOrder: (workOrder: WorkOrder) => void;
   onCallCustomer: (phone: string) => void;
+  onPrintWorkOrder: (workOrder: WorkOrder) => void;
   currentBranchId: string;
 }
 
@@ -47,6 +49,7 @@ export function ServiceManagerMobile({
   onEditWorkOrder,
   onDeleteWorkOrder,
   onCallCustomer,
+  onPrintWorkOrder,
   currentBranchId,
 }: ServiceManagerMobileProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -376,17 +379,29 @@ export function ServiceManagerMobile({
               </div>
 
               {/* Action Buttons Row */}
-              <div className="grid grid-cols-3 border-t border-gray-800">
+              <div className="grid grid-cols-4 border-t border-gray-800">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onCallCustomer(workOrder.customerPhone || "");
                   }}
-                  className="flex items-center justify-center gap-1.5 py-3 bg-green-500/10 hover:bg-green-500/20 transition-colors border-r border-gray-800"
+                  className="flex items-center justify-center gap-1 py-3 bg-green-500/10 hover:bg-green-500/20 transition-colors border-r border-gray-800"
                 >
                   <Phone className="w-4 h-4 text-green-500" />
-                  <span className="text-xs font-semibold text-green-500">
+                  <span className="text-[11px] font-semibold text-green-500">
                     Gọi
+                  </span>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPrintWorkOrder(workOrder);
+                  }}
+                  className="flex items-center justify-center gap-1 py-3 bg-purple-500/10 hover:bg-purple-500/20 transition-colors border-r border-gray-800"
+                >
+                  <Printer className="w-4 h-4 text-purple-500" />
+                  <span className="text-[11px] font-semibold text-purple-500">
+                    In
                   </span>
                 </button>
                 <button
@@ -394,10 +409,10 @@ export function ServiceManagerMobile({
                     e.stopPropagation();
                     onEditWorkOrder(workOrder);
                   }}
-                  className="flex items-center justify-center gap-1.5 py-3 bg-[#009ef7]/10 hover:bg-[#009ef7]/20 transition-colors border-r border-gray-800"
+                  className="flex items-center justify-center gap-1 py-3 bg-[#009ef7]/10 hover:bg-[#009ef7]/20 transition-colors border-r border-gray-800"
                 >
                   <Edit2 className="w-4 h-4 text-[#009ef7]" />
-                  <span className="text-xs font-semibold text-[#009ef7]">
+                  <span className="text-[11px] font-semibold text-[#009ef7]">
                     Sửa
                   </span>
                 </button>
@@ -406,10 +421,10 @@ export function ServiceManagerMobile({
                     e.stopPropagation();
                     onDeleteWorkOrder(workOrder);
                   }}
-                  className="flex items-center justify-center gap-1.5 py-3 bg-[#f1416c]/10 hover:bg-[#f1416c]/20 transition-colors"
+                  className="flex items-center justify-center gap-1 py-3 bg-[#f1416c]/10 hover:bg-[#f1416c]/20 transition-colors"
                 >
                   <Trash2 className="w-4 h-4 text-[#f1416c]" />
-                  <span className="text-xs font-semibold text-[#f1416c]">
+                  <span className="text-[11px] font-semibold text-[#f1416c]">
                     Xóa
                   </span>
                 </button>
