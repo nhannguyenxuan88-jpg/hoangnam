@@ -11,6 +11,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { showToast } from "./utils/toast";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import TopProgressBar from "./components/common/TopProgressBar";
+import NotificationDropdown from "./components/common/NotificationDropdown";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AppProvider } from "./contexts/AppContext";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
@@ -328,8 +329,12 @@ function Nav() {
             />
           </div>
 
-          {/* Right: Home Icon */}
-          <div className="flex items-center">
+          {/* Right: Notifications and Home Icon */}
+          <div className="flex items-center gap-1">
+            {/* Notification Dropdown */}
+            <NotificationDropdown />
+
+            {/* Home Button */}
             <Link
               to="/dashboard"
               className="p-2 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"

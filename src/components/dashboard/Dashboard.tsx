@@ -208,15 +208,15 @@ const QuickActionCard: React.FC<{
   icon: React.ReactNode;
   label: string;
   color:
-  | "purple"
-  | "orange"
-  | "emerald"
-  | "cyan"
-  | "blue"
-  | "amber"
-  | "rose"
-  | "violet"
-  | "slate";
+    | "purple"
+    | "orange"
+    | "emerald"
+    | "cyan"
+    | "blue"
+    | "amber"
+    | "rose"
+    | "violet"
+    | "slate";
   labelClassName?: string;
 }> = ({ to, icon, label, color, labelClassName }) => {
   const colors = QUICK_ACTION_COLORS[color] || QUICK_ACTION_COLORS.purple;
@@ -232,8 +232,9 @@ const QuickActionCard: React.FC<{
         {icon}
       </div>
       <span
-        className={`text-[11px] font-medium text-center leading-tight text-slate-700 dark:text-slate-300 ${labelClassName || ""
-          }`}
+        className={`text-[11px] font-medium text-center leading-tight text-slate-700 dark:text-slate-300 ${
+          labelClassName || ""
+        }`}
       >
         {label}
       </span>
@@ -269,6 +270,9 @@ const Dashboard: React.FC = () => {
     workOrdersLoading;
 
   const [showDemoButton, setShowDemoButton] = useState(false);
+  const [reportFilter, setReportFilter] = useState<
+    "today" | "week" | "month" | "year"
+  >("month");
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   // Calculate inventory stats from parts data directly
@@ -316,6 +320,54 @@ const Dashboard: React.FC = () => {
 
     return { revenue, profit, customerCount, orderCount: todaySales.length };
   }, [sales, today]);
+
+  // Thống kê theo filter (để hiển thị trên mobile)
+  const filteredStats = useMemo(() => {
+    const now = new Date();
+    let startDate: Date;
+
+    switch (reportFilter) {
+      case "today":
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case "week":
+        const dayOfWeek = now.getDay();
+        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - diff
+        );
+        break;
+      case "month":
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case "year":
+        startDate = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    const startDateStr = startDate.toISOString().slice(0, 10);
+    const filteredSales = sales.filter(
+      (s) => s.date.slice(0, 10) >= startDateStr
+    );
+
+    const revenue = filteredSales.reduce((sum, s) => sum + s.total, 0);
+    const profit = filteredSales.reduce((sum, s) => {
+      const cost = s.items.reduce(
+        (c, it) => c + ((it as any).costPrice || 0) * it.quantity,
+        0
+      );
+      return sum + (s.total - cost);
+    }, 0);
+    const customerCount = new Set(
+      filteredSales.map((s) => s.customer.phone || s.customer.name)
+    ).size;
+
+    return { revenue, profit, customerCount, orderCount: filteredSales.length };
+  }, [sales, reportFilter]);
 
   // Dữ liệu doanh thu 7 ngày gần nhất
   const last7DaysRevenue = useMemo(() => {
@@ -482,24 +534,15 @@ const Dashboard: React.FC = () => {
     const now = new Date();
 
     for (let i = 2; i >= 0; i--) {
-      const monthDate = new Date(
-        now.getFullYear(),
-        now.getMonth() - i,
-        1
-      );
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthStr = monthDate.toISOString().slice(0, 7);
       const monthName = monthDate.toLocaleDateString("vi-VN", {
         month: "short",
         year: "numeric",
       });
 
-      const monthSales = sales.filter((s) =>
-        s.date.startsWith(monthStr)
-      );
-      const revenue = monthSales.reduce(
-        (sum, s) => sum + s.total,
-        0
-      );
+      const monthSales = sales.filter((s) => s.date.startsWith(monthStr));
+      const revenue = monthSales.reduce((sum, s) => sum + s.total, 0);
       const orders = monthSales.length;
 
       months.push({
@@ -527,7 +570,10 @@ const Dashboard: React.FC = () => {
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <h1 className="text-lg md:text-xl font-semibold mb-1">
-              Xin chào, {profile?.full_name || profile?.email?.split('@')[0] || "Người dùng"}{" "}
+              Xin chào,{" "}
+              {profile?.full_name ||
+                profile?.email?.split("@")[0] ||
+                "Người dùng"}{" "}
               👋
             </h1>
             <p className="text-sm md:text-base text-blue-100 dark:text-violet-100">
@@ -572,11 +618,19 @@ const Dashboard: React.FC = () => {
           <h2 className="text-base md:text-lg font-bold text-slate-900 dark:text-white">
             Báo cáo
           </h2>
-          <select className="text-sm bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <option>Tháng này</option>
-            <option>Hôm nay</option>
-            <option>Tuần này</option>
-            <option>Năm nay</option>
+          <select
+            value={reportFilter}
+            onChange={(e) =>
+              setReportFilter(
+                e.target.value as "today" | "week" | "month" | "year"
+              )
+            }
+            className="text-sm bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="month">Tháng này</option>
+            <option value="today">Hôm nay</option>
+            <option value="week">Tuần này</option>
+            <option value="year">Năm nay</option>
           </select>
         </div>
 
@@ -586,7 +640,7 @@ const Dashboard: React.FC = () => {
               Doanh thu
             </p>
             <p className="text-lg md:text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {formatCurrency(todayStats.revenue)}
+              {formatCurrency(filteredStats.revenue)}
             </p>
           </div>
           <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 md:p-4">
@@ -594,12 +648,13 @@ const Dashboard: React.FC = () => {
               Lợi nhuận
             </p>
             <p
-              className={`text-lg md:text-2xl font-bold ${todayStats.profit >= 0
-                ? "text-green-600 dark:text-green-400"
-                : "text-red-600 dark:text-red-400"
-                }`}
+              className={`text-lg md:text-2xl font-bold ${
+                filteredStats.profit >= 0
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-red-600 dark:text-red-400"
+              }`}
             >
-              {formatCurrency(todayStats.profit)}
+              {formatCurrency(filteredStats.profit)}
             </p>
           </div>
         </div>
@@ -730,85 +785,65 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Biểu đồ Biên nhận - Chỉ hiện trên mobile */}
-      <div className="md:hidden bg-white dark:bg-slate-800 rounded-xl p-4 md:p-5 shadow-sm border border-slate-200 dark:border-slate-700">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm md:text-base font-semibold text-slate-900 dark:text-white">
-            Biên nhận
+      {/* Cảnh báo quan trọng - Chỉ hiện trên mobile khi có cảnh báo */}
+      {alerts.length > 0 && (
+        <div className="md:hidden bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            Cảnh báo
           </h3>
-          <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-            <span>Sửa chữa / Bảo hành / Dụng mới</span>
+          <div className="space-y-2">
+            {alerts.map((alert, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800"
+              >
+                <div className="flex-shrink-0">
+                  {alert.type === "Tồn kho thấp" && (
+                    <Package className="w-5 h-5 text-orange-500" />
+                  )}
+                  {alert.type === "Nợ đến hạn" && (
+                    <HandCoins className="w-5 h-5 text-red-500" />
+                  )}
+                  {alert.type === "Số dư thấp" && (
+                    <Wallet className="w-5 h-5 text-amber-500" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                    {alert.type}
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
+                    {alert.message}
+                  </p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+              </div>
+            ))}
           </div>
         </div>
+      )}
 
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart
-            data={[
-              { name: "Chưa sửa (0)", value: 0 },
-              { name: "Đang sửa (0)", value: 0 },
-              { name: "Sửa xong (0)", value: 0 },
-            ]}
+      {/* Tổng tồn kho - Chỉ hiện trên mobile */}
+      <div className="md:hidden bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Tổng SL tồn kho
+            </p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">
+              {totalInvQty.toLocaleString()}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Gộp tất cả chi nhánh
+            </p>
+          </div>
+          <Link
+            to="/inventory"
+            className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition"
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#94a3b8" />
-            <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" />
-            <Tooltip />
-            <Bar dataKey="value" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Status Cards - Chưa sửa, Đang sửa, Sửa xong - Chỉ hiện trên mobile */}
-      <div className="md:hidden grid grid-cols-3 gap-3">
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-              Chưa sửa
-            </h4>
-            <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          </div>
-          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-            0
-          </p>
-          <div className="mt-2 text-xs text-blue-700 dark:text-blue-300 space-y-0.5">
-            <p>Cơ giá: 0</p>
-            <p>BH: 0</p>
-            <p>Dụng: 0</p>
-          </div>
-        </div>
-
-        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-              Đang sửa
-            </h4>
-            <Wrench className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-          </div>
-          <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">
-            0
-          </p>
-          <div className="mt-2 text-xs text-amber-700 dark:text-amber-300 space-y-0.5">
-            <p>Cơ giá: 0</p>
-            <p>BH: 0</p>
-            <p>Dụng: 0</p>
-          </div>
-        </div>
-
-        <div className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold text-green-900 dark:text-green-100">
-              Sửa xong
-            </h4>
-            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-          </div>
-          <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-            0
-          </p>
-          <div className="mt-2 text-xs text-green-700 dark:text-green-300 space-y-0.5">
-            <p>Cơ giá: 0</p>
-            <p>BH: 0</p>
-            <p>Dụng: 0</p>
-          </div>
+            <Boxes className="w-6 h-6" />
+          </Link>
         </div>
       </div>
 
@@ -912,9 +947,9 @@ const Dashboard: React.FC = () => {
         />
       </div>
 
-      {/* Cảnh báo */}
+      {/* Cảnh báo - Ẩn trên mobile (đã có riêng ở trên) */}
       {alerts.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+        <div className="hidden md:block bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-500" /> Cảnh báo
           </h3>
@@ -939,8 +974,8 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Biểu đồ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Biểu đồ - Ẩn trên mobile, chỉ hiện trên desktop */}
+      <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Biểu đồ doanh thu 7 ngày */}
         <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
@@ -1011,8 +1046,7 @@ const Dashboard: React.FC = () => {
               <Tooltip formatter={(value: any) => formatCurrency(value)} />
             </PieChart>
           </ResponsiveContainer>
-          <div className="mt-4 flex justify-center gap-6">
-          </div>
+          <div className="mt-4 flex justify-center gap-6"></div>
         </div>
 
         {/* Top sản phẩm bán chạy */}
@@ -1038,8 +1072,8 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Top Customers và Monthly Comparison */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Top Customers và Monthly Comparison - Ẩn trên mobile */}
+      <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Customers */}
         <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
@@ -1087,9 +1121,7 @@ const Dashboard: React.FC = () => {
             So sánh 3 tháng gần đây
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={monthlyComparisonData}
-            >
+            <BarChart data={monthlyComparisonData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
               <XAxis dataKey="month" stroke="#94a3b8" />
               <YAxis yAxisId="left" stroke="#3b82f6" />
@@ -1172,7 +1204,5 @@ const Dashboard: React.FC = () => {
     </div>
   );
 };
-
-
 
 export default Dashboard;
