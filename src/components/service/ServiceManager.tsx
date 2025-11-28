@@ -1643,8 +1643,8 @@ export default function ServiceManager() {
         </div>
       </div>
 
-      {/* Quick status filters */}
-      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex flex-wrap items-center gap-3">
+      {/* Quick status filters - Hidden on desktop (lg+) since we have the stat cards above */}
+      <div className="lg:hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 flex flex-wrap items-center gap-3">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
           Trạng thái nhanh
         </span>
