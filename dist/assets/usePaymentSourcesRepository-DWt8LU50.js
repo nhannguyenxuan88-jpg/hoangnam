@@ -1,1 +1,0 @@
-import{a as s,y as t,s as n,ag as u,a0 as c}from"./index-vsbswUoW.js";const i=()=>{const a=s();return t({mutationFn:({id:e,branchId:r,delta:o})=>u(e,r,o),onSuccess:()=>{a.invalidateQueries({queryKey:["paymentSourcesRepo"]})},onError:e=>n.error(c(e))})};export{i as u};

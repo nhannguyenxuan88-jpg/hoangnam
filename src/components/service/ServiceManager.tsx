@@ -45,6 +45,10 @@ import {
   validatePhoneNumber,
   validateDepositAmount,
 } from "../../utils/validation";
+import {
+  detectMaintenancesFromWorkOrder,
+  updateVehicleMaintenances,
+} from "../../utils/maintenanceReminder";
 
 interface StoreSettings {
   store_name?: string;
@@ -779,6 +783,7 @@ export default function ServiceManager() {
         status,
         customer,
         vehicle,
+        currentKm = 0,
         issueDescription,
         technicianId,
         parts = [],
@@ -819,6 +824,8 @@ export default function ServiceManager() {
           customerPhone: customer.phone,
           vehicleModel: vehicle?.model || "",
           licensePlate: vehicle?.licensePlate || "",
+          vehicleId: vehicle?.id || "",
+          currentKm: currentKm > 0 ? currentKm : undefined,
           issueDescription: issueDescription || "",
           technicianName: technicianName,
           status: status,
@@ -845,6 +852,8 @@ export default function ServiceManager() {
           customerPhone: customer.phone,
           vehicleModel: vehicle?.model || "",
           licensePlate: vehicle?.licensePlate || "",
+          vehicleId: vehicle?.id || "",
+          currentKm: currentKm > 0 ? currentKm : undefined,
           issueDescription: issueDescription || "",
           technicianName: technicianName,
           status: status,
@@ -862,6 +871,18 @@ export default function ServiceManager() {
           remainingAmount: remainingAmount,
           creationDate: new Date().toISOString(),
         };
+
+        // Update vehicle currentKm and maintenance records if km was entered
+        if (currentKm > 0 && customer?.id && vehicle?.id) {
+          await updateVehicleKmAndMaintenance(
+            customer,
+            vehicle.id,
+            currentKm,
+            parts,
+            additionalServices,
+            issueDescription
+          );
+        }
 
         // Auto-create customer debt if status is "Trả máy" and there's remaining amount
         if (status === "Trả máy" && remainingAmount > 0) {
@@ -882,6 +903,8 @@ export default function ServiceManager() {
           customerPhone: customer.phone,
           vehicleModel: vehicle?.model || "",
           licensePlate: vehicle?.licensePlate || "",
+          vehicleId: vehicle?.id || "",
+          currentKm: currentKm > 0 ? currentKm : undefined,
           issueDescription: issueDescription || "",
           technicianName: technicianName,
           status: status,
@@ -907,6 +930,8 @@ export default function ServiceManager() {
           customerPhone: customer.phone,
           vehicleModel: vehicle?.model || "",
           licensePlate: vehicle?.licensePlate || "",
+          vehicleId: vehicle?.id || "",
+          currentKm: currentKm > 0 ? currentKm : undefined,
           issueDescription: issueDescription || "",
           technicianName: technicianName,
           status: status,
@@ -921,6 +946,18 @@ export default function ServiceManager() {
           totalPaid: totalPaid > 0 ? totalPaid : undefined,
           remainingAmount: remainingAmount,
         };
+
+        // Update vehicle currentKm and maintenance records if km was entered
+        if (currentKm > 0 && customer?.id && vehicle?.id) {
+          await updateVehicleKmAndMaintenance(
+            customer,
+            vehicle.id,
+            currentKm,
+            parts,
+            additionalServices,
+            issueDescription
+          );
+        }
 
         // Auto-create customer debt if status is "Trả máy" and there's remaining amount
         if (status === "Trả máy" && remainingAmount > 0) {
@@ -4552,10 +4589,15 @@ const WorkOrderModal: React.FC<{
       return customers.slice(0, 10); // Limit to first 10 for performance
     }
 
+    const q = customerSearch.toLowerCase();
     return customers.filter(
       (c) =>
-        c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
-        c.phone?.toLowerCase().includes(customerSearch.toLowerCase())
+        c.name.toLowerCase().includes(q) ||
+        c.phone?.toLowerCase().includes(q) ||
+        (c.vehicles &&
+          c.vehicles.some((v: any) =>
+            v.licensePlate?.toLowerCase().includes(q)
+          ))
     );
   }, [customers, customerSearch]);
 
@@ -4655,6 +4697,72 @@ const WorkOrderModal: React.FC<{
   const totalAdditionalPayment = showPartialPayment ? partialPayment : 0;
   const totalPaid = totalDeposit + totalAdditionalPayment;
   const remainingAmount = Math.max(0, total - totalPaid);
+
+  // Helper: Update vehicle currentKm and lastMaintenances in customer record
+  const updateVehicleKmAndMaintenance = async (
+    customer: any,
+    vehicleId: string,
+    newKm: number,
+    partsUsed: Array<{ partName: string }> = [],
+    additionalServices: Array<{ description: string }> = [],
+    issueDescription?: string
+  ) => {
+    if (!customer?.id || !vehicleId || !newKm) return;
+
+    try {
+      // Detect maintenance types from work order
+      const detectedMaintenances = detectMaintenancesFromWorkOrder(
+        partsUsed,
+        additionalServices,
+        issueDescription
+      );
+
+      // Find and update the vehicle in customer's vehicles array
+      const updatedVehicles = (customer.vehicles || []).map((v: any) => {
+        if (v.id === vehicleId) {
+          // If maintenances detected, update lastMaintenances
+          if (detectedMaintenances.length > 0) {
+            const updatedVehicle = updateVehicleMaintenances(
+              v,
+              detectedMaintenances,
+              newKm
+            );
+            console.log(
+              `[updateVehicleKmAndMaintenance] Updated maintenances:`,
+              detectedMaintenances
+            );
+            return updatedVehicle;
+          }
+          // Otherwise just update km
+          return { ...v, currentKm: newKm };
+        }
+        return v;
+      });
+
+      // Save updated customer with new vehicle km
+      const updatedCustomer = {
+        ...customer,
+        vehicles: updatedVehicles,
+      };
+
+      await upsertCustomer(updatedCustomer);
+      console.log(
+        `[updateVehicleKmAndMaintenance] Updated vehicle ${vehicleId} to ${newKm} km`
+      );
+    } catch (error) {
+      console.error("[updateVehicleKmAndMaintenance] Error:", error);
+      // Don't throw - this is a non-critical update
+    }
+  };
+
+  // Legacy helper (keep for backwards compatibility)
+  const updateVehicleKm = async (
+    customer: any,
+    vehicleId: string,
+    newKm: number
+  ) => {
+    return updateVehicleKmAndMaintenance(customer, vehicleId, newKm);
+  };
 
   // Helper: Auto-create customer debt if there's remaining amount
   const createCustomerDebt = useCreateCustomerDebtRepo();

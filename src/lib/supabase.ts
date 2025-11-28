@@ -38,9 +38,14 @@ export const supabaseHelpers = {
   },
 
   async updateCustomer(id: string, updates: any) {
+    // Filter out fields that don't exist in the customers table
+    // The actual DB columns are: id, name, phone, email, address, vehicles (jsonb),
+    // segment, status, loyaltyPoints, totalSpent, visitCount, notes, lastVisit, created_at
+    const { licensePlate, vehicleModel, vehicleId, ...validUpdates } = updates;
+
     const { data, error } = await supabase
       .from("customers")
-      .update(updates)
+      .update(validUpdates)
       .eq("id", id)
       .select()
       .single();

@@ -1,7 +1,21 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { X, Plus, Minus, Check, ChevronDown, Search } from "lucide-react";
+import {
+  X,
+  Plus,
+  Minus,
+  Check,
+  ChevronDown,
+  Search,
+  AlertTriangle,
+} from "lucide-react";
 import { formatCurrency, formatWorkOrderId } from "../../utils/format";
 import type { WorkOrder, Part, Customer, Vehicle, Employee } from "../../types";
+import {
+  checkVehicleMaintenance,
+  formatKm,
+  getWarningBadgeColor,
+  type MaintenanceWarning,
+} from "../../utils/maintenanceReminder";
 
 interface WorkOrderMobileModalProps {
   isOpen: boolean;
@@ -138,16 +152,25 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     if (workOrder) {
       setSelectedCustomer(initialCustomer);
       setSelectedVehicle(initialVehicle);
+      // Load currentKm: ưu tiên từ workOrder, nếu không có thì từ vehicle
+      if (workOrder.currentKm) {
+        setCurrentKm(workOrder.currentKm.toString());
+      } else if (initialVehicle?.currentKm) {
+        setCurrentKm(initialVehicle.currentKm.toString());
+      }
       // Nếu đang edit và có initialCustomer, ẩn form tìm kiếm
       setShowCustomerSearch(!initialCustomer);
     } else {
       setSelectedCustomer(null);
       setSelectedVehicle(null);
+      setCurrentKm("");
       setShowCustomerSearch(true);
     }
   }, [workOrder, initialCustomer, initialVehicle]);
 
-  const [currentKm, setCurrentKm] = useState("");
+  const [currentKm, setCurrentKm] = useState(
+    workOrder?.currentKm?.toString() || ""
+  );
   const [issueDescription, setIssueDescription] = useState(
     workOrder?.issueDescription || ""
   );
@@ -239,7 +262,11 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     const filtered = customers.filter(
       (c) =>
         c.name.toLowerCase().includes(term) ||
-        c.phone?.toLowerCase().includes(term)
+        c.phone?.toLowerCase().includes(term) ||
+        (c.vehicles &&
+          c.vehicles.some((v: any) =>
+            v.licensePlate?.toLowerCase().includes(term)
+          ))
     );
     console.log(
       "[WorkOrderMobileModal] Filtered customers:",
@@ -278,10 +305,26 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     return existingVehicles;
   }, [selectedCustomer, selectedVehicle]);
 
-  // Auto-select vehicle if customer has only one
+  // Check maintenance warnings for selected vehicle
+  const maintenanceWarnings = useMemo((): MaintenanceWarning[] => {
+    if (!selectedVehicle) return [];
+    // Update currentKm in vehicle for accurate check
+    const vehicleWithKm = {
+      ...selectedVehicle,
+      currentKm: currentKm ? parseInt(currentKm) : selectedVehicle.currentKm,
+    };
+    return checkVehicleMaintenance(vehicleWithKm);
+  }, [selectedVehicle, currentKm]);
+
+  // Auto-select vehicle if customer has only one and load km
   React.useEffect(() => {
     if (customerVehicles.length === 1 && !selectedVehicle) {
-      setSelectedVehicle(customerVehicles[0]);
+      const vehicle = customerVehicles[0];
+      setSelectedVehicle(vehicle);
+      // Load currentKm from vehicle if exists
+      if (vehicle.currentKm) {
+        setCurrentKm(vehicle.currentKm.toString());
+      }
     }
   }, [customerVehicles, selectedVehicle]);
 
@@ -314,10 +357,17 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     setShowCustomerSearch(false);
     setCustomerSearchTerm("");
     setSelectedVehicle(null);
+    setCurrentKm(""); // Reset km when changing customer
   };
 
   const handleSelectVehicle = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
+    // Load currentKm from vehicle if exists
+    if (vehicle.currentKm) {
+      setCurrentKm(vehicle.currentKm.toString());
+    } else {
+      setCurrentKm("");
+    }
   };
 
   const handleAddPart = (part: Part) => {
@@ -756,6 +806,39 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                     className="w-full px-2.5 py-1.5 bg-[#2b2b40] rounded-lg text-white text-xs"
                   />
                 </div>
+
+                {/* Maintenance Warnings */}
+                {maintenanceWarnings.length > 0 && (
+                  <div className="p-2.5 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/30 rounded-lg">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-orange-400" />
+                      <span className="text-xs font-semibold text-orange-400">
+                        Cần bảo dưỡng
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {maintenanceWarnings.map((warning) => (
+                        <div
+                          key={warning.type}
+                          className={`flex items-center justify-between px-2 py-1.5 rounded text-xs ${
+                            warning.isOverdue
+                              ? "bg-red-500/20 text-red-300"
+                              : "bg-yellow-500/20 text-yellow-300"
+                          }`}
+                        >
+                          <span>
+                            {warning.icon} {warning.name}
+                          </span>
+                          <span className="font-medium">
+                            {warning.isOverdue
+                              ? `Quá ${formatKm(Math.abs(warning.kmUntilDue))}`
+                              : `Còn ${formatKm(warning.kmUntilDue)}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">

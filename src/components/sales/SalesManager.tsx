@@ -351,10 +351,16 @@ const EditSaleModal: React.FC<EditSaleModalProps> = ({
       p.sku.toLowerCase().includes(searchPart.toLowerCase())
   );
 
-  // Filter customers for search
-  const filteredCustomers = customers.filter((c) =>
-    c.name.toLowerCase().includes(customerSearchText.toLowerCase())
-  );
+  // Filter customers for search (by name, phone, or license plate)
+  const filteredCustomers = customers.filter((c) => {
+    const q = customerSearchText.toLowerCase();
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.phone?.toLowerCase().includes(q) ||
+      (c.vehicles &&
+        c.vehicles.some((v: any) => v.licensePlate?.toLowerCase().includes(q)))
+    );
+  });
 
   const handleAddPart = (part: Part) => {
     // Check if current branch has stock

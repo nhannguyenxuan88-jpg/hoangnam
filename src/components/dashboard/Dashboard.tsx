@@ -34,10 +34,16 @@ import {
   Receipt,
   TrendingDown,
   LineChart as LineChartIcon,
+  Car,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAppContext } from "../../contexts/AppContext";
+import {
+  getVehiclesNeedingMaintenance,
+  formatKm,
+  type VehicleMaintenanceStatus,
+} from "../../utils/maintenanceReminder";
 
 import { useSalesRepo } from "../../hooks/useSalesRepository";
 import { usePartsRepo } from "../../hooks/usePartsRepository";
@@ -292,6 +298,21 @@ const Dashboard: React.FC = () => {
       return sum + stock * price;
     }, 0);
   }, [parts, currentBranchId]);
+
+  // Vehicles needing maintenance
+  const vehiclesNeedingMaintenance = useMemo(() => {
+    return getVehiclesNeedingMaintenance(customers);
+  }, [customers]);
+
+  const maintenanceStats = useMemo(() => {
+    const overdue = vehiclesNeedingMaintenance.filter(
+      (v) => v.hasOverdue
+    ).length;
+    const dueSoon = vehiclesNeedingMaintenance.filter(
+      (v) => v.hasDueSoon && !v.hasOverdue
+    ).length;
+    return { overdue, dueSoon, total: vehiclesNeedingMaintenance.length };
+  }, [vehiclesNeedingMaintenance]);
 
   const handleLoadDemo = () => {
     loadDemoData();
@@ -983,6 +1004,87 @@ const Dashboard: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Xe cần bảo dưỡng */}
+      {vehiclesNeedingMaintenance.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <Car className="w-5 h-5 text-orange-500" /> Xe cần bảo dưỡng
+            </h3>
+            <div className="flex items-center gap-2">
+              {maintenanceStats.overdue > 0 && (
+                <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-full">
+                  {maintenanceStats.overdue} quá hạn
+                </span>
+              )}
+              {maintenanceStats.dueSoon > 0 && (
+                <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full">
+                  {maintenanceStats.dueSoon} sắp đến hạn
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {vehiclesNeedingMaintenance.slice(0, 10).map((item, idx) => (
+              <div
+                key={`${item.vehicle.id}-${idx}`}
+                className={`p-3 rounded-lg border ${
+                  item.hasOverdue
+                    ? "bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800"
+                    : "bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800"
+                }`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <div className="font-medium text-slate-900 dark:text-white">
+                      {item.vehicle.licensePlate}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      {item.vehicle.model} • {item.customer?.name} •{" "}
+                      {item.customer?.phone}
+                    </div>
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    {item.vehicle.currentKm
+                      ? formatKm(item.vehicle.currentKm)
+                      : "Chưa có km"}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {item.warnings.map((warning) => (
+                    <span
+                      key={warning.type}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
+                        warning.isOverdue
+                          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                      }`}
+                    >
+                      {warning.icon} {warning.name}
+                      <span className="opacity-75">
+                        {warning.isOverdue
+                          ? `(+${formatKm(Math.abs(warning.kmUntilDue))})`
+                          : `(còn ${formatKm(warning.kmUntilDue)})`}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          {vehiclesNeedingMaintenance.length > 10 && (
+            <div className="mt-3 text-center">
+              <Link
+                to="/customers"
+                className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
+              >
+                Xem thêm {vehiclesNeedingMaintenance.length - 10} xe khác →
+              </Link>
+            </div>
+          )}
         </div>
       )}
 

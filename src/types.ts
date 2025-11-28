@@ -6,11 +6,26 @@ export interface UserSession {
 }
 
 // Domain Types (subset adapted from original repo for standalone needs)
+
+// Thông tin bảo dưỡng gần nhất của xe
+export interface MaintenanceRecord {
+  km: number; // Số km tại thời điểm bảo dưỡng
+  date: string; // Ngày bảo dưỡng (ISO string)
+}
+
+export interface VehicleMaintenances {
+  oilChange?: MaintenanceRecord; // Thay nhớt máy (chu kỳ 1,000-1,500 km)
+  gearboxOil?: MaintenanceRecord; // Thay nhớt hộp số (chu kỳ 5,000 km)
+  throttleClean?: MaintenanceRecord; // Vệ sinh kim phun, họng ga, nồi (chu kỳ 20,000 km)
+}
+
 export interface Vehicle {
   id: string;
   model: string; // Dòng xe: Exciter, Wave, SH...
   licensePlate: string; // Biển số
   isPrimary?: boolean; // Xe chính (mặc định)
+  currentKm?: number; // Số km hiện tại (cập nhật mỗi lần vào xưởng)
+  lastMaintenances?: VehicleMaintenances; // Lịch sử bảo dưỡng gần nhất
 }
 
 export interface Customer {
@@ -109,6 +124,7 @@ export interface WorkOrder {
   vehicleModel?: string;
   licensePlate?: string;
   vehicleId?: string; // NEW: Link to specific vehicle from customer.vehicles[]
+  currentKm?: number; // Số km hiện tại tại thời điểm tạo phiếu
   issueDescription?: string;
   technicianName?: string;
   status: "Tiếp nhận" | "Đang sửa" | "Đã sửa xong" | "Trả máy";

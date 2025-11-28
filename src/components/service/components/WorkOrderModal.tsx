@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+﻿import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Check,
@@ -151,9 +151,10 @@ const WorkOrderModal: React.FC<{
       vehicleModel: order?.vehicleModel || "",
       licensePlate: order?.licensePlate || "",
       vehicleId: order?.vehicleId || "",
+      currentKm: order?.currentKm || undefined,
       issueDescription: order?.issueDescription || "",
       technicianName: order?.technicianName || "",
-      status: order?.status || "Ti�p nh�n",
+      status: order?.status || "Tiếp nhận",
       laborCost: order?.laborCost || 0,
       discount: order?.discount || 0,
       partsUsed: order?.partsUsed || [],
@@ -272,10 +273,12 @@ const WorkOrderModal: React.FC<{
       return customers.slice(0, 10); // Limit to first 10 for performance
     }
 
+    const q = customerSearch.toLowerCase();
     return customers.filter(
       (c) =>
-        c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
-        c.phone?.toLowerCase().includes(customerSearch.toLowerCase())
+        c.name.toLowerCase().includes(q) ||
+        c.phone?.toLowerCase().includes(q) ||
+        (c.vehicles && c.vehicles.some((v: any) => v.licensePlate?.toLowerCase().includes(q)))
     );
   }, [customers, customerSearch]);
 
@@ -1850,8 +1853,7 @@ const WorkOrderModal: React.FC<{
                 </label>
                 <input
                   type="number"
-                  placeholder="15000"
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  placeholder="15000"`n                  value={formData.currentKm || ""}`n                  onChange={(e) =>`n                    setFormData({`n                      ...formData,`n                      currentKm: e.target.value`n                        ? parseInt(e.target.value)`n                        : undefined,`n                    })`n                  }`n                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 />
               </div>
 

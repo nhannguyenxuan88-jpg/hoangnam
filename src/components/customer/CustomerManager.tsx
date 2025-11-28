@@ -443,7 +443,12 @@ const CustomerManager: React.FC = () => {
     const q = search.toLowerCase();
     let result = customers.filter(
       (c) =>
-        c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q))
+        c.name.toLowerCase().includes(q) ||
+        (c.phone && c.phone.includes(q)) ||
+        (c.vehicles &&
+          c.vehicles.some((v: any) =>
+            v.licensePlate?.toLowerCase().includes(q)
+          ))
     );
 
     // Apply segment filter
