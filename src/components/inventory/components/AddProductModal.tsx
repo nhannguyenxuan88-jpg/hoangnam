@@ -10,6 +10,7 @@ export interface AddProductModalProps {
   onSave: (productData: {
     name: string;
     description: string;
+    barcode: string;
     category: string;
     quantity: number;
     importPrice: number;
@@ -24,6 +25,7 @@ const AddProductModal: React.FC<{
   onSave: (productData: {
     name: string;
     description: string;
+    barcode: string;
     category: string;
     quantity: number;
     importPrice: number;
@@ -34,6 +36,7 @@ const AddProductModal: React.FC<{
 }> = ({ isOpen, onClose, onSave }) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [barcode, setBarcode] = useState("");
   const [category, setCategory] = useState("");
   const [quantity, setQuantity] = useState<number>(1);
   const [importPrice, setImportPrice] = useState<number>(0);
@@ -55,6 +58,7 @@ const AddProductModal: React.FC<{
     onSave({
       name: name.trim(),
       description: description.trim(),
+      barcode: barcode.trim(),
       category: category || "Ch�a ph�n lo�i",
       quantity: Number(quantity) || 1,
       importPrice: Number(importPrice) || 0,
@@ -66,6 +70,7 @@ const AddProductModal: React.FC<{
     // Reset form
     setName("");
     setDescription("");
+    setBarcode("");
     setCategory("");
     setQuantity(1);
     setImportPrice(0);
@@ -122,6 +127,23 @@ const AddProductModal: React.FC<{
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 placeholder="M� t� s�n ph�m"
               />
+            </div>
+
+            {/* M� v�ch (Barcode) */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Mã vạch (Barcode)
+              </label>
+              <input
+                type="text"
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                placeholder="Ví dụ: 06455-KYJ-841 (Honda), 5S9-F2101-00 (Yamaha)"
+                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 font-mono"
+              />
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Nhập mã vạch từ bao bì gốc của hãng để quét nhanh khi bán hàng
+              </p>
             </div>
 
             {/* Danh m�c s�n ph�m */}

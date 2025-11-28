@@ -228,6 +228,7 @@ const GoodsReceiptModal: React.FC<{
         const createRes = await createPartMutation.mutateAsync({
           name: productData.name,
           sku: `SKU-${Date.now()}`,
+          barcode: productData.barcode || "",
           category: productData.category,
           description: productData.description,
           stock: { [currentBranchId]: productData.quantity },
