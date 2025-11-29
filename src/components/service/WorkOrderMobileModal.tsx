@@ -877,6 +877,11 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                             <div className="text-white text-xs font-medium">
                               {index + 1}. {part.partName}
                             </div>
+                            {part.sku && (
+                              <div className="text-[10px] text-slate-500 font-mono">
+                                SKU: {part.sku}
+                              </div>
+                            )}
                             <div className="text-xs text-slate-400">
                               {formatCurrency(part.sellingPrice)} / cái
                             </div>
@@ -887,7 +892,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                         </div>
 
                         {/* Quantity Controls */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-end">
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() =>

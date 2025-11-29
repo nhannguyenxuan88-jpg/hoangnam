@@ -3500,12 +3500,9 @@ const SalesManager: React.FC = () => {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() =>
-                              updateCartQuantity(
-                                item.partId,
-                                Math.max(1, item.quantity - 1)
-                              )
+                              updateCartQuantity(item.partId, item.quantity - 1)
                             }
-                            className="w-7 h-7 flex items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all font-bold text-base"
+                            className="w-7 h-7 flex items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-md text-slate-700 dark:text-slate-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 transition-all font-bold text-base"
                           >
                             -
                           </button>
@@ -3519,12 +3516,6 @@ const SalesManager: React.FC = () => {
                             className="w-7 h-7 flex items-center justify-center bg-blue-500 dark:bg-blue-600 rounded-md text-white hover:bg-blue-600 dark:hover:bg-blue-700 transition-all font-bold text-base"
                           >
                             +
-                          </button>
-                          <button
-                            onClick={() => removeFromCart(item.partId)}
-                            className="w-7 h-7 flex items-center justify-center bg-red-500 hover:bg-red-600 rounded-md text-white transition-all ml-0.5 font-bold text-base"
-                          >
-                            ×
                           </button>
                         </div>
                       </div>
@@ -3554,12 +3545,9 @@ const SalesManager: React.FC = () => {
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <button
                           onClick={() =>
-                            updateCartQuantity(
-                              item.partId,
-                              Math.max(1, item.quantity - 1)
-                            )
+                            updateCartQuantity(item.partId, item.quantity - 1)
                           }
-                          className="w-8 h-8 flex items-center justify-center bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:from-slate-200 hover:to-slate-300 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all shadow-sm hover:shadow-md font-bold"
+                          className="w-8 h-8 flex items-center justify-center bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 rounded-lg text-slate-700 dark:text-slate-300 hover:from-red-100 hover:to-red-200 dark:hover:from-red-900/30 dark:hover:to-red-800/30 hover:text-red-500 transition-all shadow-sm hover:shadow-md font-bold"
                         >
                           -
                         </button>
@@ -3573,12 +3561,6 @@ const SalesManager: React.FC = () => {
                           className="w-8 h-8 flex items-center justify-center bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-600 dark:to-indigo-600 rounded-lg text-white hover:from-blue-600 hover:to-indigo-600 dark:hover:from-blue-700 dark:hover:to-indigo-700 transition-all shadow-md hover:shadow-lg font-bold"
                         >
                           +
-                        </button>
-                        <button
-                          onClick={() => removeFromCart(item.partId)}
-                          className="w-8 h-8 flex items-center justify-center bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 rounded-lg text-white transition-all ml-1 shadow-md hover:shadow-lg font-bold text-lg"
-                        >
-                          ×
                         </button>
                       </div>
                     </div>

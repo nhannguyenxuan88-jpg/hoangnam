@@ -4978,66 +4978,35 @@ const InventoryManager: React.FC = () => {
                   {filteredParts.map((part, index) => {
                     const stock = part.stock[currentBranchId] || 0;
                     const retailPrice = part.retailPrice[currentBranchId] || 0;
-                    const value = stock * retailPrice;
                     const isDuplicate = hasDuplicateSku(part.sku || "");
-                    // Lấy chữ cái đầu của tên sản phẩm để hiển thị khi không có ảnh
-                    const initials = part.name
-                      .split(/[-\s]/)
-                      .slice(0, 2)
-                      .map((word) => word.charAt(0).toUpperCase())
-                      .join("");
                     return (
                       <div
                         key={part.id}
-                        className={`flex items-center gap-3 p-3 rounded-xl bg-[#2d3748] border border-slate-600 transition ${
+                        className={`p-3 rounded-xl bg-[#2d3748] border border-slate-600 transition ${
                           isDuplicate ? "border-l-4 border-l-orange-500" : ""
                         }`}
                         role="listitem"
                       >
-                        <div className="w-14 h-14 bg-slate-600 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
-                          {part.imageUrl ? (
-                            <img
-                              src={part.imageUrl}
-                              alt={part.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div
-                              className="w-full h-full flex items-center justify-center"
-                              style={{
-                                backgroundColor: getCategoryColor(
-                                  part.category
-                                ),
-                              }}
-                            >
-                              <span className="text-lg font-bold text-white/90">
-                                {initials || (
-                                  <Package className="w-6 h-6 text-white opacity-90" />
-                                )}
-                              </span>
-                            </div>
-                          )}
-                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              {/* Tên sản phẩm: cho phép 2 dòng thay vì truncate 1 dòng */}
-                              <div className="text-[15px] font-medium text-white line-clamp-2 leading-tight">
+                              {/* Tên sản phẩm: hiển thị đầy đủ */}
+                              <div className="text-[15px] font-medium text-white leading-tight">
                                 {part.name}
                               </div>
                               <div className="text-[12px] text-slate-400 mt-1 truncate">
-                                SKU: {part.sku} • {part.category}
+                                SKU: {part.sku}
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0">
-                              {/* Sửa lỗi format giá bị lặp đơn vị ₫ */}
-                              <div className="text-[13px] text-slate-300 font-medium">
-                                {formatCurrency(value)}
+                              {/* Hiển thị giá bán */}
+                              <div className="text-[13px] text-emerald-400 font-semibold">
+                                {formatCurrency(retailPrice)}
                               </div>
                             </div>
                           </div>
                           <div className="mt-2 flex items-center justify-between">
-                            {/* Cải thiện badge số lượng với icon và text rõ hơn */}
+                            {/* Badge số lượng tồn kho */}
                             <span
                               className={`inline-flex items-center gap-1 px-2.5 py-1 text-sm font-bold rounded-lg ${
                                 stock === 0
