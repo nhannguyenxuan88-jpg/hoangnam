@@ -540,6 +540,12 @@ export default function ServiceManager() {
   const createCustomerDebt = useCreateCustomerDebtRepo();
   const updateCustomerDebt = useUpdateCustomerDebtRepo();
 
+  // 🔹 Handle create/update work orders (for mobile)
+  const { mutateAsync: createWorkOrderAtomicAsync } =
+    useCreateWorkOrderAtomicRepo();
+  const { mutateAsync: updateWorkOrderAtomicAsync } =
+    useUpdateWorkOrderAtomicRepo();
+
   // 🔹 Handle Mobile Save - Similar to desktop handleSave
   const handleMobileSave = async (workOrderData: any) => {
     try {
