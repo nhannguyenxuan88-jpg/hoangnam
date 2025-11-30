@@ -22,6 +22,8 @@ import {
   ScanLine,
   History,
   Plus,
+  Share2,
+  Download,
 } from "lucide-react";
 import { useAppContext } from "../../contexts/AppContext";
 import { usePartsRepo } from "../../hooks/usePartsRepository";
@@ -976,6 +978,10 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
   const [dropdownOpenSaleId, setDropdownOpenSaleId] = useState<string | null>(
     null
   );
+  const [salesDropdownPos, setSalesDropdownPos] = useState({
+    top: 0,
+    right: 0,
+  });
 
   // Compute date range when filter changes
   useEffect(() => {
@@ -1593,13 +1599,19 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
                             </button>
                             <div className="relative dropdown-menu-container">
                               <button
-                                onClick={() =>
+                                onClick={(e) => {
+                                  const rect =
+                                    e.currentTarget.getBoundingClientRect();
+                                  setSalesDropdownPos({
+                                    top: rect.bottom + 4,
+                                    right: window.innerWidth - rect.right,
+                                  });
                                   setDropdownOpenSaleId(
                                     dropdownOpenSaleId === sale.id
                                       ? null
                                       : sale.id
-                                  )
-                                }
+                                  );
+                                }}
                                 className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                                 title="Tùy chọn"
                               >
@@ -1614,13 +1626,19 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
                                 </svg>
                               </button>
                               {dropdownOpenSaleId === sale.id && (
-                                <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-50">
+                                <div
+                                  className="fixed w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-[9999]"
+                                  style={{
+                                    top: salesDropdownPos.top,
+                                    right: salesDropdownPos.right,
+                                  }}
+                                >
                                   <button
                                     onClick={() => {
                                       onPrintReceipt(sale);
                                       setDropdownOpenSaleId(null);
                                     }}
-                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2 rounded-t-lg"
+                                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2 rounded-t-lg"
                                   >
                                     <svg
                                       className="w-4 h-4"
@@ -1643,7 +1661,7 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
                                       setShowDetailModal(true);
                                       setDropdownOpenSaleId(null);
                                     }}
-                                    className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
+                                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2"
                                   >
                                     <svg
                                       className="w-4 h-4"
@@ -1673,7 +1691,7 @@ const SalesHistoryModal: React.FC<SalesHistoryModalProps> = ({
                                       }
                                       setDropdownOpenSaleId(null);
                                     }}
-                                    className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 rounded-b-lg"
+                                    className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 rounded-b-lg"
                                   >
                                     <svg
                                       className="w-4 h-4"
@@ -2630,6 +2648,65 @@ const SalesManager: React.FC = () => {
   const handlePrintReceipt = (sale: Sale) => {
     setPrintSale(sale);
     setShowPrintPreview(true);
+  };
+
+  // Ref for invoice preview content
+  const invoicePreviewRef = useRef<HTMLDivElement>(null);
+
+  // Handle share invoice as image
+  const handleShareInvoice = async () => {
+    if (!invoicePreviewRef.current || !printSale) return;
+
+    try {
+      showToast.info("Đang tạo hình ảnh...");
+      
+      // Dynamic import html2canvas
+      const html2canvas = (await import("html2canvas")).default;
+      
+      const canvas = await html2canvas(invoicePreviewRef.current, {
+        backgroundColor: "#ffffff",
+        scale: 2, // Higher quality
+        useCORS: true,
+        allowTaint: true,
+      });
+
+      // Convert to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((b) => resolve(b!), "image/png", 1.0);
+      });
+
+      const fileName = `hoa-don-${printSale.sale_code || formatAnyId(printSale.id) || printSale.id}.png`;
+
+      // Check if Web Share API is available and supports files
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], fileName, { type: "image/png" });
+        const shareData = { files: [file] };
+        
+        if (navigator.canShare(shareData)) {
+          await navigator.share({
+            files: [file],
+            title: "Hóa đơn bán hàng",
+            text: `Hóa đơn ${printSale.sale_code || formatAnyId(printSale.id)}`,
+          });
+          showToast.success("Đã chia sẻ hóa đơn!");
+          return;
+        }
+      }
+
+      // Fallback: Download image
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast.success("Đã tải xuống hình ảnh hóa đơn!");
+    } catch (error) {
+      console.error("Share error:", error);
+      showToast.error("Không thể chia sẻ hóa đơn");
+    }
   };
 
   // Handle actual print after preview
@@ -4252,91 +4329,161 @@ const SalesManager: React.FC = () => {
               boxSizing: "border-box",
             }}
           >
-            {/* Header with Logo */}
+            {/* Header - Logo bên trái, thông tin bên phải */}
             <div
               style={{
-                textAlign: "center",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "15px",
                 marginBottom: "20px",
                 borderBottom: "2px solid #333",
                 paddingBottom: "15px",
               }}
             >
+              {/* Logo bên trái */}
               <img
-                src="https://raw.githubusercontent.com/Nhan-Lam-SmartCare/Motocare/main/public/logo.png"
-                alt="Nhận-Lâm SmartCare"
+                src={
+                  storeSettings?.logo_url ||
+                  "https://raw.githubusercontent.com/Nhan-Lam-SmartCare/Motocare/main/public/logo.png"
+                }
+                alt="Logo"
                 style={{
-                  width: "120px",
-                  height: "120px",
-                  margin: "0 auto 10px",
-                  display: "block",
+                  width: "60px",
+                  height: "60px",
+                  objectFit: "contain",
+                  flexShrink: 0,
                 }}
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                 }}
               />
-              <h1
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                  margin: "0 0 8px 0",
-                  color: "#c92a2a",
-                }}
-              >
-                Nhận-Lâm SmartCare
-              </h1>
-              <div style={{ fontSize: "11px", lineHeight: "1.6" }}>
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-4 h-4" aria-hidden="true" />
-                  <span>
-                    Địa chỉ: 4p Phú Lợi B, Phú Thuận B, Hồng Ngự, Đồng Tháp
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="w-4 h-4"
+              {/* Thông tin cửa hàng bên phải */}
+              <div style={{ flex: 1 }}>
+                <h1
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "bold",
+                    margin: "0 0 5px 0",
+                    color: "#1e40af",
+                  }}
+                >
+                  {storeSettings?.store_name || "Nhạn-Lâm SmartCare"}
+                </h1>
+                <div style={{ fontSize: "11px", lineHeight: "1.5" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "4px",
+                    }}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M2.25 6.75c0 8.284 6.716 15 15 15 .828 0 1.5-.672 1.5-1.5v-2.25a1.5 1.5 0 00-1.5-1.5h-1.158a1.5 1.5 0 00-1.092.468l-.936.996a1.5 1.5 0 01-1.392.444 12.035 12.035 0 01-7.29-7.29 1.5 1.5 0 01.444-1.392l.996-.936a1.5 1.5 0 00.468-1.092V6.75A1.5 1.5 0 006.75 5.25H4.5c-.828 0-1.5.672-1.5 1.5z"
-                    />
-                  </svg>
-                  <span>Điện thoại: 0947747907</span>
+                    <svg
+                      style={{
+                        width: "12px",
+                        height: "12px",
+                        flexShrink: 0,
+                        marginTop: "2px",
+                      }}
+                      viewBox="0 0 24 24"
+                      fill="#ef4444"
+                    >
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                    </svg>
+                    <span>
+                      {storeSettings?.address ||
+                        "Ấp Phú Lợi B, Phú Thuận B, Hồng Ngự, Đồng Tháp"}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    <svg
+                      style={{ width: "12px", height: "12px", flexShrink: 0 }}
+                      viewBox="0 0 24 24"
+                      fill="#16a34a"
+                    >
+                      <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+                    </svg>
+                    <span>{storeSettings?.phone || "0947-747-907"}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Bank Info Box */}
-            <div
-              style={{
-                backgroundColor: "#f8f9fa",
-                border: "1px solid #dee2e6",
-                borderRadius: "6px",
-                padding: "10px 12px",
-                marginBottom: "20px",
-                fontSize: "11px",
-              }}
-            >
-              <div style={{ fontWeight: "bold", marginBottom: "6px" }}>
-                💳 Thông tin chuyển khoản:
+            {/* Bank Info Section - giống ServiceManager: info bên trái, QR bên phải */}
+            {storeSettings?.bank_name && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "12px",
+                  backgroundColor: "#f0f9ff",
+                  border: "1px solid #dee2e6",
+                  borderRadius: "6px",
+                  padding: "10px 12px",
+                  marginBottom: "20px",
+                  fontSize: "11px",
+                }}
+              >
+                {/* Thông tin ngân hàng bên trái */}
+                <div style={{ flex: 1, lineHeight: "1.5" }}>
+                  <div
+                    style={{
+                      fontWeight: "bold",
+                      marginBottom: "3px",
+                      color: "#1e40af",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
+                    <svg
+                      style={{ width: "12px", height: "12px", flexShrink: 0 }}
+                      viewBox="0 0 24 24"
+                      fill="#0891b2"
+                    >
+                      <path d="M4 10h3v7H4zm6.5 0h3v7h-3zM2 19h20v3H2zm15-9h3v7h-3zm-5-9L2 6v2h20V6z" />
+                    </svg>
+                    <span>Thông tin chuyển khoản:</span>
+                  </div>
+                  <div>
+                    • Ngân hàng: <strong>{storeSettings.bank_name}</strong>
+                  </div>
+                  {storeSettings.bank_account_number && (
+                    <div>
+                      • Số tài khoản:{" "}
+                      <strong style={{ color: "#2563eb" }}>
+                        {storeSettings.bank_account_number}
+                      </strong>
+                    </div>
+                  )}
+                  {storeSettings.bank_account_holder && (
+                    <div>
+                      • Chủ tài khoản:{" "}
+                      <strong>{storeSettings.bank_account_holder}</strong>
+                    </div>
+                  )}
+                </div>
+                {/* QR Code bên phải */}
+                {storeSettings.bank_qr_url && (
+                  <div style={{ flexShrink: 0 }}>
+                    <img
+                      src={storeSettings.bank_qr_url}
+                      alt="QR Banking"
+                      style={{
+                        width: "50px",
+                        height: "50px",
+                        objectFit: "contain",
+                      }}
+                    />
+                  </div>
+                )}
               </div>
-              <div style={{ lineHeight: "1.6" }}>
-                <div>
-                  • Ngân hàng: <strong>NH Liên Việt (LPBank)</strong>
-                </div>
-                <div>
-                  • Số tài khoản: <strong>LAMVOT</strong>
-                </div>
-                <div>
-                  • Chủ tài khoản: <strong>VO THANH LAM</strong>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Invoice Title */}
             <div
@@ -4822,7 +4969,15 @@ const SalesManager: React.FC = () => {
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
                 Xem trước hóa đơn
               </h2>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleShareInvoice}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center gap-2 transition"
+                  title="Chia sẻ / Tải ảnh"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Chia sẻ
+                </button>
                 <button
                   onClick={handleDoPrint}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 transition"
@@ -4859,53 +5014,97 @@ const SalesManager: React.FC = () => {
             {/* Print Preview Content */}
             <div className="flex-1 overflow-y-auto p-6 bg-slate-100 dark:bg-slate-900">
               <div
+                ref={invoicePreviewRef}
                 className="bg-white shadow-lg mx-auto"
                 style={{ width: "80mm", minHeight: "100mm", color: "#000" }}
               >
                 <div style={{ padding: "5mm" }}>
-                  {/* Store Info Header - Compact for Receipt */}
+                  {/* Store Info Header - Logo bên trái, thông tin bên phải */}
                   <div
                     style={{
                       borderBottom: "2px solid #3b82f6",
                       paddingBottom: "2mm",
                       marginBottom: "3mm",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "3mm",
                     }}
                   >
-                    <div style={{ textAlign: "center" }}>
-                      {storeSettings?.logo_url && (
-                        <img
-                          src={storeSettings.logo_url}
-                          alt="Logo"
-                          style={{
-                            height: "12mm",
-                            width: "auto",
-                            objectFit: "contain",
-                            margin: "0 auto 2mm",
-                          }}
-                        />
-                      )}
+                    {/* Logo bên trái */}
+                    {storeSettings?.logo_url && (
+                      <img
+                        src={storeSettings.logo_url}
+                        alt="Logo"
+                        style={{
+                          height: "14mm",
+                          width: "14mm",
+                          objectFit: "contain",
+                          flexShrink: 0,
+                        }}
+                      />
+                    )}
+                    {/* Thông tin bên phải */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div
                         style={{
                           fontWeight: "bold",
-                          fontSize: "11pt",
+                          fontSize: "10pt",
                           color: "#1e40af",
+                          marginBottom: "1mm",
                         }}
                       >
                         {storeSettings?.store_name || "Nhạn Lâm SmartCare"}
                       </div>
-                      <div
-                        style={{
-                          fontSize: "8pt",
-                          color: "#000",
-                          marginTop: "1mm",
-                        }}
-                      >
-                        {storeSettings?.address &&
-                          `📍 ${storeSettings.address}`}
-                      </div>
-                      <div style={{ fontSize: "8pt", color: "#000" }}>
-                        {storeSettings?.phone && `📞 ${storeSettings.phone}`}
-                      </div>
+                      {storeSettings?.address && (
+                        <div
+                          style={{
+                            fontSize: "7pt",
+                            color: "#000",
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: "1mm",
+                            lineHeight: "1.3",
+                          }}
+                        >
+                          <svg
+                            style={{
+                              width: "8px",
+                              height: "8px",
+                              flexShrink: 0,
+                              marginTop: "1px",
+                            }}
+                            viewBox="0 0 24 24"
+                            fill="#ef4444"
+                          >
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                          </svg>
+                          <span>{storeSettings.address}</span>
+                        </div>
+                      )}
+                      {storeSettings?.phone && (
+                        <div
+                          style={{
+                            fontSize: "7pt",
+                            color: "#000",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "1mm",
+                          }}
+                        >
+                          <svg
+                            style={{
+                              width: "8px",
+                              height: "8px",
+                              flexShrink: 0,
+                            }}
+                            viewBox="0 0 24 24"
+                            fill="#16a34a"
+                          >
+                            <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+                          </svg>
+                          <span>{storeSettings.phone}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -5095,42 +5294,63 @@ const SalesManager: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Bank Info */}
+                  {/* Bank Info Section - giống ServiceManager */}
                   {storeSettings?.bank_name && (
                     <div
                       style={{
-                        borderTop: "1px dashed #999",
-                        paddingTop: "2mm",
-                        marginBottom: "3mm",
+                        marginTop: "2mm",
+                        border: "1px solid #ddd",
+                        padding: "2mm",
+                        borderRadius: "2mm",
+                        backgroundColor: "#f0f9ff",
                         fontSize: "7.5pt",
-                        textAlign: "center",
                       }}
                     >
-                      <div style={{ fontWeight: "bold", marginBottom: "1mm" }}>
-                        Chuyển khoản: {storeSettings.bank_name}
-                      </div>
-                      {storeSettings.bank_account_number && (
-                        <div>STK: {storeSettings.bank_account_number}</div>
-                      )}
-                      {storeSettings.bank_account_holder && (
-                        <div style={{ fontSize: "7pt" }}>
-                          {storeSettings.bank_account_holder}
-                        </div>
-                      )}
-                      {storeSettings.bank_qr_url && (
-                        <div style={{ marginTop: "2mm" }}>
-                          <img
-                            src={storeSettings.bank_qr_url}
-                            alt="QR Banking"
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: "2mm",
+                        }}
+                      >
+                        {/* Thông tin ngân hàng bên trái */}
+                        <div style={{ flex: 1 }}>
+                          <div
                             style={{
-                              height: "20mm",
-                              width: "20mm",
-                              objectFit: "contain",
-                              margin: "0 auto",
+                              fontWeight: "bold",
+                              marginBottom: "1mm",
+                              color: "#1e40af",
+                              fontSize: "8pt",
                             }}
-                          />
+                          >
+                            Chuyển khoản: {storeSettings.bank_name}
+                          </div>
+                          {storeSettings.bank_account_number && (
+                            <div
+                              style={{ color: "#2563eb", fontWeight: "bold" }}
+                            >
+                              STK: {storeSettings.bank_account_number}
+                            </div>
+                          )}
+                          {storeSettings.bank_account_holder && (
+                            <div>{storeSettings.bank_account_holder}</div>
+                          )}
                         </div>
-                      )}
+                        {/* QR Code bên phải */}
+                        {storeSettings.bank_qr_url && (
+                          <div style={{ flexShrink: 0 }}>
+                            <img
+                              src={storeSettings.bank_qr_url}
+                              alt="QR Banking"
+                              style={{
+                                height: "18mm",
+                                width: "18mm",
+                                objectFit: "contain",
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 

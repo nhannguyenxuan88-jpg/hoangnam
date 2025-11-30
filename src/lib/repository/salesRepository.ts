@@ -265,13 +265,22 @@ export async function createSaleAtomic(
     if (!input.id)
       return failure({ code: "validation", message: "Thiếu ID hóa đơn" });
 
+    // Validate userId is a valid UUID or null
+    const validUserId =
+      input.userId &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        input.userId
+      )
+        ? input.userId
+        : null;
+
     const payload = {
       p_sale_id: input.id,
       p_items: input.items as any,
       p_discount: input.discount ?? 0,
       p_customer: input.customer ?? { name: "Khách lẻ" },
       p_payment_method: input.paymentMethod,
-      p_user_id: input.userId || "unknown",
+      p_user_id: validUserId,
       p_user_name: input.userName || "Unknown",
       p_branch_id: input.branchId || "CN1",
     } as any;

@@ -61,6 +61,7 @@ export interface Part {
   barcode?: string; // Mã vạch của hãng (Honda: 06455-KYJ-841, Yamaha: 5S9-F2101-00)
   // Stock & pricing are branch-mapped for multi-branch future extension
   stock: { [branchId: string]: number };
+  reservedStock?: { [branchId: string]: number }; // Số lượng đặt trước cho phiếu sửa chữa chưa thanh toán
   retailPrice: { [branchId: string]: number };
   wholesalePrice?: { [branchId: string]: number };
   category?: string;
@@ -70,6 +71,15 @@ export interface Part {
   costPrice?: { [branchId: string]: number };
   vatRate?: number; // e.g. 0.1 for 10%
   created_at?: string;
+}
+
+/** Thông tin cảnh báo tồn kho khi tạo/cập nhật phiếu sửa chữa */
+export interface StockWarning {
+  partId: string;
+  partName: string;
+  requested: number;
+  available: number;
+  shortage: number;
 }
 
 // Product Category entity (normalized instead of deriving from parts)

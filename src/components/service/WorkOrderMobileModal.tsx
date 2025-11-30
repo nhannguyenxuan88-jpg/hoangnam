@@ -162,11 +162,22 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
       }
       // Nếu đang edit và có initialCustomer, ẩn form tìm kiếm
       setShowCustomerSearch(!initialCustomer);
+
+      // Sync deposit amount từ workOrder (để hiển thị số tiền đã đặt cọc)
+      if (workOrder.depositAmount && workOrder.depositAmount > 0) {
+        setDepositAmount(workOrder.depositAmount);
+        setIsDeposit(true);
+      } else {
+        setDepositAmount(0);
+        setIsDeposit(false);
+      }
     } else {
       setSelectedCustomer(null);
       setSelectedVehicle(null);
       setCurrentKm("");
       setShowCustomerSearch(true);
+      setDepositAmount(0);
+      setIsDeposit(false);
     }
   }, [workOrder, initialCustomer, initialVehicle]);
 

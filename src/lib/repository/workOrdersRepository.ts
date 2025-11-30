@@ -1,5 +1,5 @@
 import { supabase } from "../../supabaseClient";
-import type { WorkOrder } from "../../types";
+import type { WorkOrder, StockWarning } from "../../types";
 import { RepoResult, success, failure } from "./types";
 import { safeAudit } from "./auditLogsRepository";
 
@@ -77,6 +77,8 @@ export async function createWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
       depositTransactionId?: string;
       paymentTransactionId?: string;
       inventoryTxCount?: number;
+      stockWarnings?: StockWarning[];
+      inventoryDeducted?: boolean;
     }
   >
 > {
@@ -221,6 +223,12 @@ export async function createWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
     const inventoryTxCount = (data as any).inventoryTxCount as
       | number
       | undefined;
+    const stockWarnings = (data as any).stockWarnings as
+      | StockWarning[]
+      | undefined;
+    const inventoryDeducted = (data as any).inventoryDeducted as
+      | boolean
+      | undefined;
 
     // Accept either workOrder object OR orderId from RPC
     if (!workOrderRow && !orderId) {
@@ -274,6 +282,8 @@ export async function createWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
       depositTransactionId,
       paymentTransactionId,
       inventoryTxCount,
+      stockWarnings,
+      inventoryDeducted,
     });
   } catch (e: any) {
     return failure({
@@ -290,6 +300,7 @@ export async function updateWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
     WorkOrder & {
       depositTransactionId?: string;
       paymentTransactionId?: string;
+      stockWarnings?: StockWarning[];
     }
   >
 > {
@@ -402,6 +413,9 @@ export async function updateWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
     const paymentTransactionId = (data as any).paymentTransactionId as
       | string
       | undefined;
+    const stockWarnings = (data as any).stockWarnings as
+      | StockWarning[]
+      | undefined;
 
     if (!workOrderRow) {
       return failure({ code: "unknown", message: "Kết quả RPC không hợp lệ" });
@@ -425,6 +439,7 @@ export async function updateWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
       ...(workOrderRow as any),
       depositTransactionId,
       paymentTransactionId,
+      stockWarnings,
     });
   } catch (e: any) {
     return failure({
@@ -608,6 +623,141 @@ export async function refundWorkOrder(
     return failure({
       code: "network",
       message: "Lỗi kết nối khi hoàn tiền",
+      cause: e,
+    });
+  }
+}
+
+/**
+ * Thanh toán phiếu sửa chữa và trừ kho khi đã thanh toán đủ
+ * @param orderId - ID phiếu sửa chữa
+ * @param paymentMethod - Phương thức thanh toán (cash, transfer, card)
+ * @param paymentAmount - Số tiền thanh toán
+ */
+export async function completeWorkOrderPayment(
+  orderId: string,
+  paymentMethod: string,
+  paymentAmount: number
+): Promise<
+  RepoResult<
+    WorkOrder & {
+      paymentTransactionId?: string;
+      newPaymentStatus?: string;
+      inventoryDeducted?: boolean;
+    }
+  >
+> {
+  try {
+    let userId: string | null = null;
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      userId = userData?.user?.id || null;
+    } catch {}
+
+    const { data, error } = await supabase.rpc("work_order_complete_payment", {
+      p_order_id: orderId,
+      p_payment_method: paymentMethod,
+      p_payment_amount: paymentAmount,
+      p_user_id: userId || "unknown",
+    });
+
+    if (error || !data) {
+      console.error("[completeWorkOrderPayment] RPC error:", error);
+
+      const rawDetails = error?.details || error?.message || "";
+      const upper = rawDetails.toUpperCase();
+
+      if (upper.includes("INSUFFICIENT_STOCK")) {
+        let items: any[] = [];
+        const colon = rawDetails.indexOf(":");
+        if (colon !== -1) {
+          const jsonStr = rawDetails.slice(colon + 1).trim();
+          try {
+            items = JSON.parse(jsonStr);
+          } catch {}
+        }
+        const list = Array.isArray(items)
+          ? items
+              .map(
+                (d: any) =>
+                  `${d.partName || d.partId || "?"} (còn ${d.available}, cần ${
+                    d.requested
+                  })`
+              )
+              .join(", ")
+          : "";
+        return failure({
+          code: "validation",
+          message: list
+            ? `Thiếu tồn kho: ${list}`
+            : "Tồn kho không đủ để hoàn thành thanh toán",
+          cause: error,
+        });
+      }
+      if (upper.includes("ORDER_NOT_FOUND"))
+        return failure({
+          code: "validation",
+          message: "Không tìm thấy phiếu sửa chữa",
+          cause: error,
+        });
+      if (upper.includes("ORDER_REFUNDED"))
+        return failure({
+          code: "validation",
+          message: "Phiếu này đã được hoàn tiền",
+          cause: error,
+        });
+      if (upper.includes("UNAUTHORIZED"))
+        return failure({
+          code: "supabase",
+          message: "Bạn không có quyền thanh toán",
+          cause: error,
+        });
+      if (upper.includes("BRANCH_MISMATCH"))
+        return failure({
+          code: "validation",
+          message: "Chi nhánh không khớp với quyền hiện tại",
+          cause: error,
+        });
+      return failure({
+        code: "supabase",
+        message: `Thanh toán thất bại: ${error?.message || "Unknown error"}`,
+        cause: error,
+      });
+    }
+
+    const workOrderRow = (data as any).workOrder as WorkOrder | undefined;
+    const paymentTransactionId = (data as any).paymentTransactionId as
+      | string
+      | undefined;
+    const newPaymentStatus = (data as any).newPaymentStatus as
+      | string
+      | undefined;
+    const inventoryDeducted = (data as any).inventoryDeducted as
+      | boolean
+      | undefined;
+
+    if (!workOrderRow) {
+      return failure({ code: "unknown", message: "Kết quả RPC không hợp lệ" });
+    }
+
+    await safeAudit(userId, {
+      action: "work_order.payment",
+      tableName: WORK_ORDERS_TABLE,
+      recordId: orderId,
+      oldData: null,
+      newData: workOrderRow,
+    });
+
+    return success({
+      ...normalizeWorkOrder(workOrderRow),
+      paymentTransactionId,
+      newPaymentStatus,
+      inventoryDeducted,
+    });
+  } catch (e: any) {
+    return failure({
+      code: "network",
+      message: "Lỗi kết nối khi thanh toán",
       cause: e,
     });
   }

@@ -4065,6 +4065,10 @@ const InventoryManager: React.FC = () => {
   );
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [openActionRow, setOpenActionRow] = useState<string | null>(null);
+  const [inventoryDropdownPos, setInventoryDropdownPos] = useState({
+    top: 0,
+    right: 0,
+  });
 
   // Generate a color from category string for placeholder avatar
   const getAvatarColor = (name: string) => {
@@ -5080,13 +5084,13 @@ const InventoryManager: React.FC = () => {
                               </button>
 
                               {mobileMenuOpenIndex === index && (
-                                <div className="absolute right-0 mt-2 w-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50">
+                                <div className="absolute right-0 bottom-full mb-2 w-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-[9999]">
                                   <button
                                     onClick={() => {
                                       setEditingPart(part);
                                       setMobileMenuOpenIndex(null);
                                     }}
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-700 flex items-center gap-2 text-white"
+                                    className="w-full text-left px-3 py-2.5 text-sm hover:bg-slate-700 flex items-center gap-2 text-white rounded-t-lg"
                                     aria-label={`Chỉnh sửa ${part.name}`}
                                   >
                                     <Edit className="w-4 h-4 text-blue-400" />
@@ -5097,7 +5101,7 @@ const InventoryManager: React.FC = () => {
                                       handleDeleteItem(part.id);
                                       setMobileMenuOpenIndex(null);
                                     }}
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-700 flex items-center gap-2 text-red-400"
+                                    className="w-full text-left px-3 py-2.5 text-sm hover:bg-slate-700 flex items-center gap-2 text-red-400 rounded-b-lg"
                                     aria-label={`Xóa ${part.name}`}
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -5308,6 +5312,12 @@ const InventoryManager: React.FC = () => {
                                 <button
                                   onClick={(event) => {
                                     event.stopPropagation();
+                                    const rect =
+                                      event.currentTarget.getBoundingClientRect();
+                                    setInventoryDropdownPos({
+                                      top: rect.bottom + 4,
+                                      right: window.innerWidth - rect.right,
+                                    });
                                     setOpenActionRow((prev) =>
                                       prev === part.id ? null : part.id
                                     );
@@ -5321,7 +5331,11 @@ const InventoryManager: React.FC = () => {
                                 </button>
                                 {openActionRow === part.id && (
                                   <div
-                                    className="absolute right-0 top-full z-10 mt-2 w-44 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white shadow-xl dark:bg-slate-800"
+                                    className="fixed w-44 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white shadow-xl dark:bg-slate-800 z-[9999]"
+                                    style={{
+                                      top: inventoryDropdownPos.top,
+                                      right: inventoryDropdownPos.right,
+                                    }}
                                     onClick={(event) => event.stopPropagation()}
                                   >
                                     <button
@@ -5330,7 +5344,7 @@ const InventoryManager: React.FC = () => {
                                         setEditingPart(part);
                                         setOpenActionRow(null);
                                       }}
-                                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-blue-50 dark:hover:bg-slate-700"
+                                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-blue-50 dark:hover:bg-slate-700 rounded-t-xl"
                                     >
                                       <Edit className="h-4 w-4 text-blue-500" />
                                       Chỉnh sửa
@@ -5341,7 +5355,7 @@ const InventoryManager: React.FC = () => {
                                         setOpenActionRow(null);
                                         handleDeleteItem(part.id);
                                       }}
-                                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-red-500 hover:bg-red-50 dark:hover:bg-slate-700/70"
+                                      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-red-500 hover:bg-red-50 dark:hover:bg-slate-700/70 rounded-b-xl"
                                     >
                                       <Trash2 className="h-4 w-4" />
                                       Xóa

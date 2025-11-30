@@ -1,0 +1,82 @@
+-- ============================================================
+-- RESERVED STOCK SYSTEM - Complete Migration
+-- ============================================================
+-- Mục đích: Trừ kho khi thanh toán thay vì khi tạo phiếu
+-- Tính năng: Cảnh báo nếu tồn kho không đủ cho các phiếu đang chờ
+-- ============================================================
+-- Chạy các file SQL theo thứ tự sau trong Supabase SQL Editor:
+-- 
+-- 1. sql/2025-11-29_reserved_stock_schema.sql
+--    - Thêm cột reservedStock vào bảng parts
+--    - Tạo helper functions: mc_available_stock, mc_reserve_stock, mc_release_reserved_stock
+--    - Tạo view parts_available_stock
+--
+-- 2. sql/2025-11-29_work_order_complete_payment.sql
+--    - Thêm cột inventory_deducted vào work_orders
+--    - Tạo function work_order_complete_payment
+--
+-- 3. sql/2025-11-29_work_order_create_v2.sql
+--    - Cập nhật function work_order_create_atomic
+--    - Đặt trước tồn kho thay vì trừ kho ngay
+--
+-- 4. sql/2025-11-29_work_order_update_v2.sql
+--    - Cập nhật function work_order_update_atomic
+--    - Xử lý reserved stock khi thêm/bớt phụ tùng
+--
+-- 5. sql/2025-11-29_work_order_refund_v2.sql
+--    - Cập nhật function work_order_refund_atomic
+--    - Giải phóng reserved stock hoặc hoàn trả tồn kho
+-- ============================================================
+
+-- Quick verification after migration:
+-- SELECT 
+--   p.name,
+--   p.stock->>'CN1' as stock,
+--   p.reservedStock->>'CN1' as reserved,
+--   (COALESCE((p.stock->>'CN1')::int, 0) - COALESCE((p.reservedStock->>'CN1')::int, 0)) as available
+-- FROM parts p
+-- WHERE p.reservedStock IS NOT NULL AND p.reservedStock != '{}'::jsonb;
+
+-- ============================================================
+-- HOW IT WORKS - Quy trình hoạt động
+-- ============================================================
+--
+-- 1. TẠO PHIẾU SỬA CHỮA (chưa thanh toán):
+--    - Phụ tùng được RESERVE (đặt trước) trong reservedStock
+--    - Tồn kho thực (stock) KHÔNG thay đổi
+--    - Nếu tồn kho khả dụng < yêu cầu → Trả về stockWarnings
+--    - Phiếu vẫn được tạo (cho phép đặt hàng thêm)
+--
+-- 2. TẠO PHIẾU SỬA CHỮA (thanh toán ngay):
+--    - Phụ tùng được DEDUCT (trừ) ngay từ stock
+--    - Không cần reserve vì đã thanh toán
+--    - inventory_deducted = TRUE
+--
+-- 3. THANH TOÁN PHIẾU (work_order_complete_payment):
+--    - Nếu inventory_deducted = FALSE và thanh toán đủ:
+--      a. Release reservation (giảm reservedStock)
+--      b. Deduct actual stock (giảm stock)
+--      c. Tạo inventory_transactions (Xuất kho)
+--      d. Set inventory_deducted = TRUE
+--
+-- 4. CẬP NHẬT PHIẾU:
+--    - Nếu chưa thanh toán: Điều chỉnh reservedStock
+--    - Nếu đã thanh toán: Điều chỉnh stock + inventory_transactions
+--
+-- 5. HỦY PHIẾU:
+--    - Nếu chưa thanh toán: Release reservations
+--    - Nếu đã thanh toán: Restore stock + inventory_transactions
+--
+-- ============================================================
+-- AVAILABLE STOCK CALCULATION
+-- ============================================================
+-- Tồn kho khả dụng = stock - reservedStock
+--
+-- Ví dụ:
+-- | Phụ tùng | Stock | Reserved | Available |
+-- |----------|-------|----------|-----------|
+-- | Nhớt 5W30| 10    | 3        | 7         |
+-- | Bugi NGK | 5     | 5        | 0 ⚠️      |
+-- | Lọc gió  | 8     | 2        | 6         |
+--
+-- ============================================================

@@ -209,6 +209,10 @@ export default function ServiceManager() {
   );
   const [activeTab, setActiveTab] = useState<ServiceTabKey>("all");
   const [rowActionMenuId, setRowActionMenuId] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    right: 0,
+  });
 
   // State for print preview modal
   const [printOrder, setPrintOrder] = useState<WorkOrder | null>(null);
@@ -1100,13 +1104,50 @@ export default function ServiceManager() {
                       >
                         {storeSettings?.store_name || "Nhạn Lâm SmartCare"}
                       </div>
-                      <div style={{ color: "#000" }}>
-                        📍{" "}
-                        {storeSettings?.address ||
-                          "Ấp Phú Lợi B, Xã Long Phú Thuận, Đông Tháp"}
+                      <div
+                        style={{
+                          color: "#000",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "1mm",
+                        }}
+                      >
+                        <svg
+                          style={{
+                            width: "10px",
+                            height: "10px",
+                            flexShrink: 0,
+                          }}
+                          viewBox="0 0 24 24"
+                          fill="#ef4444"
+                        >
+                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                        </svg>
+                        <span>
+                          {storeSettings?.address ||
+                            "Ấp Phú Lợi B, Xã Long Phú Thuận, Đông Tháp"}
+                        </span>
                       </div>
-                      <div style={{ color: "#000" }}>
-                        📞 {storeSettings?.phone || "0947.747.907"}
+                      <div
+                        style={{
+                          color: "#000",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "1mm",
+                        }}
+                      >
+                        <svg
+                          style={{
+                            width: "10px",
+                            height: "10px",
+                            flexShrink: 0,
+                          }}
+                          viewBox="0 0 24 24"
+                          fill="#16a34a"
+                        >
+                          <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+                        </svg>
+                        <span>{storeSettings?.phone || "0947.747.907"}</span>
                       </div>
                     </div>
                   </div>
@@ -1885,144 +1926,148 @@ export default function ServiceManager() {
                         </div>
                       </td>
 
-                      {/* Column 3: Chi tiết */}
+                      {/* Column 3: Chi tiết - Compact format */}
                       <td className="px-4 py-4 align-top">
-                        <div className="space-y-2">
+                        <div className="space-y-1.5 max-w-[180px]">
                           {visibleParts.length > 0 && (
-                            <div>
-                              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">
-                                Phụ tùng
-                              </div>
-                              <div className="space-y-0.5">
-                                {visibleParts.map((part, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="text-xs text-slate-700 dark:text-slate-300"
-                                  >
-                                    • {part.partName} x{part.quantity}
-                                  </div>
+                            <div className="text-xs">
+                              <span className="text-slate-500 dark:text-slate-400">
+                                🔧{" "}
+                              </span>
+                              <span className="text-slate-700 dark:text-slate-300">
+                                {visibleParts.slice(0, 2).map((p, i) => (
+                                  <span key={i}>
+                                    {p.partName?.length > 20
+                                      ? p.partName.substring(0, 20) + "..."
+                                      : p.partName}
+                                    {p.quantity > 1 && ` x${p.quantity}`}
+                                    {i < Math.min(visibleParts.length, 2) - 1 &&
+                                      ", "}
+                                  </span>
                                 ))}
-                                {remainingParts > 0 && (
-                                  <div className="text-xs text-slate-400">
-                                    +{remainingParts} hạng mục khác
-                                  </div>
+                                {visibleParts.length > 2 && (
+                                  <span className="text-slate-400">
+                                    {" "}
+                                    +{visibleParts.length - 2}
+                                  </span>
                                 )}
-                              </div>
+                              </span>
                             </div>
                           )}
 
                           {visibleServices.length > 0 && (
-                            <div>
-                              <div className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-0.5">
-                                Gia công/Đặt hàng
-                              </div>
-                              <div className="space-y-0.5">
-                                {visibleServices.map((svc, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="text-xs text-slate-700 dark:text-slate-300"
-                                  >
-                                    • {svc.description} x{svc.quantity || 1}
-                                  </div>
+                            <div className="text-xs">
+                              <span className="text-slate-500 dark:text-slate-400">
+                                ⚙️{" "}
+                              </span>
+                              <span className="text-slate-700 dark:text-slate-300">
+                                {visibleServices.slice(0, 2).map((s, i) => (
+                                  <span key={i}>
+                                    {s.description?.length > 15
+                                      ? s.description.substring(0, 15) + "..."
+                                      : s.description}
+                                    {i <
+                                      Math.min(visibleServices.length, 2) - 1 &&
+                                      ", "}
+                                  </span>
                                 ))}
-                                {remainingServices > 0 && (
-                                  <div className="text-xs text-slate-400">
-                                    +{remainingServices} dịch vụ khác
-                                  </div>
+                                {visibleServices.length > 2 && (
+                                  <span className="text-slate-400">
+                                    {" "}
+                                    +{visibleServices.length - 2}
+                                  </span>
                                 )}
-                              </div>
+                              </span>
                             </div>
                           )}
 
                           {visibleParts.length === 0 &&
                             visibleServices.length === 0 && (
-                              <div className="text-xs text-slate-500 italic">
-                                Chưa có chi tiết
+                              <div className="text-xs text-slate-400 italic">
+                                —
                               </div>
                             )}
                         </div>
                       </td>
 
+                      {/* Column 4: Thanh toán & trạng thái - Clean layout */}
                       <td className="px-4 py-4 align-top">
-                        <div className="space-y-3 min-w-[220px]">
-                          <div className="flex flex-wrap gap-2 text-xs">
-                            {laborCost > 0 && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-slate-600 dark:text-slate-200">
-                                DV {formatCurrency(laborCost)}
-                              </span>
-                            )}
-                            {partsCost > 0 && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-slate-600 dark:text-slate-200">
-                                P/tùng {formatCurrency(partsCost)}
-                              </span>
-                            )}
-                            {servicesTotal > 0 && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-700 px-2 py-0.5 text-slate-600 dark:text-slate-200">
-                                Công {formatCurrency(servicesTotal)}
-                              </span>
-                            )}
-                            {order.discount && order.discount > 0 && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 dark:bg-red-900/30 px-2 py-0.5 text-red-600 dark:text-red-400">
-                                Giảm {formatCurrency(order.discount)}
-                              </span>
-                            )}
+                        <div className="space-y-2 min-w-[200px]">
+                          {/* Tổng tiền */}
+                          <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            {formatCurrency(totalAmount)}
                           </div>
 
+                          {/* Progress bar + Đã thu */}
                           {totalAmount > 0 && (
                             <div className="space-y-1">
-                              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                                <span>Đã thu</span>
-                                <span className="font-semibold text-slate-700 dark:text-slate-200">
-                                  {formatCurrency(Math.max(0, paidAmount))} /{" "}
-                                  {formatCurrency(totalAmount)}
-                                </span>
-                              </div>
-                              <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-700">
+                              <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700">
                                 <div
-                                  className={`h-full rounded-full ${
+                                  className={`h-full rounded-full transition-all ${
                                     paymentProgress >= 100
                                       ? "bg-emerald-500"
-                                      : "bg-blue-500"
+                                      : paymentProgress > 0
+                                      ? "bg-blue-500"
+                                      : "bg-slate-300"
                                   }`}
-                                  style={{ width: `${paymentProgress}%` }}
-                                ></div>
+                                  style={{
+                                    width: `${Math.min(paymentProgress, 100)}%`,
+                                  }}
+                                />
+                              </div>
+                              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                                <span>
+                                  Đã thu:{" "}
+                                  {formatCurrency(Math.max(0, paidAmount))}
+                                </span>
+                                {order.remainingAmount !== undefined &&
+                                  order.remainingAmount > 0 && (
+                                    <span className="text-red-500 font-medium">
+                                      Còn{" "}
+                                      {formatCurrency(order.remainingAmount)}
+                                    </span>
+                                  )}
                               </div>
                             </div>
                           )}
 
-                          <div className="flex flex-wrap items-center gap-2 text-xs font-medium">
+                          {/* Status badges */}
+                          <div className="flex flex-wrap items-center gap-1.5">
                             <StatusBadge
                               status={order.status as WorkOrderStatus}
                             />
                             <span
-                              className={`px-2 py-0.5 rounded-full ${paymentPillClass}`}
+                              className={`text-xs px-2 py-0.5 rounded-full ${paymentPillClass}`}
                             >
                               {order.paymentStatus === "paid"
-                                ? "Đã thanh toán"
-                                : "Chưa thanh toán"}
+                                ? "Đã TT"
+                                : order.paymentStatus === "partial"
+                                ? "TT một phần"
+                                : "Chưa TT"}
                             </span>
-                            {order.remainingAmount !== undefined &&
-                              order.remainingAmount > 0 && (
-                                <span className="text-red-500">
-                                  Còn {formatCurrency(order.remainingAmount)}
-                                </span>
-                              )}
                           </div>
                         </div>
                       </td>
 
                       <td
-                        className="px-4 py-4 align-top"
+                        className="px-4 py-4 align-top overflow-visible"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex items-center justify-end gap-2">
                           <div className="relative service-row-menu">
                             <button
-                              onClick={() =>
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const rect =
+                                  e.currentTarget.getBoundingClientRect();
+                                setDropdownPosition({
+                                  top: rect.bottom + 4,
+                                  right: window.innerWidth - rect.right,
+                                });
                                 setRowActionMenuId(
                                   rowActionMenuId === order.id ? null : order.id
-                                )
-                              }
+                                );
+                              }}
                               aria-haspopup="menu"
                               aria-expanded={rowActionMenuId === order.id}
                               className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
@@ -2030,13 +2075,19 @@ export default function ServiceManager() {
                               <ChevronDown className="w-4 h-4" />
                             </button>
                             {rowActionMenuId === order.id && (
-                              <div className="absolute right-0 mt-2 w-48 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-xl z-10">
+                              <div
+                                className="fixed w-48 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-xl z-[9999]"
+                                style={{
+                                  top: dropdownPosition.top,
+                                  right: dropdownPosition.right,
+                                }}
+                              >
                                 <button
                                   onClick={() => {
                                     handlePrintOrder(order);
                                     setRowActionMenuId(null);
                                   }}
-                                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700"
+                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-t-lg"
                                 >
                                   <Printer className="w-4 h-4" /> In phiếu
                                 </button>
@@ -2047,7 +2098,7 @@ export default function ServiceManager() {
                                     );
                                     setRowActionMenuId(null);
                                   }}
-                                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-600 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700"
+                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700"
                                 >
                                   <Smartphone className="w-4 h-4" /> Gọi khách
                                 </button>
@@ -2057,7 +2108,7 @@ export default function ServiceManager() {
                                       handleRefundOrder(order);
                                       setRowActionMenuId(null);
                                     }}
-                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-b-lg"
                                   >
                                     Hủy/Hoàn tiền
                                   </button>
@@ -2136,6 +2187,9 @@ export default function ServiceManager() {
           paymentSources={paymentSources}
           currentBranchId={currentBranchId}
           storeSettings={storeSettings}
+          invalidateWorkOrders={() =>
+            queryClient.invalidateQueries({ queryKey: ["workOrdersRepo"] })
+          }
         />
       )}
 
@@ -2245,17 +2299,72 @@ export default function ServiceManager() {
                       >
                         {storeSettings?.store_name || "Nhạn Lâm SmartCare"}
                       </div>
-                      <div style={{ color: "#000" }}>
-                        📍{" "}
-                        {storeSettings?.address ||
-                          "Ấp Phú Lợi B, Xã Long Phú Thuận, Đông Tháp"}
+                      <div
+                        style={{
+                          color: "#000",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "1mm",
+                        }}
+                      >
+                        <svg
+                          style={{
+                            width: "10px",
+                            height: "10px",
+                            flexShrink: 0,
+                          }}
+                          viewBox="0 0 24 24"
+                          fill="#ef4444"
+                        >
+                          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                        </svg>
+                        <span>
+                          {storeSettings?.address ||
+                            "Ấp Phú Lợi B, Xã Long Phú Thuận, Đông Tháp"}
+                        </span>
                       </div>
-                      <div style={{ color: "#000" }}>
-                        📞 {storeSettings?.phone || "0947.747.907"}
+                      <div
+                        style={{
+                          color: "#000",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "1mm",
+                        }}
+                      >
+                        <svg
+                          style={{
+                            width: "10px",
+                            height: "10px",
+                            flexShrink: 0,
+                          }}
+                          viewBox="0 0 24 24"
+                          fill="#16a34a"
+                        >
+                          <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+                        </svg>
+                        <span>{storeSettings?.phone || "0947.747.907"}</span>
                       </div>
                       {storeSettings?.email && (
-                        <div style={{ color: "#000" }}>
-                          ✉️ {storeSettings.email}
+                        <div
+                          style={{
+                            color: "#000",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "1mm",
+                          }}
+                        >
+                          <svg
+                            style={{
+                              width: "10px",
+                              height: "10px",
+                              flexShrink: 0,
+                            }}
+                            viewBox="0 0 24 24"
+                            fill="#3b82f6"
+                          >
+                            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+                          </svg>
+                          <span>{storeSettings.email}</span>
                         </div>
                       )}
                     </div>
@@ -2275,9 +2384,24 @@ export default function ServiceManager() {
                               fontWeight: "bold",
                               marginBottom: "1mm",
                               color: "#000",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-end",
+                              gap: "1mm",
                             }}
                           >
-                            🏦 {storeSettings.bank_name}
+                            <svg
+                              style={{
+                                width: "10px",
+                                height: "10px",
+                                flexShrink: 0,
+                              }}
+                              viewBox="0 0 24 24"
+                              fill="#0891b2"
+                            >
+                              <path d="M4 10h3v7H4zm6.5 0h3v7h-3zM2 19h20v3H2zm15-9h3v7h-3zm-5-9L2 6v2h20V6z" />
+                            </svg>
+                            <span>{storeSettings.bank_name}</span>
                           </div>
                           {storeSettings.bank_account_number && (
                             <div style={{ color: "#000" }}>
@@ -2978,16 +3102,61 @@ export default function ServiceManager() {
               >
                 {storeSettings?.store_name || "Nhạn Lâm SmartCare"}
               </div>
-              <div style={{ color: "#000" }}>
-                📍{" "}
-                {storeSettings?.address ||
-                  "Ấp Phú Lợi B, Xã Long Phú Thuận, Đông Tháp"}
+              <div
+                style={{
+                  color: "#000",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1mm",
+                }}
+              >
+                <svg
+                  style={{ width: "10px", height: "10px", flexShrink: 0 }}
+                  viewBox="0 0 24 24"
+                  fill="#ef4444"
+                >
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                </svg>
+                <span>
+                  {storeSettings?.address ||
+                    "Ấp Phú Lợi B, Xã Long Phú Thuận, Đông Tháp"}
+                </span>
               </div>
-              <div style={{ color: "#000" }}>
-                📞 {storeSettings?.phone || "0947.747.907"}
+              <div
+                style={{
+                  color: "#000",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1mm",
+                }}
+              >
+                <svg
+                  style={{ width: "10px", height: "10px", flexShrink: 0 }}
+                  viewBox="0 0 24 24"
+                  fill="#16a34a"
+                >
+                  <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+                </svg>
+                <span>{storeSettings?.phone || "0947.747.907"}</span>
               </div>
               {storeSettings?.email && (
-                <div style={{ color: "#000" }}>✉️ {storeSettings.email}</div>
+                <div
+                  style={{
+                    color: "#000",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "1mm",
+                  }}
+                >
+                  <svg
+                    style={{ width: "10px", height: "10px", flexShrink: 0 }}
+                    viewBox="0 0 24 24"
+                    fill="#3b82f6"
+                  >
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+                  </svg>
+                  <span>{storeSettings.email}</span>
+                </div>
               )}
             </div>
 
@@ -3006,9 +3175,20 @@ export default function ServiceManager() {
                       fontWeight: "bold",
                       marginBottom: "1mm",
                       color: "#000",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-end",
+                      gap: "1mm",
                     }}
                   >
-                    🏦 {storeSettings.bank_name}
+                    <svg
+                      style={{ width: "10px", height: "10px", flexShrink: 0 }}
+                      viewBox="0 0 24 24"
+                      fill="#0891b2"
+                    >
+                      <path d="M4 10h3v7H4zm6.5 0h3v7h-3zM2 19h20v3H2zm15-9h3v7h-3zm-5-9L2 6v2h20V6z" />
+                    </svg>
+                    <span>{storeSettings.bank_name}</span>
                   </div>
                   {storeSettings.bank_account_number && (
                     <div style={{ color: "#000" }}>
@@ -3718,6 +3898,7 @@ const WorkOrderModal: React.FC<{
   paymentSources: any[];
   currentBranchId: string;
   storeSettings?: StoreSettings | null;
+  invalidateWorkOrders?: () => void;
 }> = ({
   order,
   onClose,
@@ -3732,6 +3913,7 @@ const WorkOrderModal: React.FC<{
   paymentSources,
   currentBranchId,
   storeSettings,
+  invalidateWorkOrders,
 }) => {
   // Popular motorcycle models in Vietnam
   const POPULAR_MOTORCYCLES = [
@@ -4527,6 +4709,11 @@ const WorkOrderModal: React.FC<{
           throw error;
         }
         console.log("[INSERT SUCCESS]", data);
+      }
+
+      // Invalidate queries to refresh the list
+      if (invalidateWorkOrders) {
+        invalidateWorkOrders();
       }
 
       onSave(workOrderData as unknown as WorkOrder);

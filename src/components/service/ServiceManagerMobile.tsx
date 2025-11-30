@@ -365,16 +365,38 @@ export function ServiceManagerMobile({
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between pt-2 border-t border-gray-800">
-                  <div className="text-xs text-gray-400">
-                    KTV:{" "}
-                    <span className="text-gray-300">
-                      {workOrder.technicianName || "Chưa phân"}
-                    </span>
+                <div className="pt-2 border-t border-gray-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-gray-400">
+                      KTV:{" "}
+                      <span className="text-gray-300">
+                        {workOrder.technicianName || "Chưa phân"}
+                      </span>
+                    </div>
+                    <div className="text-white font-bold text-base">
+                      {formatCurrency(workOrder.total || 0)}
+                    </div>
                   </div>
-                  <div className="text-white font-bold text-base">
-                    {formatCurrency(workOrder.total || 0)}
-                  </div>
+                  {/* Payment info */}
+                  {((workOrder.depositAmount && workOrder.depositAmount > 0) ||
+                    (workOrder.additionalPayment &&
+                      workOrder.additionalPayment > 0)) && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-green-400">
+                        💰 Đã thu:{" "}
+                        {formatCurrency(
+                          (workOrder.depositAmount || 0) +
+                            (workOrder.additionalPayment || 0)
+                        )}
+                      </span>
+                      {(workOrder.remainingAmount ?? 0) > 0 && (
+                        <span className="text-amber-400">
+                          Còn lại:{" "}
+                          {formatCurrency(workOrder.remainingAmount || 0)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

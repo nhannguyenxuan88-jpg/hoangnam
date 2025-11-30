@@ -1,0 +1,1 @@
+import{a as s,y as t,s as n,al as u,a5 as c}from"./index-B2tLSL14.js";const i=()=>{const a=s();return t({mutationFn:({id:e,branchId:r,delta:o})=>u(e,r,o),onSuccess:()=>{a.invalidateQueries({queryKey:["paymentSourcesRepo"]})},onError:e=>n.error(c(e))})};export{i as u};

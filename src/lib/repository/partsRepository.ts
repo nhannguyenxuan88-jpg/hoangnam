@@ -321,3 +321,33 @@ export async function fetchPartBySku(
     });
   }
 }
+
+/**
+ * Tính tồn kho khả dụng = tồn kho thực - đã đặt trước
+ * @param part - Phụ tùng cần tính
+ * @param branchId - Chi nhánh
+ * @returns Số lượng khả dụng
+ */
+export function getAvailableStock(part: Part, branchId: string): number {
+  const stock = part.stock?.[branchId] ?? 0;
+  const reserved = part.reservedStock?.[branchId] ?? 0;
+  return Math.max(0, stock - reserved);
+}
+
+/**
+ * Lấy thông tin tồn kho khả dụng cho tất cả chi nhánh
+ * @param part - Phụ tùng cần tính
+ * @returns Object chứa tồn kho khả dụng theo chi nhánh
+ */
+export function getAvailableStockAll(part: Part): {
+  [branchId: string]: number;
+} {
+  const result: { [branchId: string]: number } = {};
+  const branches = Object.keys(part.stock || {});
+
+  for (const branchId of branches) {
+    result[branchId] = getAvailableStock(part, branchId);
+  }
+
+  return result;
+}

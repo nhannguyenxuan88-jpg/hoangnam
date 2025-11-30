@@ -60,12 +60,24 @@ export function useRepairTemplates() {
   return useQuery({
     queryKey: [QUERY_KEY, branchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Only query with branch_id if it looks like a UUID (contains dashes)
+      // Otherwise just get templates without branch_id filter
+      const isUUID = branchId && branchId.includes("-");
+
+      let query = supabase
         .from("repair_templates")
         .select("*")
-        .or(`branch_id.is.null,branch_id.eq.${branchId}`)
         .eq("is_active", true)
         .order("name", { ascending: true });
+
+      if (isUUID) {
+        query = query.or(`branch_id.is.null,branch_id.eq.${branchId}`);
+      } else {
+        // Non-UUID branch_id (like "CN1") - just get global templates
+        query = query.is("branch_id", null);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching repair templates:", error);
@@ -89,11 +101,22 @@ export function useAllRepairTemplates() {
   return useQuery({
     queryKey: [QUERY_KEY, "all", branchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Only query with branch_id if it looks like a UUID (contains dashes)
+      const isUUID = branchId && branchId.includes("-");
+
+      let query = supabase
         .from("repair_templates")
         .select("*")
-        .or(`branch_id.is.null,branch_id.eq.${branchId}`)
         .order("name", { ascending: true });
+
+      if (isUUID) {
+        query = query.or(`branch_id.is.null,branch_id.eq.${branchId}`);
+      } else {
+        // Non-UUID branch_id (like "CN1") - just get global templates
+        query = query.is("branch_id", null);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching all repair templates:", error);
