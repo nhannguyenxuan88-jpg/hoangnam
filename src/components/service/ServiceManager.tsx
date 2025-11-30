@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -220,11 +220,69 @@ export default function ServiceManager() {
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(
     null
   );
+  const invoicePreviewRef = useRef<HTMLDivElement>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   // State for refund modal
   const [refundingOrder, setRefundingOrder] = useState<WorkOrder | null>(null);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [refundReason, setRefundReason] = useState("");
+
+  // Share invoice as image function
+  const handleShareInvoice = async () => {
+    if (!invoicePreviewRef.current || !printOrder) return;
+
+    setIsSharing(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(invoicePreviewRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+      });
+
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((b) => resolve(b!), "image/png", 1.0);
+      });
+
+      const fileName = `phieu-sua-chua-${formatWorkOrderId(printOrder.id)}.png`;
+
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], fileName, { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `Phiếu sửa chữa ${formatWorkOrderId(printOrder.id)}`,
+          });
+          showToast.success("Đã chia sẻ phiếu thành công!");
+        } else {
+          downloadImage(blob, fileName);
+        }
+      } else {
+        downloadImage(blob, fileName);
+      }
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") {
+        console.error("Error sharing invoice:", error);
+        showToast.error("Không thể chia sẻ phiếu");
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const downloadImage = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast.success("Đã tải phiếu xuống!");
+  };
 
   // Open modal automatically if navigated from elsewhere with editOrder state
 
@@ -2219,6 +2277,14 @@ export default function ServiceManager() {
               </h2>
               <div className="flex items-center gap-3">
                 <button
+                  onClick={handleShareInvoice}
+                  disabled={isSharing}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg flex items-center gap-2 transition"
+                >
+                  <Share2 className="w-4 h-4" />
+                  {isSharing ? "Đang xử lý..." : "Chia sẻ"}
+                </button>
+                <button
                   onClick={handleDoPrint}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 transition"
                 >
@@ -2254,6 +2320,7 @@ export default function ServiceManager() {
             {/* Print Preview Content */}
             <div className="flex-1 overflow-y-auto p-6 bg-slate-100 dark:bg-slate-900">
               <div
+                ref={invoicePreviewRef}
                 className="bg-white shadow-lg mx-auto"
                 style={{ width: "148mm", minHeight: "210mm", color: "#000" }}
               >
@@ -2261,28 +2328,26 @@ export default function ServiceManager() {
                   {/* Store Info Header - Compact Layout */}
                   <div
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr auto 1fr",
-                      gap: "3mm",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "4mm",
                       marginBottom: "4mm",
-                      alignItems: "start",
                       borderBottom: "2px solid #3b82f6",
                       paddingBottom: "3mm",
                     }}
                   >
-                    {/* Left: Logo (if available) */}
+                    {/* Left: Logo */}
                     {storeSettings?.logo_url && (
-                      <div style={{ marginRight: "4mm" }}>
-                        <img
-                          src={storeSettings.logo_url}
-                          alt="Logo"
-                          style={{
-                            height: "18mm",
-                            width: "auto",
-                            objectFit: "contain",
-                          }}
-                        />
-                      </div>
+                      <img
+                        src={storeSettings.logo_url}
+                        alt="Logo"
+                        style={{
+                          height: "18mm",
+                          width: "18mm",
+                          objectFit: "contain",
+                          flexShrink: 0,
+                        }}
+                      />
                     )}
 
                     {/* Center: Store Info */}
@@ -2375,6 +2440,7 @@ export default function ServiceManager() {
                         fontSize: "8pt",
                         lineHeight: "1.4",
                         textAlign: "right",
+                        flexShrink: 0,
                       }}
                     >
                       {storeSettings?.bank_name && (
@@ -3068,8 +3134,8 @@ export default function ServiceManager() {
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "start",
+              alignItems: "flex-start",
+              gap: "4mm",
               borderBottom: "2px solid #3b82f6",
               paddingBottom: "3mm",
               marginBottom: "4mm",
@@ -3077,17 +3143,16 @@ export default function ServiceManager() {
           >
             {/* Left: Logo (if available) */}
             {storeSettings?.logo_url && (
-              <div style={{ marginRight: "4mm" }}>
-                <img
-                  src={storeSettings.logo_url}
-                  alt="Logo"
-                  style={{
-                    height: "18mm",
-                    width: "auto",
-                    objectFit: "contain",
-                  }}
-                />
-              </div>
+              <img
+                src={storeSettings.logo_url}
+                alt="Logo"
+                style={{
+                  height: "18mm",
+                  width: "18mm",
+                  objectFit: "contain",
+                  flexShrink: 0,
+                }}
+              />
             )}
 
             {/* Center: Store Info */}
@@ -3166,6 +3231,7 @@ export default function ServiceManager() {
                 fontSize: "8pt",
                 lineHeight: "1.4",
                 textAlign: "right",
+                flexShrink: 0,
               }}
             >
               {storeSettings?.bank_name && (
