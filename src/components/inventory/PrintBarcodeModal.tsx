@@ -13,14 +13,60 @@ interface PrintBarcodeModalProps {
 type BarcodeFormat = "CODE128" | "EAN13" | "CODE39";
 
 // Preset sizes phù hợp với Xprinter XP-360B (20-82mm width)
-type LabelPreset = "30x20" | "40x30" | "50x30" | "60x40" | "80x50";
+type LabelPreset = "30x20" | "40x30" | "50x30" | "60x40" | "80x50" | "100x80";
 
-const LABEL_PRESETS: Record<LabelPreset, { width: number; height: number; name: string; barcodeHeight: number; fontSize: number }> = {
-  "30x20": { width: 30, height: 20, name: "30×20mm (nhỏ)", barcodeHeight: 25, fontSize: 7 },
-  "40x30": { width: 40, height: 30, name: "40×30mm (phổ biến)", barcodeHeight: 35, fontSize: 8 },
-  "50x30": { width: 50, height: 30, name: "50×30mm (vừa)", barcodeHeight: 40, fontSize: 9 },
-  "60x40": { width: 60, height: 40, name: "60×40mm (lớn)", barcodeHeight: 45, fontSize: 10 },
-  "80x50": { width: 80, height: 50, name: "80×50mm (max)", barcodeHeight: 55, fontSize: 12 },
+const LABEL_PRESETS: Record<
+  LabelPreset,
+  {
+    width: number;
+    height: number;
+    name: string;
+    barcodeHeight: number;
+    fontSize: number;
+  }
+> = {
+  "30x20": {
+    width: 30,
+    height: 20,
+    name: "30×20mm (nhỏ)",
+    barcodeHeight: 25,
+    fontSize: 7,
+  },
+  "40x30": {
+    width: 40,
+    height: 30,
+    name: "40×30mm (phổ biến)",
+    barcodeHeight: 35,
+    fontSize: 8,
+  },
+  "50x30": {
+    width: 50,
+    height: 30,
+    name: "50×30mm (vừa)",
+    barcodeHeight: 40,
+    fontSize: 9,
+  },
+  "60x40": {
+    width: 60,
+    height: 40,
+    name: "60×40mm (lớn)",
+    barcodeHeight: 45,
+    fontSize: 10,
+  },
+  "80x50": {
+    width: 80,
+    height: 50,
+    name: "80×50mm (max)",
+    barcodeHeight: 55,
+    fontSize: 12,
+  },
+  "100x80": {
+    width: 100,
+    height: 80,
+    name: "100×80mm (rất lớn)",
+    barcodeHeight: 70,
+    fontSize: 14,
+  },
 };
 
 const PrintBarcodeModal: React.FC<PrintBarcodeModalProps> = ({
@@ -50,7 +96,7 @@ const PrintBarcodeModal: React.FC<PrintBarcodeModalProps> = ({
       try {
         // Tính toán width dựa trên kích thước nhãn
         const barcodeWidth = Math.max(1, (currentSize.width - 10) / 50);
-        
+
         JsBarcode(barcodeRef.current, barcodeValue, {
           format: barcodeFormat,
           width: barcodeWidth,
@@ -89,9 +135,10 @@ const PrintBarcodeModal: React.FC<PrintBarcodeModalProps> = ({
 
     // Truncate name based on label width
     const maxNameLength = Math.floor(currentSize.width / 3);
-    const displayName = part.name.length > maxNameLength 
-      ? part.name.slice(0, maxNameLength) + "..." 
-      : part.name;
+    const displayName =
+      part.name.length > maxNameLength
+        ? part.name.slice(0, maxNameLength) + "..."
+        : part.name;
 
     // Generate labels HTML - tối ưu cho máy in nhiệt
     const labels = Array(quantity)
@@ -110,9 +157,23 @@ const PrintBarcodeModal: React.FC<PrintBarcodeModalProps> = ({
           box-sizing: border-box;
           overflow: hidden;
         ">
-          ${showName ? `<div style="font-size: ${currentSize.fontSize - 1}px; font-weight: bold; text-align: center; line-height: 1.1; max-width: 100%; overflow: hidden; white-space: nowrap;">${displayName}</div>` : ""}
+          ${
+            showName
+              ? `<div style="font-size: ${
+                  currentSize.fontSize - 1
+                }px; font-weight: bold; text-align: center; line-height: 1.1; max-width: 100%; overflow: hidden; white-space: nowrap;">${displayName}</div>`
+              : ""
+          }
           ${barcodeRef.current?.outerHTML || ""}
-          ${showPrice ? `<div style="font-size: ${currentSize.fontSize}px; font-weight: bold; line-height: 1;">${formatCurrency(part.retailPrice[currentBranchId] || 0)}</div>` : ""}
+          ${
+            showPrice
+              ? `<div style="font-size: ${
+                  currentSize.fontSize
+                }px; font-weight: bold; line-height: 1;">${formatCurrency(
+                  part.retailPrice[currentBranchId] || 0
+                )}</div>`
+              : ""
+          }
         </div>
       `
       )
@@ -212,7 +273,9 @@ const PrintBarcodeModal: React.FC<PrintBarcodeModalProps> = ({
         <div className="p-4 space-y-4">
           {/* Product Info */}
           <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3">
-            <p className="font-medium text-slate-900 dark:text-slate-100 text-sm">{part.name}</p>
+            <p className="font-medium text-slate-900 dark:text-slate-100 text-sm">
+              {part.name}
+            </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1">
               Mã: {barcodeValue}
             </p>
@@ -223,7 +286,9 @@ const PrintBarcodeModal: React.FC<PrintBarcodeModalProps> = ({
 
           {/* Preview */}
           <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 flex flex-col items-center bg-white">
-            <p className="text-xs text-slate-500 mb-2">Xem trước nhãn ({currentSize.name})</p>
+            <p className="text-xs text-slate-500 mb-2">
+              Xem trước nhãn ({currentSize.name})
+            </p>
             <div
               ref={printRef}
               className="border-2 border-dashed border-slate-300 rounded flex flex-col items-center justify-center bg-white"
@@ -238,8 +303,9 @@ const PrintBarcodeModal: React.FC<PrintBarcodeModalProps> = ({
                   className="font-bold text-center text-slate-900 truncate max-w-full leading-tight"
                   style={{ fontSize: `${currentSize.fontSize - 1}px` }}
                 >
-                  {part.name.length > Math.floor(currentSize.width / 3) 
-                    ? part.name.slice(0, Math.floor(currentSize.width / 3)) + "..." 
+                  {part.name.length > Math.floor(currentSize.width / 3)
+                    ? part.name.slice(0, Math.floor(currentSize.width / 3)) +
+                      "..."
                     : part.name}
                 </p>
               )}
@@ -294,7 +360,9 @@ const PrintBarcodeModal: React.FC<PrintBarcodeModalProps> = ({
                 <input
                   type="number"
                   value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  onChange={(e) =>
+                    setQuantity(Math.max(1, parseInt(e.target.value) || 1))
+                  }
                   className="w-16 text-center px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   min="1"
                   max="100"
@@ -315,7 +383,9 @@ const PrintBarcodeModal: React.FC<PrintBarcodeModalProps> = ({
               </label>
               <select
                 value={barcodeFormat}
-                onChange={(e) => setBarcodeFormat(e.target.value as BarcodeFormat)}
+                onChange={(e) =>
+                  setBarcodeFormat(e.target.value as BarcodeFormat)
+                }
                 className="px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
               >
                 <option value="CODE128">CODE128 (phổ biến)</option>
@@ -332,7 +402,9 @@ const PrintBarcodeModal: React.FC<PrintBarcodeModalProps> = ({
                   onChange={(e) => setShowName(e.target.checked)}
                   className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-slate-700 dark:text-slate-300">Hiện tên</span>
+                <span className="text-sm text-slate-700 dark:text-slate-300">
+                  Hiện tên
+                </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -341,14 +413,17 @@ const PrintBarcodeModal: React.FC<PrintBarcodeModalProps> = ({
                   onChange={(e) => setShowPrice(e.target.checked)}
                   className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="text-sm text-slate-700 dark:text-slate-300">Hiện giá</span>
+                <span className="text-sm text-slate-700 dark:text-slate-300">
+                  Hiện giá
+                </span>
               </label>
             </div>
 
             {/* Tips */}
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
               <p className="text-xs text-amber-800 dark:text-amber-300">
-                <strong>💡 Mẹo:</strong> Cài đặt khổ giấy trong driver máy in trùng với kích thước nhãn đã chọn để in chính xác.
+                <strong>💡 Mẹo:</strong> Cài đặt khổ giấy trong driver máy in
+                trùng với kích thước nhãn đã chọn để in chính xác.
               </p>
             </div>
           </div>

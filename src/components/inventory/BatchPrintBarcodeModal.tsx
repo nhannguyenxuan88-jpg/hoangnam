@@ -22,7 +22,7 @@ interface BatchPrintBarcodeModalProps {
 }
 
 type BarcodeFormat = "CODE128" | "CODE39";
-type LabelPreset = "30x20" | "40x30" | "50x30" | "60x40" | "80x50";
+type LabelPreset = "30x20" | "40x30" | "50x30" | "60x40" | "80x50" | "100x80";
 type QuantityMode = "stock" | "fixed" | "custom";
 type ViewMode = "select" | "preview";
 
@@ -70,6 +70,13 @@ const LABEL_PRESETS: Record<
     name: "80×50mm",
     barcodeHeight: 55,
     fontSize: 12,
+  },
+  "100x80": {
+    width: 100,
+    height: 80,
+    name: "100×80mm",
+    barcodeHeight: 70,
+    fontSize: 14,
   },
 };
 

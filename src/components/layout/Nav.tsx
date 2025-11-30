@@ -57,6 +57,9 @@ export function Nav() {
     viewDebt: isOwnerOrManager,
     viewEmployees: isOwnerOrManager,
     viewSettings: isOwnerOrManager,
+    viewInventory: isOwnerOrManager,
+    viewDashboard: isOwnerOrManager,
+    viewReports: isOwnerOrManager,
   } as const;
 
   return (
@@ -212,12 +215,14 @@ export function Nav() {
 
           {/* Center: Main Navigation - Hidden on mobile */}
           <div className="hidden md:flex items-center gap-1">
-            <NavLink
-              to="/dashboard"
-              colorKey="blue"
-              icon={<LayoutDashboard className="w-4 h-4" />}
-              label="Tổng quan"
-            />
+            {can.viewDashboard && (
+              <NavLink
+                to="/dashboard"
+                colorKey="blue"
+                icon={<LayoutDashboard className="w-4 h-4" />}
+                label="Tổng quan"
+              />
+            )}
             <NavLink
               to="/service"
               colorKey="violet"
@@ -230,12 +235,14 @@ export function Nav() {
               icon={<Cart className="w-4 h-4" />}
               label="Bán hàng"
             />
-            <NavLink
-              to="/inventory"
-              colorKey="amber"
-              icon={<Boxes className="w-4 h-4" />}
-              label="Quản lý kho"
-            />
+            {can.viewInventory && (
+              <NavLink
+                to="/inventory"
+                colorKey="amber"
+                icon={<Boxes className="w-4 h-4" />}
+                label="Quản lý kho"
+              />
+            )}
             <NavLink
               to="/customers"
               colorKey="cyan"
@@ -274,12 +281,14 @@ export function Nav() {
                 label="Phân tích"
               />
             )}
-            <NavLink
-              to="/reports"
-              colorKey="fuchsia"
-              icon={<FileText className="w-4 h-4" />}
-              label="Báo cáo"
-            />
+            {can.viewReports && (
+              <NavLink
+                to="/reports"
+                colorKey="fuchsia"
+                icon={<FileText className="w-4 h-4" />}
+                label="Báo cáo"
+              />
+            )}
           </div>
 
           {/* Right: Notifications and Home Icon (mobile only) */}
@@ -289,7 +298,7 @@ export function Nav() {
 
             {/* Home Button - Only visible on mobile */}
             <Link
-              to="/dashboard"
+              to={role === USER_ROLES.STAFF ? "/service" : "/dashboard"}
               className="md:hidden p-2 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               title="Trang chủ"
             >

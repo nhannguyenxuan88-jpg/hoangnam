@@ -196,8 +196,15 @@ const MainLayout: React.FC = () => {
         }`}
       >
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/" element={<Navigate to="/service" replace />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute requiredRoles={["owner", "manager"]}>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/sales" element={<Sales />} />
           <Route
             path="/audit-logs"
@@ -209,7 +216,14 @@ const MainLayout: React.FC = () => {
               </ProtectedRoute>
             }
           />
-          <Route path="/inventory" element={<Inventory />} />
+          <Route
+            path="/inventory"
+            element={
+              <ProtectedRoute requiredRoles={["owner", "manager"]}>
+                <Inventory />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/lookup" element={<LookupPage />} />
           <Route path="/service" element={<Service />} />
@@ -271,7 +285,14 @@ const MainLayout: React.FC = () => {
               </ProtectedRoute>
             }
           />
-          <Route path="/reports" element={<ReportsPage />} />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute requiredRoles={["owner", "manager"]}>
+                <ReportsPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/settings"
             element={

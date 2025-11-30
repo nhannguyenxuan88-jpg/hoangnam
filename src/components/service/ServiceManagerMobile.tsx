@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
   FileText,
   Wrench,
@@ -18,6 +19,8 @@ import {
   Menu,
   Bell,
   Settings,
+  History,
+  ClipboardList,
 } from "lucide-react";
 import type { WorkOrder } from "../../types";
 import {
@@ -25,6 +28,8 @@ import {
   formatDate,
   formatWorkOrderId,
 } from "../../utils/format";
+import { useAuth } from "../../contexts/AuthContext";
+import { canDo } from "../../utils/permissions";
 
 interface ServiceManagerMobileProps {
   workOrders: WorkOrder[];
@@ -33,6 +38,7 @@ interface ServiceManagerMobileProps {
   onDeleteWorkOrder: (workOrder: WorkOrder) => void;
   onCallCustomer: (phone: string) => void;
   onPrintWorkOrder: (workOrder: WorkOrder) => void;
+  onOpenTemplates: () => void;
   currentBranchId: string;
 }
 
@@ -50,8 +56,10 @@ export function ServiceManagerMobile({
   onDeleteWorkOrder,
   onCallCustomer,
   onPrintWorkOrder,
+  onOpenTemplates,
   currentBranchId,
 }: ServiceManagerMobileProps) {
+  const { profile } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [showFilterPopup, setShowFilterPopup] = useState(false);
@@ -274,6 +282,26 @@ export function ServiceManagerMobile({
             className="w-full pl-10 pr-3 py-2.5 bg-[#2b2b40] border border-gray-700 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:border-[#009ef7]"
           />
         </div>
+
+        {/* Quick Action Buttons */}
+        <div className="flex items-center gap-2 mt-2">
+          <button
+            onClick={onOpenTemplates}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/50 rounded-lg transition-colors"
+          >
+            <ClipboardList className="w-4 h-4 text-purple-400" />
+            <span className="text-xs font-medium text-purple-300">Mẫu SC</span>
+          </button>
+          <Link
+            to="/service-history"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/50 rounded-lg transition-colors"
+          >
+            <History className="w-4 h-4 text-cyan-400" />
+            <span className="text-xs font-medium text-cyan-300">
+              Lịch sử SC
+            </span>
+          </Link>
+        </div>
       </div>
 
       {/* DANH SÁCH PHIẾU SỬA CHỮA */}
@@ -438,18 +466,20 @@ export function ServiceManagerMobile({
                     Sửa
                   </span>
                 </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteWorkOrder(workOrder);
-                  }}
-                  className="flex items-center justify-center gap-1 py-3 bg-[#f1416c]/10 hover:bg-[#f1416c]/20 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4 text-[#f1416c]" />
-                  <span className="text-[11px] font-semibold text-[#f1416c]">
-                    Xóa
-                  </span>
-                </button>
+                {canDo(profile?.role, "work_order.delete") && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteWorkOrder(workOrder);
+                    }}
+                    className="flex items-center justify-center gap-1 py-3 bg-[#f1416c]/10 hover:bg-[#f1416c]/20 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 text-[#f1416c]" />
+                    <span className="text-[11px] font-semibold text-[#f1416c]">
+                      Xóa
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
           ))

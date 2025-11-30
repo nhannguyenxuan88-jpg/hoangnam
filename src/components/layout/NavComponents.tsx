@@ -7,6 +7,8 @@ import {
   Boxes,
   Users,
 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
+import { USER_ROLES } from "../../constants";
 
 // Color types and constants
 export type ColorKey =
@@ -165,51 +167,70 @@ export const NavLink: React.FC<{
 // Bottom Navigation Bar for Mobile
 export const BottomNav: React.FC = () => {
   const location = useLocation();
+  const { profile } = useAuth();
+  const role = profile?.role;
+  const isOwnerOrManager =
+    role === USER_ROLES.OWNER || role === USER_ROLES.MANAGER;
 
   // Hide bottom nav on inventory and sales page for mobile (they have their own internal tabs)
   if (location.pathname === "/inventory" || location.pathname === "/sales") {
     return null;
   }
 
-  const navItems = [
+  const allNavItems = [
     {
       to: "/dashboard",
       icon: <LayoutDashboard className="w-6 h-6" />,
       label: "Tổng quan",
       color: "blue",
+      show: isOwnerOrManager,
     },
     {
       to: "/service",
       icon: <Wrench className="w-6 h-6" />,
       label: "Sửa chữa",
       color: "violet",
+      show: true,
     },
     {
       to: "/sales",
       icon: <Cart className="w-6 h-6" />,
       label: "Bán hàng",
       color: "emerald",
+      show: true,
     },
     {
       to: "/inventory",
       icon: <Boxes className="w-6 h-6" />,
       label: "Kho",
       color: "amber",
+      show: isOwnerOrManager,
     },
     {
       to: "/customers",
       icon: <Users className="w-6 h-6" />,
       label: "Khách hàng",
       color: "cyan",
+      show: true,
     },
   ];
+
+  const navItems = allNavItems.filter((item) => item.show);
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 safe-area-bottom">
       {/* Backdrop blur effect for modern look */}
       <div className="absolute inset-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-lg -z-10"></div>
 
-      <div className="grid grid-cols-5 gap-1 px-2 py-2">
+      <div
+        className={`grid gap-1 px-2 py-2 ${
+          navItems.length === 3
+            ? "grid-cols-3"
+            : navItems.length === 4
+            ? "grid-cols-4"
+            : "grid-cols-5"
+        }`}
+      >
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
           const colorKey = item.color as ColorKey;

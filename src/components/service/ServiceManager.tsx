@@ -984,6 +984,7 @@ export default function ServiceManager() {
           onDeleteWorkOrder={handleDelete}
           onCallCustomer={handleCallCustomer}
           onPrintWorkOrder={handlePrintOrder}
+          onOpenTemplates={() => setShowTemplateModal(true)}
           currentBranchId={currentBranchId}
         />
 
@@ -1648,6 +1649,42 @@ export default function ServiceManager() {
             </div>
           </div>
         )}
+
+        {/* Repair Templates Modal for Mobile */}
+        <RepairTemplatesModal
+          isOpen={showTemplateModal}
+          onClose={() => setShowTemplateModal(false)}
+          onApplyTemplate={(template) => {
+            // Convert and apply template to current work order for mobile
+            const newOrder: WorkOrder = {
+              id: `WO-${Date.now()}`,
+              customerName: "",
+              customerPhone: "",
+              vehicleModel: "",
+              issueDescription: template.description,
+              status: "Tiếp nhận",
+              creationDate: new Date().toISOString(),
+              estimatedCompletion: new Date(
+                Date.now() + template.duration * 60000
+              ).toISOString(),
+              assignedTechnician: "",
+              laborCost: template.laborCost,
+              partsUsed: template.parts.map((p) => ({
+                partId: "",
+                partName: p.name,
+                quantity: p.quantity,
+                unitPrice: p.price,
+              })),
+              notes: "",
+              total: 0,
+            };
+            setEditingOrder(newOrder);
+            setShowTemplateModal(false);
+            setShowMobileModal(true);
+          }}
+          parts={fetchedParts || []}
+          currentBranchId={currentBranchId}
+        />
       </>
     );
   }
