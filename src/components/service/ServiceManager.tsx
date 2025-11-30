@@ -73,6 +73,7 @@ type FilterColor = "slate" | "blue" | "orange" | "green" | "purple";
 export default function ServiceManager() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { profile } = useAuth(); // Get user profile early for createCustomerDebtIfNeeded
 
   const {
     parts: contextParts,
@@ -215,6 +216,8 @@ export default function ServiceManager() {
     right: 0,
   });
 
+  const location = useLocation();
+
   // Read status filter from URL query params (e.g., ?status=pending)
   useEffect(() => {
     const statusParam = searchParams.get("status");
@@ -226,6 +229,18 @@ export default function ServiceManager() {
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
+  // Handle navigation from ServiceHistory with editOrder state
+  useEffect(() => {
+    const state = location.state as { editOrder?: WorkOrder } | null;
+    if (state?.editOrder) {
+      // Set the editing order and open modal
+      setEditingOrder(state.editOrder);
+      setShowModal(true);
+      // Clear the navigation state to prevent re-opening on re-render
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // State for print preview modal
   const [printOrder, setPrintOrder] = useState<WorkOrder | null>(null);
@@ -615,6 +630,119 @@ export default function ServiceManager() {
   // 🔹 Handle create/update customer debts
   const createCustomerDebt = useCreateCustomerDebtRepo();
   const updateCustomerDebt = useUpdateCustomerDebtRepo();
+
+  // Helper: Auto-create customer debt if there's remaining amount (defined early for handleMobileSave)
+  const createCustomerDebtIfNeeded = async (
+    workOrder: WorkOrder,
+    remainingAmount: number,
+    totalAmount: number,
+    paidAmount: number
+  ) => {
+    if (remainingAmount <= 0) return;
+
+    console.log("[createCustomerDebtIfNeeded] CALLED with:", {
+      workOrderId: workOrder.id,
+      totalAmount,
+      paidAmount,
+      remainingAmount,
+      customerName: workOrder.customerName,
+      timestamp: new Date().toISOString(),
+    });
+
+    try {
+      const safeCustomerId =
+        workOrder.customerPhone || workOrder.id || `CUST-ANON-${Date.now()}`;
+      const safeCustomerName =
+        workOrder.customerName?.trim() ||
+        workOrder.customerPhone ||
+        "Khách vãng lai";
+
+      // Tạo nội dung chi tiết từ phiếu sửa chữa
+      const workOrderNumber =
+        formatWorkOrderId(workOrder.id, storeSettings?.work_order_prefix)
+          .split("-")
+          .pop() || "";
+
+      let description = `${
+        workOrder.vehicleModel || "Xe"
+      } (Phiếu sửa chữa #${workOrderNumber})`;
+
+      // Mô tả vấn đề
+      if (workOrder.issueDescription) {
+        description += `\nVấn đề: ${workOrder.issueDescription}`;
+      }
+
+      // Danh sách phụ tùng đã sử dụng
+      if (workOrder.partsUsed && workOrder.partsUsed.length > 0) {
+        description += "\n\nPhụ tùng đã thay:";
+        workOrder.partsUsed.forEach((part) => {
+          description += `\n  • ${part.quantity} x ${
+            part.partName
+          } - ${formatCurrency(part.price * part.quantity)}`;
+        });
+      }
+
+      // Danh sách dịch vụ bổ sung (gia công, đặt hàng)
+      if (
+        workOrder.additionalServices &&
+        workOrder.additionalServices.length > 0
+      ) {
+        description += "\n\nDịch vụ:";
+        workOrder.additionalServices.forEach((service) => {
+          description += `\n  • ${service.quantity} x ${
+            service.description
+          } - ${formatCurrency(service.price * service.quantity)}`;
+        });
+      }
+
+      // Công lao động
+      if (workOrder.laborCost && workOrder.laborCost > 0) {
+        description += `\n\nCông lao động: ${formatCurrency(
+          workOrder.laborCost
+        )}`;
+      }
+
+      // Giảm giá (nếu có)
+      if (workOrder.discount && workOrder.discount > 0) {
+        description += `\nGiảm giá: -${formatCurrency(workOrder.discount)}`;
+      }
+
+      // Thông tin nhân viên tạo phiếu
+      const createdByDisplay = profile?.full_name || "N/A";
+      description += `\n\nNV: ${createdByDisplay}`;
+
+      // Thông tin nhân viên kỹ thuật
+      if (workOrder.technicianName) {
+        description += `\nNVKỹ thuật: ${workOrder.technicianName}`;
+      }
+
+      const payload = {
+        customerId: safeCustomerId,
+        customerName: safeCustomerName,
+        phone: workOrder.customerPhone || null,
+        licensePlate: workOrder.licensePlate || null,
+        description: description,
+        totalAmount: totalAmount,
+        paidAmount: paidAmount,
+        remainingAmount: remainingAmount,
+        createdDate: new Date().toISOString().split("T")[0],
+        branchId: currentBranchId,
+        workOrderId: workOrder.id, // 🔹 Link debt với work order
+      };
+
+      console.log("[ServiceManager] createCustomerDebt payload:", payload);
+      const result = await createCustomerDebt.mutateAsync(payload as any);
+      console.log("[ServiceManager] createCustomerDebt result:", result);
+      showToast.success(
+        `Đã tạo/cập nhật công nợ ${remainingAmount.toLocaleString()}đ (Mã: ${
+          result?.id || "N/A"
+        })`
+      );
+    } catch (error) {
+      console.error("Error creating/updating customer debt:", error);
+      showToast.error("Không thể tạo/cập nhật công nợ tự động");
+    }
+  };
 
   // 🔹 Handle create/update work orders (for mobile)
   const { mutateAsync: createWorkOrderAtomicAsync } =
@@ -4091,7 +4219,7 @@ const WorkOrderModal: React.FC<{
     "Khác",
   ];
 
-  const { profile } = useAuth();
+  // profile already destructured at component top level
   const { mutateAsync: createWorkOrderAtomicAsync } =
     useCreateWorkOrderAtomicRepo();
   const { mutateAsync: updateWorkOrderAtomicAsync } =
@@ -4400,120 +4528,6 @@ const WorkOrderModal: React.FC<{
     newKm: number
   ) => {
     return updateVehicleKmAndMaintenance(customer, vehicleId, newKm);
-  };
-
-  // Helper: Auto-create customer debt if there's remaining amount
-  const createCustomerDebt = useCreateCustomerDebtRepo();
-  const createCustomerDebtIfNeeded = async (
-    workOrder: WorkOrder,
-    remainingAmount: number,
-    totalAmount: number,
-    paidAmount: number
-  ) => {
-    if (remainingAmount <= 0) return;
-
-    console.log("[createCustomerDebtIfNeeded] CALLED with:", {
-      workOrderId: workOrder.id,
-      totalAmount,
-      paidAmount,
-      remainingAmount,
-      customerName: workOrder.customerName,
-      timestamp: new Date().toISOString(),
-    });
-
-    try {
-      const safeCustomerId =
-        workOrder.customerPhone || workOrder.id || `CUST-ANON-${Date.now()}`;
-      const safeCustomerName =
-        workOrder.customerName?.trim() ||
-        workOrder.customerPhone ||
-        "Khách vãng lai";
-
-      // Tạo nội dung chi tiết từ phiếu sửa chữa
-      const workOrderNumber =
-        formatWorkOrderId(workOrder.id, storeSettings?.work_order_prefix)
-          .split("-")
-          .pop() || "";
-
-      let description = `${
-        workOrder.vehicleModel || "Xe"
-      } (Phiếu sửa chữa #${workOrderNumber})`;
-
-      // Mô tả vấn đề
-      if (workOrder.issueDescription) {
-        description += `\nVấn đề: ${workOrder.issueDescription}`;
-      }
-
-      // Danh sách phụ tùng đã sử dụng
-      if (workOrder.partsUsed && workOrder.partsUsed.length > 0) {
-        description += "\n\nPhụ tùng đã thay:";
-        workOrder.partsUsed.forEach((part) => {
-          description += `\n  • ${part.quantity} x ${
-            part.partName
-          } - ${formatCurrency(part.price * part.quantity)}`;
-        });
-      }
-
-      // Danh sách dịch vụ bổ sung (gia công, đặt hàng)
-      if (
-        workOrder.additionalServices &&
-        workOrder.additionalServices.length > 0
-      ) {
-        description += "\n\nDịch vụ:";
-        workOrder.additionalServices.forEach((service) => {
-          description += `\n  • ${service.quantity} x ${
-            service.description
-          } - ${formatCurrency(service.price * service.quantity)}`;
-        });
-      }
-
-      // Công lao động
-      if (workOrder.laborCost && workOrder.laborCost > 0) {
-        description += `\n\nCông lao động: ${formatCurrency(
-          workOrder.laborCost
-        )}`;
-      }
-
-      // Giảm giá (nếu có)
-      if (workOrder.discount && workOrder.discount > 0) {
-        description += `\nGiảm giá: -${formatCurrency(workOrder.discount)}`;
-      }
-
-      // Thông tin nhân viên tạo phiếu
-      const createdByDisplay = profile?.full_name || "N/A";
-      description += `\n\nNV: ${createdByDisplay}`;
-
-      // Thông tin nhân viên kỹ thuật
-      if (workOrder.technicianName) {
-        description += `\nNVKỹ thuật: ${workOrder.technicianName}`;
-      }
-
-      const payload = {
-        customerId: safeCustomerId,
-        customerName: safeCustomerName,
-        phone: workOrder.customerPhone || null,
-        licensePlate: workOrder.licensePlate || null,
-        description: description,
-        totalAmount: totalAmount,
-        paidAmount: paidAmount,
-        remainingAmount: remainingAmount,
-        createdDate: new Date().toISOString().split("T")[0],
-        branchId: currentBranchId,
-        workOrderId: workOrder.id, // 🔹 Link debt với work order
-      };
-
-      console.log("[ServiceManager] createCustomerDebt payload:", payload);
-      const result = await createCustomerDebt.mutateAsync(payload as any);
-      console.log("[ServiceManager] createCustomerDebt result:", result);
-      showToast.success(
-        `Đã tạo/cập nhật công nợ ${remainingAmount.toLocaleString()}đ (Mã: ${
-          result?.id || "N/A"
-        })`
-      );
-    } catch (error) {
-      console.error("Error creating/updating customer debt:", error);
-      showToast.error("Không thể tạo/cập nhật công nợ tự động");
-    }
   };
 
   // 🔹 Function to handle deposit (đặt cọc để đặt hàng)

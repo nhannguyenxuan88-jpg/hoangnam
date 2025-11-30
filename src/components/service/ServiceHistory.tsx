@@ -5,7 +5,14 @@ import {
   formatDate,
   formatWorkOrderId,
 } from "../../utils/format";
-import { Calendar, Search, Download, Printer, Edit2 } from "lucide-react";
+import {
+  Calendar,
+  Search,
+  Download,
+  Printer,
+  Edit2,
+  ChevronRight,
+} from "lucide-react";
 import { printElementById } from "../../utils/print";
 import { supabase } from "../../supabaseClient";
 import type { WorkOrder } from "../../types";
@@ -462,42 +469,42 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+    <div className="space-y-4 md:space-y-6 px-4 md:px-0">
+      {/* Stats Cards - Mobile optimized */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
                 Tổng phiếu
               </p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              <p className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100">
                 {filteredOrders.length}
               </p>
             </div>
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <div className="p-2 md:p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <Calendar className="w-5 h-5 md:w-6 md:h-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
                 Tổng doanh thu
               </p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+              <p className="text-lg md:text-2xl font-bold text-green-600 dark:text-green-400">
                 {formatCurrency(totalRevenue)}
               </p>
             </div>
-            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <Download className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <div className="p-2 md:p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <Download className="w-5 h-5 md:w-6 md:h-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+        <div className="col-span-2 md:col-span-1 bg-white dark:bg-slate-800 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-700">
           <button
             onClick={exportToCSV}
             className="w-full px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors"
@@ -508,37 +515,37 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
         </div>
       </div>
 
-      {/* Action Bar */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex-1 min-w-[200px]">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Tìm theo mã, tên, SĐT, xe, biển số..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400"
-              />
-              <Search
-                className="absolute left-3 top-2.5 w-4 h-4 text-slate-400"
-                aria-hidden="true"
-              />
-            </div>
-          </div>
+      {/* Action Bar - Mobile optimized */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-3 md:p-4 border border-slate-200 dark:border-slate-700">
+        {/* Search */}
+        <div className="relative mb-3">
+          <input
+            type="text"
+            placeholder="Tìm theo mã, tên, SĐT, xe,..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400"
+          />
+          <Search
+            className="absolute left-3 top-3 w-4 h-4 text-slate-400"
+            aria-hidden="true"
+          />
+        </div>
 
+        {/* Filters Row */}
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setShowDateFilterModal(true)}
-            className="px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors flex items-center gap-2"
+            className="flex-1 md:flex-none px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs md:text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
           >
             <Calendar className="w-4 h-4" />
-            {getDateFilterDisplay()}
+            <span className="truncate">{getDateFilterDisplay()}</span>
           </button>
 
           <select
             value={technicianFilter}
             onChange={(e) => setTechnicianFilter(e.target.value)}
-            className="px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-200"
+            className="flex-1 md:flex-none px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs md:text-sm text-slate-700 dark:text-slate-200"
           >
             <option value="all">Tất cả KTV</option>
             <option value="KTV 1">KTV 1</option>
@@ -548,7 +555,7 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
           <select
             value={paymentFilter}
             onChange={(e) => setPaymentFilter(e.target.value)}
-            className="px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-200"
+            className="flex-1 md:flex-none px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs md:text-sm text-slate-700 dark:text-slate-200"
           >
             <option value="all">Tất cả thanh toán</option>
             <option value="paid">Đã thanh toán</option>
@@ -743,8 +750,8 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
         </div>
       )}
 
-      {/* Table */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+      {/* Table - Desktop Only */}
+      <div className="hidden md:block bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
         {/* Table Header */}
         <div className="px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-600">
           <div className="flex items-center gap-4">
@@ -1040,29 +1047,172 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
         )}
       </div>
 
-      {/* Print Preview Modal */}
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {filteredOrders.length === 0 ? (
+          <div className="bg-slate-800 rounded-xl p-8 text-center text-slate-400">
+            Không có phiếu sửa chữa nào.
+          </div>
+        ) : (
+          filteredOrders.map((order) => {
+            const partsCost =
+              order.partsUsed?.reduce(
+                (sum, p) => sum + p.quantity * p.price,
+                0
+              ) || 0;
+            const servicesTotal =
+              order.additionalServices?.reduce(
+                (sum: number, s: any) =>
+                  sum + (s.price || 0) * (s.quantity || 1),
+                0
+              ) || 0;
+
+            return (
+              <div
+                key={order.id}
+                className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden"
+              >
+                {/* Card Header */}
+                <div className="px-4 py-3 bg-slate-700/50 border-b border-slate-700 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-slate-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-5 h-5 text-slate-300" />
+                    </div>
+                    <div>
+                      <div className="font-mono font-bold text-blue-400 text-sm">
+                        {formatWorkOrderId(
+                          order.id,
+                          storeSettings?.work_order_prefix
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        Ngày: {formatDate(order.creationDate, true)}
+                      </div>
+                      <div className="text-xs text-cyan-400">
+                        NV: {order.technicianName || "Chưa phân công"}
+                      </div>
+                    </div>
+                  </div>
+                  <StatusBadge status={order.status || "Tiếp nhận"} />
+                </div>
+
+                {/* Customer Info */}
+                <div className="px-4 py-3 border-b border-slate-700">
+                  <div className="font-semibold text-white text-base">
+                    {order.customerName}
+                  </div>
+                  <div className="text-sm text-slate-400">
+                    {order.customerPhone}
+                  </div>
+                  <div className="text-sm text-slate-400 mt-1">
+                    Xe: {order.vehicleModel || "N/A"} -{" "}
+                    {order.licensePlate || "N/A"}
+                  </div>
+                  {order.issueDescription && (
+                    <div className="text-xs text-slate-500 italic mt-1">
+                      {order.issueDescription}
+                    </div>
+                  )}
+                </div>
+
+                {/* Price Summary */}
+                <div className="px-4 py-3 space-y-2">
+                  {order.laborCost > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-400">Tiền công:</span>
+                      <span className="text-slate-300">
+                        {formatCurrency(order.laborCost)}
+                      </span>
+                    </div>
+                  )}
+                  {partsCost > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-400">Phụ tùng:</span>
+                      <span className="text-blue-400">
+                        {formatCurrency(partsCost)}
+                      </span>
+                    </div>
+                  )}
+                  {servicesTotal > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-400">Gia công:</span>
+                      <span className="text-slate-300">
+                        {formatCurrency(servicesTotal)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm font-bold pt-2 border-t border-slate-700">
+                    <span className="text-slate-300">Tổng cộng:</span>
+                    <span className="text-green-400">
+                      {formatCurrency(order.total)}
+                    </span>
+                  </div>
+                  {order.remainingAmount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-400">Còn phải thu:</span>
+                      <span className="text-red-400 font-bold">
+                        {formatCurrency(order.remainingAmount)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="pt-2">
+                    <PaymentBadge status={order.paymentStatus} />
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="px-4 py-3 bg-slate-700/30 border-t border-slate-700 flex items-center gap-2">
+                  <button
+                    onClick={() => handleEditOrder(order)}
+                    className="flex-1 px-3 py-2 bg-cyan-500 hover:bg-cyan-600 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    <span>Sửa</span>
+                  </button>
+                  <button
+                    onClick={() => handlePrintOrder(order)}
+                    className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Printer className="w-4 h-4" />
+                    <span>In</span>
+                  </button>
+                  <button
+                    onClick={() => handlePrintOrder(order)}
+                    className="px-3 py-2 bg-slate-600 hover:bg-slate-500 text-white text-sm rounded-lg transition-colors flex items-center justify-center"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Print Preview Modal - Mobile optimized */}
       {showPrintPreview && printOrder && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between rounded-t-xl flex-shrink-0">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 md:p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-4xl max-h-[95vh] md:max-h-[90vh] flex flex-col">
+            {/* Modal Header - Mobile optimized */}
+            <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-3 md:px-6 py-3 md:py-4 flex items-center justify-between rounded-t-xl flex-shrink-0">
+              <h2 className="text-base md:text-xl font-bold text-slate-900 dark:text-slate-100">
                 Xem trước phiếu in
               </h2>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3">
                 <button
                   onClick={handleDoPrint}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2 transition"
+                  className="px-3 md:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-1.5 md:gap-2 transition text-sm md:text-base"
                 >
                   <Printer className="w-4 h-4" />
-                  In phiếu
+                  <span className="hidden md:inline">In phiếu</span>
+                  <span className="md:hidden">In</span>
                 </button>
                 <button
                   onClick={() => {
                     setShowPrintPreview(false);
                     setPrintOrder(null);
                   }}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
                   aria-label="Đóng"
                 >
                   <svg
@@ -1083,11 +1233,11 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
               </div>
             </div>
 
-            {/* Print Preview Content */}
-            <div className="flex-1 overflow-y-auto p-6 bg-slate-100 dark:bg-slate-900">
+            {/* Print Preview Content - Responsive for mobile */}
+            <div className="flex-1 overflow-auto p-2 md:p-6 bg-slate-100 dark:bg-slate-900">
               <div
-                className="bg-white shadow-lg mx-auto"
-                style={{ width: "148mm", minHeight: "210mm", color: "#000" }}
+                className="bg-white shadow-lg mx-auto overflow-x-auto"
+                style={{ maxWidth: "148mm", minWidth: "320px", color: "#000" }}
               >
                 <div style={{ padding: "10mm" }}>
                   {/* Store Info Header */}

@@ -546,6 +546,25 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     const totalPaid = totalDeposit + additionalPayment;
     const remainingAmount = total - totalPaid;
 
+    // Transform parts to use 'price' field (as expected by SQL/types)
+    const transformedParts = selectedParts.map((p) => ({
+      partId: p.partId,
+      partName: p.partName,
+      quantity: p.quantity,
+      price: p.sellingPrice, // Map sellingPrice to price for SQL
+      sku: p.sku || "",
+      category: p.category || "",
+    }));
+
+    // Transform additional services to use 'price' field
+    const transformedServices = additionalServices.map((s) => ({
+      id: s.id,
+      description: s.name,
+      quantity: 1,
+      price: s.sellingPrice, // Map sellingPrice to price
+      costPrice: s.costPrice,
+    }));
+
     const workOrderData = {
       status,
       technicianId: selectedTechnicianId,
@@ -553,8 +572,8 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
       vehicle: selectedVehicle,
       currentKm: parseInt(currentKm) || 0,
       issueDescription,
-      parts: selectedParts,
-      additionalServices,
+      parts: transformedParts,
+      additionalServices: transformedServices,
       laborCost,
       discount: discountAmount,
       total: total,
