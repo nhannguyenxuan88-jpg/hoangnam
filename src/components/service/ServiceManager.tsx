@@ -201,6 +201,7 @@ export default function ServiceManager() {
 
   const [showModal, setShowModal] = useState(false);
   const [showMobileModal, setShowMobileModal] = useState(false);
+  const [mobileModalViewMode, setMobileModalViewMode] = useState(false); // true = xem chi tiết, false = chỉnh sửa
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState<WorkOrder | undefined>(
     undefined
@@ -1113,10 +1114,12 @@ export default function ServiceManager() {
           workOrders={displayWorkOrders || []}
           onCreateWorkOrder={() => {
             setEditingOrder(undefined);
+            setMobileModalViewMode(false); // Tạo mới = edit mode
             setShowMobileModal(true);
           }}
           onEditWorkOrder={(workOrder) => {
             setEditingOrder(workOrder);
+            setMobileModalViewMode(true); // Click vào phiếu = view mode trước
             setShowMobileModal(true);
           }}
           onDeleteWorkOrder={handleDelete}
@@ -1133,6 +1136,7 @@ export default function ServiceManager() {
             onClose={() => {
               setShowMobileModal(false);
               setEditingOrder(undefined);
+              setMobileModalViewMode(false);
             }}
             onSave={handleMobileSave}
             workOrder={editingOrder}
@@ -1141,6 +1145,8 @@ export default function ServiceManager() {
             employees={displayEmployees}
             currentBranchId={currentBranchId}
             upsertCustomer={upsertCustomer}
+            viewMode={mobileModalViewMode}
+            onSwitchToEdit={() => setMobileModalViewMode(false)}
           />
         )}
 

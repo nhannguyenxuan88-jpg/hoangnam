@@ -29,6 +29,8 @@ interface WorkOrderMobileModalProps {
   employees: Employee[];
   currentBranchId: string;
   upsertCustomer?: (customer: any) => void;
+  viewMode?: boolean; // true = xem chi tiết, false = chỉnh sửa
+  onSwitchToEdit?: () => void; // callback khi bấm nút chỉnh sửa từ view mode
 }
 
 type WorkOrderStatus = "Tiếp nhận" | "Đang sửa" | "Đã sửa xong" | "Trả máy";
@@ -43,6 +45,8 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   employees,
   currentBranchId,
   upsertCustomer,
+  viewMode = false,
+  onSwitchToEdit,
 }) => {
   // Find customer and vehicle from workOrder data
   const initialCustomer = useMemo(() => {
@@ -193,6 +197,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
       partName: string;
       quantity: number;
       sellingPrice: number;
+      costPrice?: number;
       sku?: string;
       category?: string;
     }>
@@ -202,6 +207,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
       partName: p.partName,
       quantity: p.quantity,
       sellingPrice: p.price || 0,
+      costPrice: p.costPrice || 0,
       sku: p.sku || "",
       category: p.category || "",
     })) || []
@@ -252,6 +258,11 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [newCustomerVehicleModel, setNewCustomerVehicleModel] = useState("");
   const [newCustomerLicensePlate, setNewCustomerLicensePlate] = useState("");
+  
+  // State for editing existing customer
+  const [isEditingCustomer, setIsEditingCustomer] = useState(false);
+  const [editCustomerName, setEditCustomerName] = useState("");
+  const [editCustomerPhone, setEditCustomerPhone] = useState("");
 
   // Helper functions for number formatting
   const formatNumberWithDots = (value: number | string): string => {
@@ -375,6 +386,38 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     setCustomerSearchTerm("");
     setSelectedVehicle(null);
     setCurrentKm(""); // Reset km when changing customer
+    // Reset edit mode
+    setIsEditingCustomer(false);
+    setEditCustomerName(customer.name);
+    setEditCustomerPhone(customer.phone || "");
+  };
+
+  // Handle save edited customer info
+  const handleSaveEditedCustomer = () => {
+    if (!selectedCustomer) return;
+    if (!editCustomerName.trim()) {
+      alert("Vui lòng nhập tên khách hàng");
+      return;
+    }
+    if (!editCustomerPhone.trim()) {
+      alert("Vui lòng nhập số điện thoại");
+      return;
+    }
+
+    const updatedCustomer = {
+      ...selectedCustomer,
+      name: editCustomerName.trim(),
+      phone: editCustomerPhone.trim(),
+    };
+
+    // Save to database if upsertCustomer is available
+    if (upsertCustomer) {
+      upsertCustomer(updatedCustomer);
+    }
+
+    // Update local state
+    setSelectedCustomer(updatedCustomer);
+    setIsEditingCustomer(false);
   };
 
   const handleSelectVehicle = (vehicle: Vehicle) => {
@@ -620,6 +663,217 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
 
   if (!isOpen) return null;
 
+  // VIEW MODE - Hiển thị chi tiết phiếu (không cho chỉnh sửa)
+  if (viewMode && workOrder) {
+    return (
+      <div className="fixed inset-0 bg-black/50 z-[100] flex items-end md:items-center justify-center">
+        {/* Mobile Full Screen */}
+        <div className="md:hidden w-full h-full bg-[#151521] flex flex-col">
+          {/* Header */}
+          <div className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 px-3 py-3 flex items-center justify-between">
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 text-white">
+              <X className="w-4 h-4" />
+            </button>
+            <h2 className="text-sm font-bold text-white">
+              📋 Chi tiết phiếu #{formatWorkOrderId(workOrder.id)}
+            </h2>
+            {onSwitchToEdit && (
+              <button 
+                onClick={onSwitchToEdit}
+                className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-white text-xs font-medium flex items-center gap-1"
+              >
+                ✏️ Sửa
+              </button>
+            )}
+            {!onSwitchToEdit && <div className="w-8"></div>}
+          </div>
+
+          {/* Scrollable Content - View Only */}
+          <div className="flex-1 overflow-y-auto bg-[#151521]">
+            {/* Trạng thái & Thời gian */}
+            <div className="p-3 bg-[#1e1e2d] border-b border-slate-700">
+              <div className="flex items-center justify-between">
+                <span className={`px-3 py-1.5 rounded-lg text-xs font-bold ${getStatusColor(workOrder.status)}`}>
+                  {workOrder.status}
+                </span>
+                <span className="text-xs text-slate-400">
+                  {new Date(workOrder.creationDate).toLocaleDateString('vi-VN')} {new Date(workOrder.creationDate).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+              {workOrder.assignedTechnician && (
+                <div className="mt-2 text-xs text-slate-300">
+                  👤 KTV: <span className="font-medium text-white">{workOrder.assignedTechnician}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Thông tin khách hàng */}
+            <div className="p-3 border-b border-slate-700">
+              <h3 className="text-xs font-semibold text-blue-400 mb-2">👤 KHÁCH HÀNG</h3>
+              <div className="bg-[#1e1e2d] rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-white font-medium">{workOrder.customerName || "—"}</span>
+                  {workOrder.customerPhone && (
+                    <a href={`tel:${workOrder.customerPhone}`} className="text-blue-400 text-sm">
+                      📞 {workOrder.customerPhone}
+                    </a>
+                  )}
+                </div>
+                <div className="text-sm text-slate-300">
+                  🏍️ {workOrder.vehicleModel || "—"} • <span className="text-yellow-400 font-mono">{workOrder.licensePlate || "—"}</span>
+                </div>
+                {workOrder.currentKm && (
+                  <div className="text-xs text-slate-400">
+                    📏 Số km hiện tại: {formatKm(workOrder.currentKm)} km
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Mô tả vấn đề */}
+            {workOrder.description && (
+              <div className="p-3 border-b border-slate-700">
+                <h3 className="text-xs font-semibold text-orange-400 mb-2">📝 MÔ TẢ VẤN ĐỀ</h3>
+                <div className="bg-[#1e1e2d] rounded-xl p-3 text-sm text-slate-300 whitespace-pre-wrap">
+                  {workOrder.description}
+                </div>
+              </div>
+            )}
+
+            {/* Phụ tùng */}
+            {workOrder.partsUsed && workOrder.partsUsed.length > 0 && (
+              <div className="p-3 border-b border-slate-700">
+                <h3 className="text-xs font-semibold text-emerald-400 mb-2">🔧 PHỤ TÙNG ({workOrder.partsUsed.length})</h3>
+                <div className="space-y-2">
+                  {workOrder.partsUsed.map((part, idx) => (
+                    <div key={idx} className="bg-[#1e1e2d] rounded-xl p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <div className="text-sm text-white font-medium truncate">{part.partName || part.name || 'Phụ tùng'}</div>
+                          <div className="text-xs text-slate-400">SL: {part.quantity} {part.sku && `• ${part.sku}`}</div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-sm font-bold text-emerald-400">{formatCurrency(part.price * part.quantity)}</div>
+                          <div className="text-xs text-slate-500">{formatCurrency(part.price)}/cái</div>
+                        </div>
+                      </div>
+                      {/* Hiển thị giá vốn để debug */}
+                      <div className="mt-1 text-[10px] text-slate-500 flex justify-between">
+                        <span>Giá vốn: {formatCurrency(part.costPrice || 0)}/cái</span>
+                        <span className="text-yellow-400">Lãi: {formatCurrency((part.price - (part.costPrice || 0)) * part.quantity)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Dịch vụ */}
+            {workOrder.additionalServices && workOrder.additionalServices.length > 0 && (
+              <div className="p-3 border-b border-slate-700">
+                <h3 className="text-xs font-semibold text-purple-400 mb-2">🛠️ DỊCH VỤ ({workOrder.additionalServices.length})</h3>
+                <div className="space-y-2">
+                  {workOrder.additionalServices.map((svc, idx) => (
+                    <div key={idx} className="bg-[#1e1e2d] rounded-xl p-3 flex items-center justify-between">
+                      <div className="flex-1 min-w-0 pr-2">
+                        <div className="text-sm text-white font-medium truncate">{svc.description || svc.name || 'Dịch vụ'}</div>
+                        {svc.quantity > 1 && <div className="text-xs text-slate-400">SL: {svc.quantity}</div>}
+                      </div>
+                      <div className="text-sm font-bold text-purple-400 flex-shrink-0">{formatCurrency(svc.price * (svc.quantity || 1))}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Ghi chú */}
+            {workOrder.note && (
+              <div className="p-3 border-b border-slate-700">
+                <h3 className="text-xs font-semibold text-yellow-400 mb-2">💬 GHI CHÚ</h3>
+                <div className="bg-[#1e1e2d] rounded-xl p-3 text-sm text-slate-300 whitespace-pre-wrap">
+                  {workOrder.note}
+                </div>
+              </div>
+            )}
+
+            {/* Tổng tiền */}
+            <div className="p-3">
+              <div className="bg-gradient-to-r from-emerald-900/50 to-emerald-800/30 rounded-xl p-4 border border-emerald-700">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-slate-300">Tổng phụ tùng</span>
+                  <span className="text-white font-medium">
+                    {formatCurrency(workOrder.partsUsed?.reduce((s, p) => s + p.price * p.quantity, 0) || 0)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-slate-300">Tổng dịch vụ</span>
+                  <span className="text-white font-medium">
+                    {formatCurrency(workOrder.additionalServices?.reduce((s, svc) => s + svc.price * (svc.quantity || 1), 0) || 0)}
+                  </span>
+                </div>
+                {(workOrder.discount || 0) > 0 && (
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-slate-300">Giảm giá</span>
+                    <span className="text-red-400 font-medium">-{formatCurrency(workOrder.discount || 0)}</span>
+                  </div>
+                )}
+                <div className="border-t border-emerald-600 pt-2 mt-2 flex items-center justify-between">
+                  <span className="text-lg font-bold text-white">TỔNG CỘNG</span>
+                  <span className="text-2xl font-black text-emerald-400">{formatCurrency(workOrder.total)}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-sm">
+                  <span className="text-slate-400">Trạng thái thanh toán</span>
+                  <span className={`font-medium ${workOrder.paymentStatus === 'paid' ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                    {workOrder.paymentStatus === 'paid' ? '✅ Đã thanh toán' : '⏳ Chưa thanh toán'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer - Nút chỉnh sửa */}
+          {onSwitchToEdit && (
+            <div className="flex-shrink-0 p-3 bg-[#1e1e2d] border-t border-slate-700">
+              <button
+                onClick={onSwitchToEdit}
+                className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-bold text-base flex items-center justify-center gap-2"
+              >
+                ✏️ Chỉnh sửa phiếu
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop View */}
+        <div className="hidden md:block max-w-2xl w-full max-h-[90vh] bg-white dark:bg-slate-800 rounded-xl shadow-2xl overflow-hidden">
+          {/* Similar content for desktop - simplified */}
+          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              Chi tiết phiếu #{formatWorkOrderId(workOrder.id)}
+            </h2>
+            <div className="flex items-center gap-2">
+              {onSwitchToEdit && (
+                <button onClick={onSwitchToEdit} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">
+                  ✏️ Chỉnh sửa
+                </button>
+              )}
+              <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          <div className="p-4 overflow-y-auto max-h-[calc(90vh-60px)]">
+            {/* Desktop content similar to mobile */}
+            <div className="text-center text-slate-500 py-8">
+              Vui lòng bấm "Chỉnh sửa" để xem và sửa chi tiết phiếu
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // EDIT MODE - Form chỉnh sửa (code cũ)
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex items-end md:items-center justify-center">
       {/* Mobile Full Screen */}
@@ -631,7 +885,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
           </button>
           <h2 className="text-sm font-semibold text-white">
             {workOrder
-              ? `Phiếu #${formatWorkOrderId(workOrder.id)}`
+              ? `✏️ Sửa phiếu #${formatWorkOrderId(workOrder.id)}`
               : "Tạo phiếu sửa chữa"}
           </h2>
           <div className="w-8"></div>
@@ -751,30 +1005,97 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                 </div>
               </div>
             ) : selectedCustomer ? (
-              <div className="p-2.5 bg-[#1e1e2d] rounded-lg flex items-start justify-between">
-                <div className="flex items-start gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-semibold text-xs">
-                    {selectedCustomer.name.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="text-white font-medium text-xs">
-                      {selectedCustomer.name}
+              <div className="p-2.5 bg-[#1e1e2d] rounded-lg">
+                {isEditingCustomer ? (
+                  // Edit mode - show input fields
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-[10px] font-medium text-slate-400 mb-1">
+                        Tên khách hàng
+                      </label>
+                      <input
+                        type="text"
+                        value={editCustomerName}
+                        onChange={(e) => setEditCustomerName(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-[#2b2b40] rounded-lg text-white text-xs"
+                        placeholder="Nhập tên khách hàng"
+                      />
                     </div>
-                    <div className="text-xs text-slate-400">
-                      📞 {selectedCustomer.phone}
+                    <div>
+                      <label className="block text-[10px] font-medium text-slate-400 mb-1">
+                        Số điện thoại
+                      </label>
+                      <input
+                        type="tel"
+                        value={editCustomerPhone}
+                        onChange={(e) => setEditCustomerPhone(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-[#2b2b40] rounded-lg text-white text-xs"
+                        placeholder="Nhập số điện thoại"
+                      />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={() => {
+                          setIsEditingCustomer(false);
+                          setEditCustomerName(selectedCustomer.name);
+                          setEditCustomerPhone(selectedCustomer.phone || "");
+                        }}
+                        className="flex-1 py-1.5 bg-[#2b2b40] text-slate-300 rounded-lg text-[10px] font-medium"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        onClick={handleSaveEditedCustomer}
+                        className="flex-1 py-1.5 bg-green-600 text-white rounded-lg text-[10px] font-medium"
+                      >
+                        💾 Lưu
+                      </button>
                     </div>
                   </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedCustomer(null);
-                    setSelectedVehicle(null);
-                    setShowCustomerSearch(true);
-                  }}
-                  className="p-1 text-slate-400 hover:text-white"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                ) : (
+                  // View mode - show customer info with edit button
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-semibold text-xs">
+                        {selectedCustomer.name.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="text-white font-medium text-xs">
+                          {selectedCustomer.name}
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          📞 {selectedCustomer.phone}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          setEditCustomerName(selectedCustomer.name);
+                          setEditCustomerPhone(selectedCustomer.phone || "");
+                          setIsEditingCustomer(true);
+                        }}
+                        className="p-1 text-blue-400 hover:text-blue-300"
+                        title="Sửa thông tin khách hàng"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedCustomer(null);
+                          setSelectedVehicle(null);
+                          setShowCustomerSearch(true);
+                          setIsEditingCustomer(false);
+                        }}
+                        className="p-1 text-slate-400 hover:text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : null}
 
@@ -1520,10 +1841,17 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
         {/* Desktop modal would go here - keeping original unchanged */}
       </div>
 
-      {/* Part Search Bottom Sheet */}
+      {/* Part Search Bottom Sheet - Fixed for keyboard visibility */}
       {showPartSearch && (
-        <div className="fixed inset-0 bg-black/70 z-[110] flex items-end">
-          <div className="w-full bg-[#151521] rounded-t-2xl max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/70 z-[110] flex flex-col">
+          {/* Spacer to push content up when keyboard appears */}
+          <div className="flex-1 min-h-[10vh]" onClick={() => {
+            setShowPartSearch(false);
+            setPartSearchTerm("");
+          }} />
+          
+          {/* Bottom Sheet Container - positioned at bottom, height adjusts with keyboard */}
+          <div className="w-full bg-[#151521] rounded-t-2xl flex flex-col" style={{ maxHeight: '70vh' }}>
             <div className="flex-shrink-0 p-3 border-b border-slate-700 flex items-center justify-between">
               <h3 className="text-white font-semibold text-sm">
                 Chọn phụ tùng
@@ -1539,7 +1867,8 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
               </button>
             </div>
 
-            <div className="p-3">
+            {/* Search Input - Sticky at top */}
+            <div className="flex-shrink-0 p-3 bg-[#151521] sticky top-0 z-10">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                 <input
@@ -1547,13 +1876,14 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                   value={partSearchTerm}
                   onChange={(e) => setPartSearchTerm(e.target.value)}
                   placeholder="Tìm tên hoặc SKU..."
-                  className="w-full pl-9 pr-3 py-2 bg-[#2b2b40] rounded-lg text-white text-xs"
+                  className="w-full pl-9 pr-3 py-2.5 bg-[#2b2b40] rounded-lg text-white text-sm"
                   autoFocus
                 />
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-3 pb-3">
+            {/* Results List - Scrollable */}
+            <div className="flex-1 overflow-y-auto px-3 pb-3 overscroll-contain">
               <div className="space-y-2">
                 {filteredParts.slice(0, 20).map((part) => {
                   const stock = part.stock?.[currentBranchId] || 0;

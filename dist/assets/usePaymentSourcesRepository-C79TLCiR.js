@@ -1,0 +1,1 @@
+import{a as s,y as t,s as n,an as u,a7 as c}from"./index-9wxNecOd.js";const i=()=>{const a=s();return t({mutationFn:({id:e,branchId:r,delta:o})=>u(e,r,o),onSuccess:()=>{a.invalidateQueries({queryKey:["paymentSourcesRepo"]})},onError:e=>n.error(c(e))})};export{i as u};

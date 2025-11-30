@@ -180,49 +180,56 @@ const AddProductModal: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-lg w-full max-w-xl max-h-[85vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex justify-between items-center px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-          <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-            Thêm sản phẩm mới
+    <div className="fixed inset-0 bg-black/70 flex items-end sm:items-center justify-center z-[9999] p-0 sm:p-4">
+      <div className="bg-white dark:bg-slate-800 w-full sm:rounded-xl sm:max-w-lg max-h-[95vh] sm:max-h-[85vh] overflow-hidden flex flex-col rounded-t-2xl">
+        {/* Header - Mobile optimized */}
+        <div className="flex justify-between items-center px-4 py-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-blue-600 to-blue-700 sm:bg-none sm:from-transparent sm:to-transparent">
+          <h2 className="text-lg font-bold text-white sm:text-slate-900 sm:dark:text-slate-100">
+            ➕ Thêm sản phẩm mới
           </h2>
           <button
             onClick={onClose}
-            className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-xl"
+            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 sm:bg-slate-100 sm:dark:bg-slate-700 text-white sm:text-slate-600 sm:dark:text-slate-300 text-2xl font-bold"
           >
             ×
           </button>
         </div>
 
         {/* Form Content */}
-        <div className="flex-1 overflow-y-auto px-4 py-3">
-          <div className="space-y-3">
-            {/* Row 1: Tên sản phẩm + Danh mục */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+        <div className="flex-1 overflow-y-auto px-4 py-4 bg-slate-50 dark:bg-slate-900/50">
+          <div className="space-y-4">
+            {/* Card: Thông tin sản phẩm */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                📦 Thông tin sản phẩm
+              </h3>
+              
+              {/* Tên sản phẩm */}
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                   Tên sản phẩm <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  className="w-full px-4 py-3 text-base border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Nhập tên sản phẩm"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+              
+              {/* Danh mục */}
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                   Danh mục sản phẩm
                 </label>
-                <div className="flex gap-1.5">
+                <div className="flex gap-2">
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="flex-1 px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    className="flex-1 px-4 py-3 text-base border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">-- Chọn hoặc tạo mới --</option>
+                    <option value="">-- Chọn danh mục --</option>
                     {categories.map((c: any) => (
                       <option key={c.id} value={c.name}>
                         {c.name}
@@ -232,111 +239,114 @@ const AddProductModal: React.FC<{
                   <button
                     type="button"
                     onClick={() => setShowInlineCat(true)}
-                    className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600"
+                    className="w-12 h-12 flex items-center justify-center bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-xl hover:bg-blue-200 dark:hover:bg-blue-800/40 transition-colors"
                     aria-label="Thêm danh mục mới"
                   >
-                    <span className="text-lg text-slate-600 dark:text-slate-300">
-                      +
-                    </span>
+                    <span className="text-2xl text-blue-600 dark:text-blue-400">+</span>
                   </button>
                 </div>
+              </div>
+              
+              {/* Barcode */}
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+                  Mã vạch / SKU
+                </label>
+                <input
+                  type="text"
+                  value={barcode}
+                  onChange={(e) => setBarcode(e.target.value)}
+                  className="w-full px-4 py-3 text-base border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nhập mã vạch (nếu có)"
+                />
               </div>
             </div>
 
             {/* Inline category form */}
             {showInlineCat && (
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  const trimmed = inlineCatName.trim();
-                  if (!trimmed) {
-                    showToast.warning("Vui lòng nhập tên danh mục");
-                    return;
-                  }
-                  if (trimmed.length < 2) {
-                    showToast.warning("Tên quá ngắn");
-                    return;
-                  }
-                  try {
-                    const res = await createCategory.mutateAsync({
-                      name: trimmed,
-                    });
-                    setCategory(res.name);
-                    setInlineCatName("");
-                    setShowInlineCat(false);
-                  } catch (err: any) {
-                    showToast.error(err?.message || "Lỗi tạo danh mục");
-                  }
-                }}
-                className="flex gap-2"
-              >
-                <input
-                  autoFocus
-                  type="text"
-                  value={inlineCatName}
-                  onChange={(e) => setInlineCatName(e.target.value)}
-                  placeholder="Nhập tên danh mục mới"
-                  className="flex-1 px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                />
-                <button
-                  type="submit"
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium"
-                >
-                  Lưu
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowInlineCat(false);
-                    setInlineCatName("");
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const trimmed = inlineCatName.trim();
+                    if (!trimmed) {
+                      showToast.warning("Vui lòng nhập tên danh mục");
+                      return;
+                    }
+                    if (trimmed.length < 2) {
+                      showToast.warning("Tên quá ngắn");
+                      return;
+                    }
+                    try {
+                      const res = await createCategory.mutateAsync({
+                        name: trimmed,
+                      });
+                      setCategory(res.name);
+                      setInlineCatName("");
+                      setShowInlineCat(false);
+                    } catch (err: any) {
+                      showToast.error(err?.message || "Lỗi tạo danh mục");
+                    }
                   }}
-                  className="px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-lg text-xs bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600"
+                  className="space-y-3"
                 >
-                  Hủy
-                </button>
-              </form>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">
+                    Tạo danh mục mới
+                  </label>
+                  <input
+                    autoFocus
+                    type="text"
+                    value={inlineCatName}
+                    onChange={(e) => setInlineCatName(e.target.value)}
+                    placeholder="Nhập tên danh mục mới"
+                    className="w-full px-4 py-3 text-base border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium"
+                    >
+                      Lưu danh mục
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowInlineCat(false);
+                        setInlineCatName("");
+                      }}
+                      className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+                    >
+                      Hủy
+                    </button>
+                  </div>
+                </form>
+              </div>
             )}
 
-            {/* Mô tả */}
-            <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Mô tả
-              </label>
+            {/* Card: Mô tả */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                📝 Mô tả sản phẩm
+              </h3>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
-                className="w-full px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                placeholder="Mô tả sản phẩm"
+                className="w-full px-4 py-3 text-base border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500"
+                placeholder="Mô tả chi tiết sản phẩm (tùy chọn)"
               />
             </div>
 
-            {/* Mã sản phẩm */}
-            <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Mã sản phẩm
-              </label>
-              <input
-                type="text"
-                value={barcode}
-                onChange={(e) => setBarcode(e.target.value)}
-                placeholder="VD: 06455-KYJ-841 (Honda), 5S9-F2101-00 (Yamaha)"
-                className="w-full px-3 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 font-mono"
-              />
-              <p className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
-                Nhập mã hãng (Honda/Yamaha) hoặc để trống để tự sinh mã nội bộ
-                PT-xxxxx
-              </p>
-            </div>
-
-            {/* Thông tin nhập kho - Compact Grid */}
-            <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Thông tin nhập kho:
-              </label>
-              <div className="grid grid-cols-5 gap-2">
+            {/* Card: Thông tin nhập kho */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                💰 Thông tin nhập kho
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {/* Số lượng */}
                 <div>
-                  <label className="block text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                     Số lượng
                   </label>
                   <FormattedNumberInput
@@ -347,12 +357,14 @@ const AddProductModal: React.FC<{
                         result.warnings.forEach((w) => showToast.warning(w));
                       setQuantity(Math.max(1, result.clean.quantity));
                     }}
-                    className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-right"
+                    className="w-full px-4 py-3 text-base border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-center font-bold"
                   />
                 </div>
+                
+                {/* Giá nhập */}
                 <div>
-                  <label className="block text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">
-                    Giá nhập
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+                    Giá nhập (đ)
                   </label>
                   <FormattedNumberInput
                     value={importPrice}
@@ -367,12 +379,14 @@ const AddProductModal: React.FC<{
                         );
                       }
                     }}
-                    className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-right"
+                    className="w-full px-4 py-3 text-base border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-right"
                   />
                 </div>
+                
+                {/* Giá bán lẻ */}
                 <div>
-                  <label className="block text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">
-                    Giá bán lẻ
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+                    Giá bán lẻ (đ)
                   </label>
                   <FormattedNumberInput
                     value={retailPrice}
@@ -380,45 +394,44 @@ const AddProductModal: React.FC<{
                       setRetailPrice(Math.max(0, Math.round(v)));
                       setRetailOverridden(true);
                     }}
-                    className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-right"
+                    className="w-full px-4 py-3 text-base border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-right"
                   />
                 </div>
+                
+                {/* Bảo hành */}
                 <div>
-                  <label className="block text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                     Bảo hành
                   </label>
-                  <FormattedNumberInput
-                    value={warranty}
-                    onValue={(v) => setWarranty(Math.max(0, Math.floor(v)))}
-                    className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-right"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-slate-600 dark:text-slate-400 mb-0.5">
-                    Đơn vị
-                  </label>
-                  <select
-                    value={warrantyUnit}
-                    onChange={(e) => setWarrantyUnit(e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                  >
-                    <option value="tháng">tháng</option>
-                    <option value="năm">năm</option>
-                    <option value="ngày">ngày</option>
-                  </select>
+                  <div className="flex gap-2">
+                    <FormattedNumberInput
+                      value={warranty}
+                      onValue={(v) => setWarranty(Math.max(0, Math.floor(v)))}
+                      className="w-16 px-2 py-3 text-base border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-center"
+                    />
+                    <select
+                      value={warrantyUnit}
+                      onChange={(e) => setWarrantyUnit(e.target.value)}
+                      className="flex-1 px-3 py-3 text-base border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    >
+                      <option value="tháng">tháng</option>
+                      <option value="năm">năm</option>
+                      <option value="ngày">ngày</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700">
+        {/* Footer - Fixed at bottom */}
+        <div className="px-4 py-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
           <button
             onClick={handleSubmit}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium text-sm"
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-4 py-4 rounded-xl font-bold text-lg shadow-lg active:scale-98 transition-all"
           >
-            Lưu và Thêm vào giỏ hàng
+            ✓ Lưu và Thêm vào giỏ hàng
           </button>
         </div>
       </div>
@@ -500,43 +513,39 @@ const GoodsReceiptMobileWrapper: React.FC<{
   }, [isOpen]);
 
   const handleAddNewProduct = (productData: any) => {
-    // Auto-create and add to receipt
-    (async () => {
-      try {
-        const newPart = await createPartMutation.mutateAsync({
+    // Chỉ thêm vào danh sách tạm thời, KHÔNG lưu vào DB ngay
+    // Sản phẩm sẽ được tạo khi hoàn tất phiếu nhập (bấm "Nhập kho")
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const tempSku = productData.barcode?.trim() || productData.sku || `PT-${Date.now()}`;
+    
+    // Add to receipt items with temporary ID (marked as new product)
+    setReceiptItems((items) => [
+      ...items,
+      {
+        partId: tempId,
+        partName: productData.name,
+        sku: tempSku,
+        quantity: productData.quantity,
+        importPrice: productData.importPrice,
+        sellingPrice: productData.retailPrice,
+        wholesalePrice: productData.wholesalePrice || 0,
+        // Store product data for later creation when receipt is finalized
+        _isNewProduct: true,
+        _productData: {
           name: productData.name,
-          sku: productData.sku || `PT-${Date.now()}`,
-          barcode: productData.barcode || "",
+          sku: tempSku,
+          barcode: productData.barcode?.trim() || "",
           category: productData.category,
-          stock: { [currentBranchId]: productData.quantity },
-          costPrice: { [currentBranchId]: productData.importPrice },
-          retailPrice: { [currentBranchId]: productData.retailPrice },
-          wholesalePrice: {
-            [currentBranchId]: productData.wholesalePrice || 0,
-          },
-        });
-        if (!newPart.ok) {
-          throw new Error(newPart.error?.message || "Failed to create part");
-        }
-        setReceiptItems((items) => [
-          ...items,
-          {
-            partId: newPart.data.id,
-            partName: productData.name,
-            sku: productData.sku || `PT-${Date.now()}`,
-            quantity: productData.quantity,
-            importPrice: productData.importPrice,
-            sellingPrice: productData.retailPrice,
-            wholesalePrice: productData.wholesalePrice || 0,
-          },
-        ]);
-        showToast.success("Đã tạo phụ tùng mới và thêm vào phiếu nhập");
-      } catch (e: any) {
-        showToast.error(e?.message || "Lỗi tạo phụ tùng mới");
-      } finally {
-        setShowAddProductModal(false);
-      }
-    })();
+          description: productData.description || "",
+          importPrice: productData.importPrice,
+          retailPrice: productData.retailPrice,
+          wholesalePrice: productData.wholesalePrice || Math.round(productData.retailPrice * 0.9),
+        },
+      },
+    ]);
+    
+    showToast.success("Đã thêm sản phẩm mới vào phiếu. Sản phẩm sẽ được lưu khi nhập kho.");
+    setShowAddProductModal(false);
   };
 
   const handleSave = () => {
@@ -4463,6 +4472,17 @@ const InventoryManager: React.FC = () => {
         importPrice: number;
         sellingPrice: number;
         wholesalePrice?: number;
+        _isNewProduct?: boolean;
+        _productData?: {
+          name: string;
+          sku: string;
+          barcode: string;
+          category: string;
+          description: string;
+          importPrice: number;
+          retailPrice: number;
+          wholesalePrice: number;
+        };
       }>,
       supplierId: string,
       totalAmount: number,
@@ -4503,21 +4523,61 @@ const InventoryManager: React.FC = () => {
 
       // ⚠️ IMPORTANT: Stock is now auto-updated by trigger (trg_inventory_tx_after_insert)
       // We only need to:
-      // 1. Create inventory_transaction (trigger will update stock)
-      // 2. Update prices (retailPrice, wholesalePrice) - not handled by trigger
-      // 3. Create supplier debt if needed
+      // 1. Create new products if any (for temp items)
+      // 2. Create inventory_transaction (trigger will update stock)
+      // 3. Update prices (retailPrice, wholesalePrice) - not handled by trigger
+      // 4. Create supplier debt if needed
 
       try {
+        // First, create any new products that were added temporarily
+        const processedItems = await Promise.all(
+          items.map(async (item) => {
+            if (item._isNewProduct && item._productData) {
+              // Create the new product in DB
+              const createRes = await createPartMutation.mutateAsync({
+                name: item._productData.name,
+                sku: item._productData.sku,
+                barcode: item._productData.barcode || "",
+                category: item._productData.category,
+                description: item._productData.description || "",
+                stock: { [currentBranchId]: 0 }, // Stock = 0, sẽ cập nhật khi hoàn tất phiếu nhập
+                costPrice: { [currentBranchId]: item._productData.importPrice },
+                retailPrice: { [currentBranchId]: item._productData.retailPrice },
+                wholesalePrice: {
+                  [currentBranchId]: item._productData.wholesalePrice || Math.round(item._productData.retailPrice * 0.9),
+                },
+              });
+              
+              // Get the real part ID from the created product
+              const partData = (createRes as any)?.data || createRes;
+              const realPartId = partData?.id || item.partId;
+              
+              console.log(`✅ Created new product: ${item._productData.name} with ID: ${realPartId}`);
+              
+              return {
+                partId: realPartId,
+                partName: item.partName,
+                quantity: item.quantity,
+                importPrice: item.importPrice,
+                sellingPrice: item.sellingPrice,
+                wholesalePrice: item.wholesalePrice || 0,
+              };
+            }
+            // Existing product, return as-is
+            return {
+              partId: item.partId,
+              partName: item.partName,
+              quantity: item.quantity,
+              importPrice: item.importPrice,
+              sellingPrice: item.sellingPrice,
+              wholesalePrice: item.wholesalePrice || 0,
+            };
+          })
+        );
+
         // Use atomic RPC for receipt creation and stock update
         await createReceiptAtomicMutation.mutateAsync({
-          items: items.map((item) => ({
-            partId: item.partId,
-            partName: item.partName,
-            quantity: item.quantity,
-            importPrice: item.importPrice,
-            sellingPrice: item.sellingPrice,
-            wholesalePrice: item.wholesalePrice || 0,
-          })),
+          items: processedItems,
           supplierId,
           branchId: currentBranchId,
           userId: profile?.id || "unknown",
@@ -4590,7 +4650,9 @@ const InventoryManager: React.FC = () => {
       allPartsData,
       currentBranchId,
       updatePartMutation,
+      createPartMutation,
       createInventoryTxAsync,
+      createReceiptAtomicMutation,
       profile?.id,
     ]
   );
