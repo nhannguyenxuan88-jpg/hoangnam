@@ -79,26 +79,32 @@ export async function createCashTransaction(
     if (!input.type)
       return failure({ code: "validation", message: "Thiếu loại thu/chi" });
 
+    // Build payload with only columns that exist in DB schema
+    // Required columns: id, category, amount, date, branchId, paymentSource
+    // Optional columns (after migration): type, notes, recipient, saleId, workOrderId, etc.
     const payload: any = {
+      id: crypto.randomUUID(), // Generate unique ID
       amount: input.amount,
       branchId: input.branchId,
-      paymentSource: input.paymentSourceId, // current DB column
-      paymentSourceId: input.paymentSourceId, // future-proof if column added
+      paymentSource: input.paymentSourceId, // DB column name
       category:
         input.category ||
         (input.type === "income" ? "general_income" : "general_expense"),
       date: input.date || new Date().toISOString(),
-      notes: input.notes,
-      description: input.notes, // legacy column mapping
-      type: input.type, // may require adding column in DB
-      saleId: input.saleId,
-      workOrderId: input.workOrderId,
-      payrollRecordId: input.payrollRecordId,
-      loanPaymentId: input.loanPaymentId,
-      supplierId: input.supplierId,
-      customerId: input.customerId,
-      recipient: input.recipient,
+      description: input.notes || "", // Map notes to description (existing column)
     };
+
+    // Add optional columns (these will be ignored by Supabase if they don't exist after migration)
+    // Only add if migration has been run - for now, use description for notes
+    if (input.type) payload.type = input.type;
+    if (input.recipient) payload.recipient = input.recipient;
+    if (input.saleId) payload.saleId = input.saleId;
+    if (input.workOrderId) payload.workOrderId = input.workOrderId;
+    if (input.payrollRecordId) payload.payrollRecordId = input.payrollRecordId;
+    if (input.loanPaymentId) payload.loanPaymentId = input.loanPaymentId;
+    if (input.supplierId) payload.supplierId = input.supplierId;
+    if (input.customerId) payload.customerId = input.customerId;
+    if (input.notes) payload.notes = input.notes;
 
     const { data, error } = await supabase
       .from(TABLE)
