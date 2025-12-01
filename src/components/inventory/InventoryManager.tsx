@@ -3431,14 +3431,15 @@ const InventoryHistorySection: React.FC<{
                       <div className="text-xs text-slate-500 dark:text-slate-400">
                         {formattedDate} {formattedTime}
                       </div>
-                      <div className="text-xs text-slate-600 dark:text-slate-300">
-                        <span className="font-medium">NV:</span>{" "}
-                        {receipt.items[0].notes
-                          ?.split("NV:")[1]
-                          ?.split("NCC:")[0]
-                          ?.split(" ")[0]
-                          ?.trim() || "Nhân viên"}
-                      </div>
+                      {receipt.items[0].notes?.includes("NV:") && (
+                        <div className="text-xs text-slate-600 dark:text-slate-300">
+                          <span className="font-medium">NV:</span>{" "}
+                          {receipt.items[0].notes
+                            ?.split("NV:")[1]
+                            ?.split("NCC:")[0]
+                            ?.trim()}
+                        </div>
+                      )}
                     </div>
                   </div>
 
