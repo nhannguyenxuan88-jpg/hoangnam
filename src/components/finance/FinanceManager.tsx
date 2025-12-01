@@ -5,14 +5,16 @@ import {
   PiggyBank,
   Building2,
   CircleDollarSign,
+  LayoutDashboard,
   type LucideIcon,
 } from "lucide-react";
 import CashBook from "./CashBook";
 import LoansManager from "./LoansManager";
 import FixedAssetsManager from "./FixedAssetsManager";
 import CapitalManager from "./CapitalManager";
+import CombinedFinance from "./CombinedFinance";
 
-type Tab = "cashbook" | "loans" | "assets" | "capital";
+type Tab = "combined" | "cashbook" | "loans" | "assets" | "capital";
 
 type TabConfig = {
   label: string;
@@ -23,6 +25,15 @@ type TabConfig = {
 };
 
 const TAB_CONFIGS: Record<Tab, TabConfig> = {
+  combined: {
+    label: "Tổng hợp",
+    Icon: LayoutDashboard,
+    activeClass:
+      "bg-gradient-to-r from-indigo-600 to-purple-500 text-white border-transparent shadow-lg shadow-indigo-500/40",
+    inactiveClass:
+      "bg-white/90 dark:bg-slate-900/60 text-indigo-700 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-700 hover:bg-indigo-50/80 dark:hover:bg-indigo-900/20",
+    dotClass: "bg-indigo-400",
+  },
   cashbook: {
     label: "Sổ quỹ",
     Icon: Wallet,
@@ -62,7 +73,7 @@ const TAB_CONFIGS: Record<Tab, TabConfig> = {
 };
 
 const FinanceManager: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<Tab>("cashbook");
+  const [activeTab, setActiveTab] = useState<Tab>("combined");
 
   return (
     <div className="space-y-6">
@@ -81,7 +92,7 @@ const FinanceManager: React.FC = () => {
 
           {/* Toggle Buttons */}
           <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto mt-4 md:mt-0">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full md:w-auto">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 w-full md:w-auto">
               {(Object.keys(TAB_CONFIGS) as Tab[]).map((tabKey) => {
                 const config = TAB_CONFIGS[tabKey];
                 const isActive = activeTab === tabKey;
@@ -116,6 +127,7 @@ const FinanceManager: React.FC = () => {
 
       {/* Content */}
       <div>
+        {activeTab === "combined" && <CombinedFinance />}
         {activeTab === "cashbook" && <CashBook />}
         {activeTab === "loans" && <LoansManager />}
         {activeTab === "assets" && <FixedAssetsManager />}

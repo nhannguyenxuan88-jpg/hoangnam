@@ -4148,7 +4148,7 @@ const SalesManager: React.FC = () => {
                     Khách phải trả
                   </span>
                   <span className="font-black text-lg md:text-2xl text-white">
-                    {formatCurrency(Math.max(0, total - orderDiscount))}
+                    {formatCurrency(total)}
                   </span>
                 </div>
               </div>
