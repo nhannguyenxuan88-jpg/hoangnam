@@ -2947,6 +2947,7 @@ const InventoryHistorySection: React.FC<{
 }> = ({ transactions }) => {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
+  const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
   const { data: supplierDebts = [] } = useSupplierDebtsRepo();
   const [activeTimeFilter, setActiveTimeFilter] = useState("7days");
   const [customStartDate, setCustomStartDate] = useState(
@@ -3108,6 +3109,60 @@ const InventoryHistorySection: React.FC<{
     });
   };
 
+  // Xóa phiếu nhập kho đã chọn
+  const handleDeleteSelectedReceipts = async () => {
+    if (selectedReceipts.size === 0) {
+      showToast.warning("Vui lòng chọn ít nhất một phiếu nhập kho");
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: "Xác nhận xóa phiếu nhập kho",
+      message: `Bạn có chắc chắn muốn xóa ${selectedReceipts.size} phiếu nhập kho đã chọn? Hành động này sẽ:\n- Xóa các giao dịch nhập kho\n- KHÔNG hoàn lại tồn kho (cần điều chỉnh thủ công nếu cần)`,
+      confirmText: "Xóa",
+      cancelText: "Hủy",
+      confirmColor: "red",
+    });
+
+    if (!confirmed) return;
+
+    try {
+      // Get all transaction IDs for selected receipts
+      const receiptCodesToDelete = Array.from(selectedReceipts);
+      const transactionIds: string[] = [];
+
+      groupedReceipts.forEach((receipt) => {
+        if (receiptCodesToDelete.includes(receipt.receiptCode)) {
+          receipt.items.forEach((item: any) => {
+            if (item.id) transactionIds.push(item.id);
+          });
+        }
+      });
+
+      if (transactionIds.length === 0) {
+        showToast.error("Không tìm thấy giao dịch để xóa");
+        return;
+      }
+
+      // Delete transactions
+      const { error } = await supabase
+        .from("inventory_transactions")
+        .delete()
+        .in("id", transactionIds);
+
+      if (error) throw error;
+
+      showToast.success(`Đã xóa ${selectedReceipts.size} phiếu nhập kho`);
+      setSelectedReceipts(new Set());
+
+      // Refetch data
+      queryClient.invalidateQueries({ queryKey: ["inventory_transactions"] });
+    } catch (err: any) {
+      console.error("❌ Lỗi xóa phiếu nhập kho:", err);
+      showToast.error(`Lỗi: ${err.message || "Không thể xóa"}`);
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
       {/* Header */}
@@ -3179,11 +3234,23 @@ const InventoryHistorySection: React.FC<{
       {/* Summary */}
       <div className="px-3 py-3 sm:px-6 sm:py-4 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
         <div className="flex justify-between items-center">
-          <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-            Tổng số phiếu:{" "}
-            <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
-              {groupedReceipts.length}
-            </span>
+          <div className="flex items-center gap-4">
+            <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+              Tổng số phiếu:{" "}
+              <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
+                {groupedReceipts.length}
+              </span>
+            </div>
+            {/* Nút xóa phiếu đã chọn */}
+            {selectedReceipts.size > 0 && (
+              <button
+                onClick={handleDeleteSelectedReceipts}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Xóa {selectedReceipts.size} phiếu
+              </button>
+            )}
           </div>
           <div className="text-right">
             <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
@@ -3226,7 +3293,7 @@ const InventoryHistorySection: React.FC<{
             <div className="text-sm sm:text-base">Không có dữ liệu</div>
           </div>
         ) : (
-          groupedReceipts.map((receipt) => {
+          groupedReceipts.map((receipt, index) => {
             const receiptDate = new Date(receipt.date);
             const formattedDate = receiptDate.toLocaleDateString("vi-VN", {
               day: "2-digit",
@@ -3249,9 +3316,12 @@ const InventoryHistorySection: React.FC<{
             const remainingDebt = receiptDebt?.remainingAmount || 0;
             const hasDebt = remainingDebt > 0;
 
+            // Unique key combining receiptCode with index to handle duplicates
+            const uniqueKey = `${receipt.receiptCode}-${index}`;
+
             return (
               <div
-                key={receipt.receiptCode}
+                key={uniqueKey}
                 className="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
               >
                 {/* Mobile Card */}
@@ -3869,6 +3939,18 @@ const InventoryHistorySection: React.FC<{
           currentBranchId={currentBranchId}
         />
       )}
+
+      {/* Confirm Modal for delete */}
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        confirmColor={confirmState.confirmColor}
+      />
     </div>
   );
 };
