@@ -797,6 +797,83 @@ export default function ServiceManager() {
         remainingAmount = 0,
       } = workOrderData;
 
+      // 🔹 Ensure vehicle info is saved to customer record
+      // This handles the case when a new vehicle is added during work order creation
+      if (customer && vehicle && vehicle.licensePlate) {
+        const existingCustomer = displayCustomers.find(
+          (c: any) => c.id === customer.id || c.phone === customer.phone
+        );
+
+        if (existingCustomer) {
+          // Check if this vehicle already exists in customer's vehicles
+          const existingVehicles = existingCustomer.vehicles || [];
+          const vehicleExists = existingVehicles.some(
+            (v: any) => v.licensePlate === vehicle.licensePlate
+          );
+
+          if (!vehicleExists) {
+            // Add new vehicle to customer
+            const updatedCustomer = {
+              ...existingCustomer,
+              vehicles: [
+                ...existingVehicles,
+                {
+                  id: vehicle.id || `veh-${Date.now()}`,
+                  licensePlate: vehicle.licensePlate,
+                  model: vehicle.model || "",
+                  currentKm: currentKm > 0 ? currentKm : undefined,
+                },
+              ],
+              // Also update top-level fields for legacy compatibility
+              licensePlate: vehicle.licensePlate,
+              vehicleModel: vehicle.model || existingCustomer.vehicleModel,
+            };
+
+            console.log(
+              "[handleMobileSave] Adding new vehicle to customer:",
+              updatedCustomer
+            );
+            upsertCustomer(updatedCustomer);
+          } else if (currentKm > 0) {
+            // Vehicle exists, just update currentKm if provided
+            const updatedVehicles = existingVehicles.map((v: any) =>
+              v.licensePlate === vehicle.licensePlate
+                ? { ...v, currentKm: currentKm }
+                : v
+            );
+            const updatedCustomer = {
+              ...existingCustomer,
+              vehicles: updatedVehicles,
+            };
+            console.log(
+              "[handleMobileSave] Updating vehicle km:",
+              updatedCustomer
+            );
+            upsertCustomer(updatedCustomer);
+          }
+        } else {
+          // Customer is new (created in modal), ensure it has vehicle info
+          const newCustomer = {
+            ...customer,
+            vehicles: customer.vehicles || [
+              {
+                id: vehicle.id || `veh-${Date.now()}`,
+                licensePlate: vehicle.licensePlate,
+                model: vehicle.model || "",
+                currentKm: currentKm > 0 ? currentKm : undefined,
+              },
+            ],
+            licensePlate: vehicle.licensePlate,
+            vehicleModel: vehicle.model,
+          };
+          console.log(
+            "[handleMobileSave] Creating new customer with vehicle:",
+            newCustomer
+          );
+          upsertCustomer(newCustomer);
+        }
+      }
+
       // Determine payment status
       let paymentStatus: "unpaid" | "paid" | "partial" = "unpaid";
       if (totalPaid >= total) {

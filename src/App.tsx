@@ -15,6 +15,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import "./index.css";
 import { LoginPage } from "./components/auth/LoginPage";
+import { ResetPasswordPage } from "./components/auth/ResetPasswordPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { useAppContext } from "./contexts/AppContext";
 import { BottomNav, Nav } from "./components/layout";
@@ -335,6 +336,10 @@ export default function App() {
                 <Routes>
                   {/* Public Routes */}
                   <Route path="/login" element={<LoginPage />} />
+                  <Route
+                    path="/reset-password"
+                    element={<ResetPasswordPage />}
+                  />
 
                   {/* Protected Routes */}
                   <Route
