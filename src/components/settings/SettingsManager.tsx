@@ -18,6 +18,14 @@ import {
   Upload,
   Image as ImageIcon,
   Shield,
+  Users,
+  UserPlus,
+  Edit2,
+  Trash2,
+  Check,
+  X,
+  Mail,
+  Building2,
 } from "lucide-react";
 
 interface StoreSettings {
@@ -48,6 +56,20 @@ interface StoreSettings {
   timezone?: string;
 }
 
+interface StaffMember {
+  id: string;
+  email: string;
+  name: string;
+  role: "owner" | "manager" | "staff";
+  branch_id: string;
+  created_at: string;
+}
+
+interface Branch {
+  id: string;
+  name: string;
+}
+
 export const SettingsManager = () => {
   const { profile, hasRole } = useAuth();
   const [settings, setSettings] = useState<StoreSettings | null>(null);
@@ -56,12 +78,281 @@ export const SettingsManager = () => {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingQR, setUploadingQR] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "general" | "branding" | "banking" | "invoice" | "security"
+    "general" | "branding" | "banking" | "invoice" | "security" | "staff"
   >("general");
+
+  // Staff management state
+  const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [loadingStaff, setLoadingStaff] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [showAddStaff, setShowAddStaff] = useState(false);
+  const [newStaffEmail, setNewStaffEmail] = useState("");
+  const [newStaffName, setNewStaffName] = useState("");
+  const [newStaffRole, setNewStaffRole] = useState<"manager" | "staff">(
+    "staff"
+  );
+  const [newStaffBranch, setNewStaffBranch] = useState("");
+  const [savingStaff, setSavingStaff] = useState(false);
 
   useEffect(() => {
     loadSettings();
   }, []);
+
+  // Load staff when tab changes to staff
+  useEffect(() => {
+    if (activeTab === "staff" && hasRole(["owner"])) {
+      loadStaff();
+      loadBranches();
+    }
+  }, [activeTab]);
+
+  const loadBranches = async () => {
+    try {
+      // Try to get branches from database first
+      const { data, error } = await supabase
+        .from("branches")
+        .select("id, name")
+        .order("name");
+
+      if (!error && data && data.length > 0) {
+        setBranches(data);
+        if (!newStaffBranch) {
+          setNewStaffBranch(data[0].id);
+        }
+      } else {
+        // Fallback: Get unique branch IDs from work_orders or use default
+        const { data: workOrders } = await supabase
+          .from("work_orders")
+          .select("branchid")
+          .limit(100);
+
+        const uniqueBranches = [
+          ...new Set(workOrders?.map((w) => w.branchid).filter(Boolean) || []),
+        ];
+
+        if (uniqueBranches.length > 0) {
+          const branchList = uniqueBranches.map((id) => ({
+            id,
+            name: id === "CN1" ? "Chi nhánh 1" : id,
+          }));
+          setBranches(branchList);
+          if (!newStaffBranch) {
+            setNewStaffBranch(branchList[0].id);
+          }
+        } else {
+          // Default branch if nothing found
+          setBranches([{ id: "CN1", name: "Chi nhánh 1" }]);
+          if (!newStaffBranch) {
+            setNewStaffBranch("CN1");
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error loading branches:", error);
+      // Set default branch on error
+      setBranches([{ id: "CN1", name: "Chi nhánh 1" }]);
+      setNewStaffBranch("CN1");
+    }
+  };
+
+  const loadStaff = async () => {
+    setLoadingStaff(true);
+    try {
+      // Try RPC function first (bypasses RLS)
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        "get_all_users_for_owner"
+      );
+
+      if (!rpcError && rpcData && rpcData.length > 0) {
+        setStaffList(rpcData as StaffMember[]);
+      } else {
+        // Fallback: Try to get from profiles table
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, email, name, role, branch_id, created_at")
+          .order("created_at", { ascending: false });
+
+        if (!profilesError && profilesData && profilesData.length > 0) {
+          setStaffList(profilesData as StaffMember[]);
+        } else {
+          // Last fallback: Show current user profile
+          if (profile) {
+            setStaffList([
+              {
+                id: profile.id,
+                email: profile.email,
+                name: profile.name || profile.full_name || "",
+                role: profile.role,
+                branch_id: "CN1",
+                created_at: profile.created_at,
+              },
+            ]);
+          }
+
+          // Show info toast about RPC function
+          if (rpcError) {
+            console.log(
+              "RPC not available, using fallback. Run sql/2025-12-02_user_management_rpc.sql to enable full user management."
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error loading staff:", error);
+      // Show current user as fallback
+      if (profile) {
+        setStaffList([
+          {
+            id: profile.id,
+            email: profile.email,
+            name: profile.name || profile.full_name || "",
+            role: profile.role,
+            branch_id: "CN1",
+            created_at: profile.created_at,
+          },
+        ]);
+      }
+    } finally {
+      setLoadingStaff(false);
+    }
+  };
+
+  const handleUpdateStaffRole = async (
+    staffId: string,
+    newRole: "owner" | "manager" | "staff",
+    newBranchId: string
+  ) => {
+    setSavingStaff(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ role: newRole, branch_id: newBranchId })
+        .eq("id", staffId);
+
+      if (error) throw error;
+
+      showToast.success("Đã cập nhật quyền nhân viên");
+      setEditingStaff(null);
+      await loadStaff();
+
+      // Audit log
+      void safeAudit(profile?.id || null, {
+        action: "staff.update_role",
+        tableName: "profiles",
+        recordId: staffId,
+        newData: { role: newRole, branch_id: newBranchId },
+      });
+    } catch (error: any) {
+      console.error("Error updating staff role:", error);
+      showToast.error(error.message || "Không thể cập nhật quyền");
+    } finally {
+      setSavingStaff(false);
+    }
+  };
+
+  const handleInviteStaff = async () => {
+    if (!newStaffEmail.trim()) {
+      showToast.error("Vui lòng nhập email");
+      return;
+    }
+
+    setSavingStaff(true);
+    try {
+      // Check if email already exists
+      const { data: existingUser } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", newStaffEmail.trim().toLowerCase())
+        .maybeSingle();
+
+      if (existingUser) {
+        showToast.error("Email này đã tồn tại trong hệ thống");
+        setSavingStaff(false);
+        return;
+      }
+
+      // Use Supabase admin invite (requires service role or invite enabled)
+      // For now, we'll create a placeholder profile that will be linked when user signs up
+      const { data, error } = await supabase.auth.admin.inviteUserByEmail(
+        newStaffEmail.trim(),
+        {
+          data: {
+            name: newStaffName.trim() || newStaffEmail.split("@")[0],
+            role: newStaffRole,
+            branch_id: newStaffBranch,
+          },
+        }
+      );
+
+      if (error) {
+        // If admin invite fails, try alternative approach
+        if (
+          error.message.includes("not authorized") ||
+          error.message.includes("admin")
+        ) {
+          // Fallback: Just show instructions
+          showToast.info(
+            `Để thêm nhân viên mới:\n1. Nhân viên đăng ký tài khoản với email: ${newStaffEmail}\n2. Quay lại đây để cập nhật quyền`,
+            { duration: 8000 }
+          );
+          setShowAddStaff(false);
+          resetNewStaffForm();
+          return;
+        }
+        throw error;
+      }
+
+      showToast.success(`Đã gửi lời mời đến ${newStaffEmail}`);
+      setShowAddStaff(false);
+      resetNewStaffForm();
+      await loadStaff();
+
+      void safeAudit(profile?.id || null, {
+        action: "staff.invite",
+        tableName: "profiles",
+        newData: {
+          email: newStaffEmail,
+          role: newStaffRole,
+          branch_id: newStaffBranch,
+        },
+      });
+    } catch (error: any) {
+      console.error("Error inviting staff:", error);
+      showToast.error(error.message || "Không thể mời nhân viên");
+    } finally {
+      setSavingStaff(false);
+    }
+  };
+
+  const resetNewStaffForm = () => {
+    setNewStaffEmail("");
+    setNewStaffName("");
+    setNewStaffRole("staff");
+    setNewStaffBranch(branches[0]?.id || "");
+  };
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case "owner":
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300";
+      case "manager":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
+      default:
+        return "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300";
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "owner":
+        return "Chủ cửa hàng";
+      case "manager":
+        return "Quản lý";
+      default:
+        return "Nhân viên";
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -341,6 +632,21 @@ export const SettingsManager = () => {
                 />
               ),
             },
+            ...(hasRole(["owner"])
+              ? [
+                  {
+                    id: "staff",
+                    label: "Nhân viên",
+                    shortLabel: "Nhân viên",
+                    icon: (
+                      <Users
+                        className="w-3.5 h-3.5 md:w-4 md:h-4"
+                        aria-hidden="true"
+                      />
+                    ),
+                  },
+                ]
+              : []),
           ].map((tab) => (
             <button
               key={tab.id}
@@ -960,10 +1266,337 @@ export const SettingsManager = () => {
             )}
           </div>
         )}
+
+        {/* Staff Management Tab */}
+        {activeTab === "staff" && isOwner && (
+          <div className="space-y-4 md:space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base md:text-lg font-semibold text-slate-900 dark:text-white">
+                  Quản lý nhân viên
+                </h2>
+                <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  Thêm, sửa quyền và quản lý tài khoản nhân viên
+                </p>
+              </div>
+              <button
+                onClick={() => setShowAddStaff(true)}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium inline-flex items-center gap-2"
+              >
+                <UserPlus className="w-4 h-4" />
+                Thêm nhân viên
+              </button>
+            </div>
+
+            {/* Add Staff Form */}
+            {showAddStaff && (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4 md:p-6">
+                <h3 className="text-sm md:text-base font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                  <UserPlus className="w-4 h-4 text-green-600" />
+                  Thêm nhân viên mới
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                      Email *
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="email"
+                        value={newStaffEmail}
+                        onChange={(e) => setNewStaffEmail(e.target.value)}
+                        placeholder="email@example.com"
+                        className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                      Họ tên
+                    </label>
+                    <input
+                      type="text"
+                      value={newStaffName}
+                      onChange={(e) => setNewStaffName(e.target.value)}
+                      placeholder="Nguyễn Văn A"
+                      className="w-full px-4 py-2.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                      Vai trò
+                    </label>
+                    <select
+                      value={newStaffRole}
+                      onChange={(e) =>
+                        setNewStaffRole(e.target.value as "manager" | "staff")
+                      }
+                      className="w-full px-4 py-2.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                    >
+                      <option value="staff">Nhân viên</option>
+                      <option value="manager">Quản lý</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                      Chi nhánh
+                    </label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <select
+                        value={newStaffBranch}
+                        onChange={(e) => setNewStaffBranch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                      >
+                        {branches.map((branch) => (
+                          <option key={branch.id} value={branch.id}>
+                            {branch.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-4">
+                  <button
+                    onClick={() => {
+                      setShowAddStaff(false);
+                      resetNewStaffForm();
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={handleInviteStaff}
+                    disabled={savingStaff || !newStaffEmail.trim()}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-400 text-white rounded-lg text-sm font-medium inline-flex items-center gap-2"
+                  >
+                    {savingStaff ? "Đang xử lý..." : "Mời nhân viên"}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3">
+                  💡 Nhân viên sẽ nhận email mời và tự đăng ký tài khoản. Sau đó
+                  bạn có thể cập nhật quyền tại đây.
+                </p>
+              </div>
+            )}
+
+            {/* Staff List */}
+            {loadingStaff ? (
+              <div className="flex items-center justify-center py-12">
+                <LoadingSpinner size="lg" />
+              </div>
+            ) : staffList.length === 0 ? (
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Chưa có nhân viên nào</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-700">
+                      <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-slate-600 dark:text-slate-400">
+                        Nhân viên
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-slate-600 dark:text-slate-400">
+                        Email
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-slate-600 dark:text-slate-400">
+                        Vai trò
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs md:text-sm font-semibold text-slate-600 dark:text-slate-400">
+                        Chi nhánh
+                      </th>
+                      <th className="text-right py-3 px-4 text-xs md:text-sm font-semibold text-slate-600 dark:text-slate-400">
+                        Thao tác
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staffList.map((staff) => (
+                      <tr
+                        key={staff.id}
+                        className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30"
+                      >
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-sm font-medium text-slate-600 dark:text-slate-300">
+                              {(staff.name ||
+                                staff.email)?.[0]?.toUpperCase() || "?"}
+                            </div>
+                            <span className="text-sm font-medium text-slate-900 dark:text-white">
+                              {staff.name || "Chưa đặt tên"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-slate-600 dark:text-slate-400">
+                          {staff.email}
+                        </td>
+                        <td className="py-3 px-4">
+                          {editingStaff?.id === staff.id ? (
+                            <select
+                              value={editingStaff.role}
+                              onChange={(e) =>
+                                setEditingStaff({
+                                  ...editingStaff,
+                                  role: e.target.value as
+                                    | "owner"
+                                    | "manager"
+                                    | "staff",
+                                })
+                              }
+                              className="px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                            >
+                              <option value="staff">Nhân viên</option>
+                              <option value="manager">Quản lý</option>
+                              {staff.role === "owner" && (
+                                <option value="owner">Chủ cửa hàng</option>
+                              )}
+                            </select>
+                          ) : (
+                            <span
+                              className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(
+                                staff.role
+                              )}`}
+                            >
+                              {getRoleLabel(staff.role)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          {editingStaff?.id === staff.id ? (
+                            <select
+                              value={editingStaff.branch_id || ""}
+                              onChange={(e) =>
+                                setEditingStaff({
+                                  ...editingStaff,
+                                  branch_id: e.target.value,
+                                })
+                              }
+                              className="px-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                            >
+                              {branches.map((branch) => (
+                                <option key={branch.id} value={branch.id}>
+                                  {branch.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-sm text-slate-600 dark:text-slate-400">
+                              {branches.find((b) => b.id === staff.branch_id)
+                                ?.name ||
+                                staff.branch_id ||
+                                "-"}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center justify-end gap-2">
+                            {editingStaff?.id === staff.id ? (
+                              <>
+                                <button
+                                  onClick={() =>
+                                    handleUpdateStaffRole(
+                                      staff.id,
+                                      editingStaff.role,
+                                      editingStaff.branch_id
+                                    )
+                                  }
+                                  disabled={savingStaff}
+                                  className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
+                                  title="Lưu"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => setEditingStaff(null)}
+                                  className="p-1.5 text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded"
+                                  title="Hủy"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                {staff.role !== "owner" && (
+                                  <button
+                                    onClick={() =>
+                                      setEditingStaff({ ...staff })
+                                    }
+                                    className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                                    title="Sửa quyền"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Help Section */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 md:p-6">
+              <h3 className="text-sm md:text-base font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                <Info className="w-4 h-4 text-blue-600" />
+                Hướng dẫn phân quyền
+              </h3>
+              <div className="space-y-3 text-xs md:text-sm text-slate-600 dark:text-slate-400">
+                <div className="flex items-start gap-2">
+                  <span
+                    className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(
+                      "owner"
+                    )}`}
+                  >
+                    Chủ cửa hàng
+                  </span>
+                  <span>
+                    Toàn quyền: quản lý nhân viên, cài đặt, báo cáo, tài
+                    chính...
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span
+                    className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(
+                      "manager"
+                    )}`}
+                  >
+                    Quản lý
+                  </span>
+                  <span>
+                    Xem báo cáo, quản lý phiếu, kho, khách hàng. Không thể cài
+                    đặt hệ thống.
+                  </span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span
+                    className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(
+                      "staff"
+                    )}`}
+                  >
+                    Nhân viên
+                  </span>
+                  <span>
+                    Tạo/sửa phiếu sửa chữa, bán hàng. Chỉ xem dữ liệu chi nhánh
+                    được gán.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Save Button (Bottom) */}
-      {isOwner && (
+      {isOwner && activeTab !== "staff" && (
         <div className="flex justify-end">
           <button
             onClick={handleSave}
