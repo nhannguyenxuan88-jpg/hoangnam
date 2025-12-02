@@ -3713,6 +3713,7 @@ const InventoryHistorySection: React.FC<{
                         ?.split("NV:")[1]
                         ?.split("NCC:")[0]
                         ?.trim() ||
+                      profile?.name ||
                       profile?.full_name ||
                       "Nhân viên"
                     } NCC:${updatedData.supplier}${
@@ -3830,6 +3831,7 @@ const InventoryHistorySection: React.FC<{
                         ?.split("NV:")[1]
                         ?.split("NCC:")[0]
                         ?.trim() ||
+                      profile?.name ||
                       profile?.full_name ||
                       "Nhân viên"
                     } NCC:${updatedData.supplier}${
@@ -4597,14 +4599,20 @@ const InventoryManager: React.FC = () => {
         );
 
         // Use atomic RPC for receipt creation and stock update
+        console.log("📦 Profile data:", {
+          id: profile?.id,
+          name: profile?.name,
+          full_name: profile?.full_name,
+          email: profile?.email,
+        });
         await createReceiptAtomicMutation.mutateAsync({
           items: processedItems,
           supplierId,
           branchId: currentBranchId,
           userId: profile?.id || "unknown",
-          notes: `NV:${profile?.full_name || "Nhân viên"} NCC:${supplierName}${
-            note ? " | " + note : ""
-          }`,
+          notes: `NV:${
+            profile?.name || profile?.full_name || "Nhân viên"
+          } NCC:${supplierName}${note ? " | " + note : ""}`,
         });
 
         // Create supplier debt if payment is partial or deferred

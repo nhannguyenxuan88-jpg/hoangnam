@@ -720,7 +720,7 @@ export default function ServiceManager() {
       }
 
       // Thông tin nhân viên tạo phiếu
-      const createdByDisplay = profile?.full_name || "N/A";
+      const createdByDisplay = profile?.name || profile?.full_name || "N/A";
       description += `\n\nNV: ${createdByDisplay}`;
 
       // Thông tin nhân viên kỹ thuật

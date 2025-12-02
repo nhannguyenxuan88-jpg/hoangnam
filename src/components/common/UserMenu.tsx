@@ -34,11 +34,13 @@ export const UserMenu = () => {
         className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
       >
         <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-          {profile?.full_name?.[0] || profile?.email?.[0]?.toUpperCase()}
+          {profile?.name?.[0] ||
+            profile?.full_name?.[0] ||
+            profile?.email?.[0]?.toUpperCase()}
         </div>
         <div className="text-left hidden sm:block">
           <div className="text-sm font-medium text-slate-900 dark:text-white">
-            {profile?.full_name || profile?.email}
+            {profile?.name || profile?.full_name || profile?.email}
           </div>
           <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
             {roleLabels[profile?.role || "staff"]?.icon}

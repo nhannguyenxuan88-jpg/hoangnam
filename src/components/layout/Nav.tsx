@@ -35,6 +35,7 @@ export function Nav() {
   const { profile, user, signOut } = useAuth();
   const role = profile?.role;
   const preferredName =
+    profile?.name?.trim() ||
     profile?.full_name?.trim() ||
     user?.user_metadata?.full_name?.trim() ||
     user?.user_metadata?.name?.trim() ||

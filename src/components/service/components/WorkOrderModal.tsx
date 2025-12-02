@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Check,
@@ -461,7 +461,7 @@ const WorkOrderModal: React.FC<{
       }
 
       // Th�ng tin nh�n vi�n t�o phi�u
-      const createdByDisplay = profile?.full_name || "N/A";
+      const createdByDisplay = profile?.name || profile?.full_name || "N/A";
       description += `\n\nNV: ${createdByDisplay}`;
 
       // Th�ng tin nh�n vi�n k� thu�t

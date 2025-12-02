@@ -497,13 +497,15 @@ const Dashboard: React.FC = () => {
     // Sử dụng local date format YYYY-MM-DD thay vì ISO string (tránh lỗi timezone)
     const formatLocalDate = (d: Date) => {
       const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
     };
-    
+
     // Chuyển ISO string hoặc date string sang local date string YYYY-MM-DD
-    const toLocalDateStr = (dateStr: string | undefined | null): string | null => {
+    const toLocalDateStr = (
+      dateStr: string | undefined | null
+    ): string | null => {
       if (!dateStr) return null;
       try {
         // Parse date string và chuyển sang local date
@@ -514,7 +516,7 @@ const Dashboard: React.FC = () => {
         return null;
       }
     };
-    
+
     const startDateStr = formatLocalDate(startDate);
     const endDateStr = formatLocalDate(endDate);
 
@@ -541,8 +543,9 @@ const Dashboard: React.FC = () => {
       // Ưu tiên dùng ngày thanh toán, nếu không có thì dùng ngày tạo
       const paymentDateRaw = wo.paymentDate || wo.paymentdate;
       const creationDateRaw = wo.creationDate || wo.creationdate;
-      const woDate = toLocalDateStr(paymentDateRaw) || toLocalDateStr(creationDateRaw);
-      
+      const woDate =
+        toLocalDateStr(paymentDateRaw) || toLocalDateStr(creationDateRaw);
+
       const isPaid =
         wo.paymentStatus === "paid" ||
         wo.paymentstatus === "paid" ||
@@ -589,7 +592,12 @@ const Dashboard: React.FC = () => {
     const filteredExpense = cashTransactions
       .filter((t) => {
         const txDate = toLocalDateStr(t.date);
-        return t.type === "expense" && txDate && txDate >= startDateStr && txDate <= endDateStr;
+        return (
+          t.type === "expense" &&
+          txDate &&
+          txDate >= startDateStr &&
+          txDate <= endDateStr
+        );
       })
       .reduce((sum, t) => sum + t.amount, 0);
 
@@ -905,7 +913,8 @@ const Dashboard: React.FC = () => {
           <div className="flex-1">
             <h1 className="text-lg md:text-xl font-semibold mb-1">
               Xin chào,{" "}
-              {profile?.full_name ||
+              {profile?.name ||
+                profile?.full_name ||
                 profile?.email?.split("@")[0] ||
                 "Người dùng"}{" "}
               👋

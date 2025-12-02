@@ -16,7 +16,8 @@ export interface UserProfile {
   id: string;
   email: string;
   role: UserRole;
-  full_name?: string;
+  name?: string;
+  full_name?: string; // legacy fallback
   avatar_url?: string;
   created_at: string;
 }

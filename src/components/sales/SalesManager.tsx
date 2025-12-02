@@ -3076,7 +3076,8 @@ const SalesManager: React.FC = () => {
         customer: customerObj,
         paymentMethod: paymentMethod!,
         userId: profile?.id || "local-user",
-        userName: profile?.full_name || profile?.email || "Nhân viên",
+        userName:
+          profile?.name || profile?.full_name || profile?.email || "Nhân viên",
         branchId: currentBranchId,
       } as any);
       if ((rpcRes as any)?.error) throw (rpcRes as any).error;
@@ -3148,7 +3149,11 @@ const SalesManager: React.FC = () => {
             total: total,
             customer: customerObj,
             paymentMethod: paymentMethod,
-            userName: profile?.full_name || profile?.email || "Nhân viên",
+            userName:
+              profile?.name ||
+              profile?.full_name ||
+              profile?.email ||
+              "Nhân viên",
             userId: profile?.id || "",
             branchId: currentBranchId || "",
           } as Sale);
@@ -3224,7 +3229,8 @@ const SalesManager: React.FC = () => {
         customerId: customer.id, // Truyền customerId để tích điểm
         paymentMethod: paymentMethod,
         userId: profile?.id || "local-user",
-        userName: profile?.full_name || profile?.email || "Nhân viên",
+        userName:
+          profile?.name || profile?.full_name || profile?.email || "Nhân viên",
         branchId: currentBranchId,
       } as any);
 
