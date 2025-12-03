@@ -577,17 +577,19 @@ const GoodsReceiptMobileWrapper: React.FC<{
     const totalAmount = Math.max(0, subtotal - discountAmount);
 
     // Calculate paid amount based on payment type
+    // Default to "full" if paymentType is somehow not set
+    const effectivePaymentType = paymentType || "full";
     let paidAmount = 0;
-    if (paymentType === "full") {
+    if (effectivePaymentType === "full") {
       paidAmount = totalAmount;
-    } else if (paymentType === "partial") {
+    } else if (effectivePaymentType === "partial") {
       paidAmount = partialAmount;
     }
     // paymentType === "note" => paidAmount = 0
 
     onSave(receiptItems, selectedSupplier, totalAmount, "", {
       paymentMethod,
-      paymentType,
+      paymentType: effectivePaymentType,
       paidAmount,
       discount: discountAmount,
     });
@@ -966,10 +968,12 @@ const GoodsReceiptModal: React.FC<{
       suppliers.find((s: any) => s.id === selectedSupplier)?.name || "";
 
     // Calculate paidAmount based on paymentType
+    // Default to "full" if paymentType is null (user selected payment method but didn't explicitly click payment type)
+    const effectivePaymentType = paymentType || "full";
     const calculatedPaidAmount =
-      paymentType === "full"
+      effectivePaymentType === "full"
         ? totalAmount
-        : paymentType === "partial"
+        : effectivePaymentType === "partial"
         ? partialAmount
         : 0;
 
@@ -4621,6 +4625,15 @@ const InventoryManager: React.FC = () => {
       const paidAmount = paymentInfo?.paidAmount || 0;
       const debtAmount = totalAmount - paidAmount;
 
+      console.log("💰 Payment calculation:", {
+        totalAmount,
+        paidAmount,
+        debtAmount,
+        paymentType: paymentInfo?.paymentType,
+        paymentMethod: paymentInfo?.paymentMethod,
+        willCreateDebt: debtAmount > 0,
+      });
+
       // ⚠️ IMPORTANT: Stock is now auto-updated by trigger (trg_inventory_tx_after_insert)
       // We only need to:
       // 1. Create new products if any (for temp items)
@@ -4693,7 +4706,7 @@ const InventoryManager: React.FC = () => {
           supplierId,
           branchId: currentBranchId,
           userId: profile?.id || "unknown",
-          notes: `NV:${
+          notes: `${receiptCode} | NV:${
             profile?.name || profile?.full_name || "Nhân viên"
           } NCC:${supplierName}${note ? " | " + note : ""}`,
         });

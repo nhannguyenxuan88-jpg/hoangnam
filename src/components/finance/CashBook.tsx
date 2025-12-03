@@ -940,6 +940,9 @@ const getCategoryLabel = (category?: string) => {
     service_deposit: "Đặt cọc dịch vụ",
     general_income: "Thu chung",
     general_expense: "Chi chung",
+    supplier_payment: "Chi trả NCC",
+    utilities: "Điện nước",
+    rent: "Tiền thuê",
   };
   return category ? labels[category] || category : "--";
 };
@@ -1001,14 +1004,33 @@ const AddTransactionModal: React.FC<{
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header with gradient */}
-        <div className={`px-5 py-4 ${type === "income" ? "bg-gradient-to-r from-emerald-500 to-green-600" : "bg-gradient-to-r from-rose-500 to-red-600"}`}>
+        <div
+          className={`px-5 py-4 ${
+            type === "income"
+              ? "bg-gradient-to-r from-emerald-500 to-green-600"
+              : "bg-gradient-to-r from-rose-500 to-red-600"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               {type === "income" ? "📥 Thu tiền" : "📤 Chi tiền"}
             </h2>
-            <button onClick={onClose} className="text-white/80 hover:text-white transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <button
+              onClick={onClose}
+              className="text-white/80 hover:text-white transition-colors"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
@@ -1019,7 +1041,10 @@ const AddTransactionModal: React.FC<{
           <div className="flex bg-slate-100 dark:bg-slate-700 rounded-xl p-1">
             <button
               type="button"
-              onClick={() => { setType("income"); setCategory(""); }}
+              onClick={() => {
+                setType("income");
+                setCategory("");
+              }}
               className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                 type === "income"
                   ? "bg-emerald-500 text-white shadow-md"
@@ -1030,7 +1055,10 @@ const AddTransactionModal: React.FC<{
             </button>
             <button
               type="button"
-              onClick={() => { setType("expense"); setCategory(""); }}
+              onClick={() => {
+                setType("expense");
+                setCategory("");
+              }}
               className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                 type === "expense"
                   ? "bg-rose-500 text-white shadow-md"
@@ -1054,13 +1082,15 @@ const AddTransactionModal: React.FC<{
                 onChange={(e) => setAmount(formatNumber(e.target.value))}
                 placeholder="0"
                 className={`w-full px-4 py-3 text-2xl font-bold bg-slate-50 dark:bg-slate-700/50 border-2 rounded-xl text-right pr-12 transition-colors ${
-                  type === "income" 
-                    ? "border-emerald-200 dark:border-emerald-800 focus:border-emerald-500 text-emerald-600 dark:text-emerald-400" 
+                  type === "income"
+                    ? "border-emerald-200 dark:border-emerald-800 focus:border-emerald-500 text-emerald-600 dark:text-emerald-400"
                     : "border-rose-200 dark:border-rose-800 focus:border-rose-500 text-rose-600 dark:text-rose-400"
                 } focus:outline-none`}
                 required
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-medium text-slate-400">đ</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-medium text-slate-400">
+                đ
+              </span>
             </div>
           </div>
 
@@ -1084,7 +1114,9 @@ const AddTransactionModal: React.FC<{
                   }`}
                 >
                   <div className="text-xl mb-1">{cat.icon}</div>
-                  <div className="text-xs font-medium leading-tight">{cat.label.replace(/^\S+\s/, "")}</div>
+                  <div className="text-xs font-medium leading-tight">
+                    {cat.label.replace(/^\S+\s/, "")}
+                  </div>
                 </button>
               ))}
             </div>

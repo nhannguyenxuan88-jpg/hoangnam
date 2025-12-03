@@ -273,10 +273,12 @@ const GoodsReceiptModal: React.FC<{
       suppliers.find((s: any) => s.id === selectedSupplier)?.name || "";
 
     // Calculate paidAmount based on paymentType
+    // Default to "full" if paymentType is null (user selected payment method but didn't explicitly click payment type)
+    const effectivePaymentType = paymentType || "full";
     const calculatedPaidAmount =
-      paymentType === "full"
+      effectivePaymentType === "full"
         ? totalAmount
-        : paymentType === "partial"
+        : effectivePaymentType === "partial"
         ? partialAmount
         : 0;
 
