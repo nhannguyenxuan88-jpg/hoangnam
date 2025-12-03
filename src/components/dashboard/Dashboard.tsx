@@ -50,7 +50,6 @@ import { usePartsRepo } from "../../hooks/usePartsRepository";
 import { useCashTxRepo } from "../../hooks/useCashTransactionsRepository";
 import {
   useCustomers,
-  usePaymentSources,
   useWorkOrders,
 } from "../../hooks/useSupabase";
 import { useEmployeesRepo } from "../../hooks/useEmployeesRepository";
@@ -257,21 +256,18 @@ const Dashboard: React.FC = () => {
   const { data: cashTransactions = [], isLoading: cashTxLoading } =
     useCashTxRepo();
   const { data: customers = [], isLoading: customersLoading } = useCustomers();
-  const { data: paymentSources = [], isLoading: sourcesLoading } =
-    usePaymentSources();
   const { data: employees = [], isLoading: employeesLoading } =
     useEmployeesRepo();
   const { data: loans = [], isLoading: loansLoading } = useLoansRepo();
   const { data: workOrders = [], isLoading: workOrdersLoading } =
     useWorkOrders();
-  const { currentBranchId } = useAppContext(); // Keep context only for branch ID
+  const { currentBranchId, paymentSources } = useAppContext(); // Get paymentSources from context for consistency with CashBook
 
   const isLoading =
     salesLoading ||
     partsLoading ||
     cashTxLoading ||
     customersLoading ||
-    sourcesLoading ||
     employeesLoading ||
     loansLoading ||
     workOrdersLoading;
