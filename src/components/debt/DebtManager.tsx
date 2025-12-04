@@ -16,6 +16,7 @@ import {
   useDeleteSupplierDebtRepo,
 } from "../../hooks/useDebtsRepository";
 import { createCashTransaction } from "../../lib/repository/cashTransactionsRepository";
+import { useQueryClient } from "@tanstack/react-query";
 
 const DebtManager: React.FC = () => {
   const {
@@ -39,6 +40,83 @@ const DebtManager: React.FC = () => {
   const createSupplierDebt = useCreateSupplierDebtRepo();
   const updateSupplierDebt = useUpdateSupplierDebtRepo();
   const deleteSupplierDebt = useDeleteSupplierDebtRepo();
+  const queryClient = useQueryClient();
+
+  // 🔹 Fetch unpaid work orders (status="Trả máy" and remainingamount > 0)
+  const [unpaidWorkOrders, setUnpaidWorkOrders] = useState<any[]>([]);
+  const [loadingWorkOrders, setLoadingWorkOrders] = useState(true);
+
+  useEffect(() => {
+    const fetchUnpaidWorkOrders = async () => {
+      setLoadingWorkOrders(true);
+      try {
+        const { data, error } = await supabase
+          .from("work_orders")
+          .select("*")
+          .eq("status", "Trả máy")
+          .eq("branchid", currentBranchId)
+          .gt("remainingamount", 0);
+
+        if (error) {
+          console.error("Error fetching unpaid work orders:", error);
+        } else {
+          setUnpaidWorkOrders(data || []);
+        }
+      } catch (err) {
+        console.error("Error:", err);
+      } finally {
+        setLoadingWorkOrders(false);
+      }
+    };
+
+    fetchUnpaidWorkOrders();
+  }, [currentBranchId]);
+
+  // 🔹 Convert work orders to debt-like format for display
+  const workOrderDebts = useMemo(() => {
+    // Get work order IDs that already have a debt record
+    const existingWorkOrderIds = new Set(
+      customerDebts
+        .filter((d: any) => d.workOrderId)
+        .map((d: any) => d.workOrderId)
+    );
+
+    // Filter out work orders that already have debt records
+    return unpaidWorkOrders
+      .filter((wo) => !existingWorkOrderIds.has(wo.id))
+      .map((wo) => {
+        const totalPaid = (wo.depositamount || 0) + (wo.additionalpayment || 0);
+        const remainingAmount = Math.max(0, (wo.total || 0) - totalPaid);
+
+        // Build description from parts
+        let description = `Phiếu: ${wo.id}`;
+        if (wo.partsused && wo.partsused.length > 0) {
+          const partsText = wo.partsused
+            .map((p: any) => `${p.quantity}x ${p.partName}`)
+            .join(", ");
+          description += `\n${partsText}`;
+        }
+        if (wo.laborcost > 0) {
+          description += `\nCông: ${(wo.laborcost || 0).toLocaleString()}đ`;
+        }
+
+        return {
+          id: `WO-${wo.id}`, // Prefix to distinguish from regular debts
+          customerId: wo.customerphone || wo.id,
+          customerName: wo.customername || "Khách vãng lai",
+          phone: wo.customerphone || null,
+          licensePlate: wo.licenseplate || null,
+          description: description,
+          totalAmount: wo.total || 0,
+          paidAmount: totalPaid,
+          remainingAmount: remainingAmount,
+          createdDate: wo.creationdate || wo.created_at,
+          branchId: wo.branchid || currentBranchId,
+          workOrderId: wo.id,
+          isFromWorkOrder: true, // Flag to identify source
+        };
+      });
+  }, [unpaidWorkOrders, customerDebts, currentBranchId]);
 
   // Fetch store settings
   const [storeSettings, setStoreSettings] = useState<any>(null);
@@ -75,8 +153,12 @@ const DebtManager: React.FC = () => {
 
   // Filter by branch
   const branchCustomerDebts = useMemo(() => {
-    return customerDebts.filter((debt) => debt.branchId === currentBranchId);
-  }, [customerDebts, currentBranchId]);
+    const dbDebts = customerDebts.filter(
+      (debt) => debt.branchId === currentBranchId
+    );
+    // Combine with work order debts (auto-merged)
+    return [...dbDebts, ...workOrderDebts] as any[];
+  }, [customerDebts, currentBranchId, workOrderDebts]);
 
   const branchSupplierDebts = useMemo(() => {
     return supplierDebts.filter((debt) => debt.branchId === currentBranchId);
@@ -87,10 +169,11 @@ const DebtManager: React.FC = () => {
     if (!searchTerm) return branchCustomerDebts;
     const term = searchTerm.toLowerCase();
     return branchCustomerDebts.filter(
-      (debt) =>
-        debt.customerName.toLowerCase().includes(term) ||
+      (debt: any) =>
+        debt.customerName?.toLowerCase().includes(term) ||
         debt.phone?.includes(term) ||
-        debt.licensePlate?.toLowerCase().includes(term)
+        debt.licensePlate?.toLowerCase().includes(term) ||
+        debt.description?.toLowerCase().includes(term)
     );
   }, [branchCustomerDebts, searchTerm]);
 
@@ -99,10 +182,15 @@ const DebtManager: React.FC = () => {
     console.log(
       "[DebtManager] branchCustomerDebts count:",
       branchCustomerDebts.length,
+      "(DB:",
+      customerDebts.filter((d) => d.branchId === currentBranchId).length,
+      "+ WorkOrders:",
+      workOrderDebts.length,
+      ")",
       "branchId:",
       currentBranchId
     );
-  }, [branchCustomerDebts, currentBranchId]);
+  }, [branchCustomerDebts, customerDebts, workOrderDebts, currentBranchId]);
 
   // Close dropdown menu when clicking outside
   useEffect(() => {
@@ -257,7 +345,7 @@ const DebtManager: React.FC = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 w-full md:w-auto">
+              <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
                 <button
                   onClick={() => setShowAddDebtModal(true)}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
@@ -316,7 +404,12 @@ const DebtManager: React.FC = () => {
       <div className="flex-1 overflow-auto">
         {activeTab === "customer" ? (
           <div className="p-6">
-            {filteredCustomerDebts.length === 0 ? (
+            {loadingCustomerDebts || loadingWorkOrders ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-600"></div>
+                <span className="ml-3 text-secondary-text">Đang tải...</span>
+              </div>
+            ) : filteredCustomerDebts.length === 0 ? (
               <div className="text-center py-12 text-tertiary-text">
                 Không có công nợ.
               </div>
@@ -332,15 +425,40 @@ const DebtManager: React.FC = () => {
                   <div className="col-span-1"></div>
                 </div>
 
-                {filteredCustomerDebts.map((debt) => (
+                {filteredCustomerDebts.map((debt: any) => (
                   <div
                     key={debt.id}
-                    className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start bg-primary-bg border border-primary-border rounded-lg p-4 hover:border-cyan-500 hover:shadow-md transition-all cursor-pointer group"
+                    className={`grid grid-cols-1 md:grid-cols-12 gap-4 items-start bg-primary-bg border rounded-lg p-4 hover:border-cyan-500 hover:shadow-md transition-all cursor-pointer group ${
+                      debt.isFromWorkOrder
+                        ? "border-amber-300 dark:border-amber-600 bg-amber-50/50 dark:bg-amber-900/10"
+                        : "border-primary-border"
+                    }`}
                     onClick={() => {
                       setSelectedDebt(debt);
                       setShowDetailModal(true);
                     }}
                   >
+                    {/* Badge for work order debts */}
+                    {debt.isFromWorkOrder && (
+                      <div className="col-span-full md:hidden mb-2">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs rounded-full">
+                          <svg
+                            className="w-3 h-3"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                            />
+                          </svg>
+                          Từ phiếu sửa chữa
+                        </span>
+                      </div>
+                    )}
                     {/* Cột 1: Khách hàng nợ (4 cols) */}
                     <div className="col-span-1 md:col-span-4 flex items-start gap-3">
                       <input
