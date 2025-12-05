@@ -332,11 +332,29 @@ const ReportsManager: React.FC = () => {
     "service_deposit", // Đặt cọc dịch vụ
   ];
 
+  // Các category phiếu chi KHÔNG tính vào lợi nhuận (vì đã tính trong giá vốn)
+  const excludedExpenseCategories = [
+    "supplier_payment", // Chi trả NCC (nhập kho) - đã tính trong giá vốn hàng bán
+    "nhập kho",
+    "nhập hàng",
+    "goods_receipt",
+    "import",
+  ];
+
   // Helper function để check exclude với case-insensitive
   const isExcludedIncomeCategory = (category: string | undefined | null) => {
     if (!category) return false;
     const lowerCat = category.toLowerCase().trim();
     return excludedIncomeCategories.some(
+      (exc) => exc.toLowerCase() === lowerCat
+    );
+  };
+
+  // Helper function để check exclude expense categories
+  const isExcludedExpenseCategory = (category: string | undefined | null) => {
+    if (!category) return false;
+    const lowerCat = category.toLowerCase().trim();
+    return excludedExpenseCategories.some(
       (exc) => exc.toLowerCase() === lowerCat
     );
   };
@@ -352,9 +370,11 @@ const ReportsManager: React.FC = () => {
         (t) => t.type === "income" && !isExcludedIncomeCategory(t.category)
       )
       .reduce((sum, t) => sum + t.amount, 0);
-    // Phiếu chi: tính tất cả
+    // Phiếu chi: loại trừ chi nhập kho (đã tính trong giá vốn hàng bán)
     const totalExpense = filteredTransactions
-      .filter((t) => t.type === "expense")
+      .filter(
+        (t) => t.type === "expense" && !isExcludedExpenseCategory(t.category)
+      )
       .reduce((sum, t) => sum + t.amount, 0);
 
     // Debug log
@@ -362,9 +382,10 @@ const ReportsManager: React.FC = () => {
       totalTransactions: filteredTransactions.length,
       incomeAfterFilter: totalIncome,
       expense: totalExpense,
-      excludedCategories: excludedIncomeCategories,
-      incomeByCategory: filteredTransactions
-        .filter((t) => t.type === "income")
+      excludedIncomeCategories: excludedIncomeCategories,
+      excludedExpenseCategories: excludedExpenseCategories,
+      expenseByCategory: filteredTransactions
+        .filter((t) => t.type === "expense")
         .reduce((acc, t) => {
           const cat = t.category || "unknown";
           acc[cat] = (acc[cat] || 0) + t.amount;
@@ -377,7 +398,7 @@ const ReportsManager: React.FC = () => {
 
   // Doanh thu tổng hợp = Doanh thu bán hàng + Phiếu thu
   const combinedRevenue = revenueReport.totalRevenue + cashTotals.totalIncome;
-  // Lợi nhuận thuần = Lợi nhuận gộp - Phiếu chi
+  // Lợi nhuận thuần = Lợi nhuận gộp - Phiếu chi (trừ chi nhập kho)
   const netProfit = revenueReport.totalProfit - cashTotals.totalExpense;
 
   const cashflowReport = useMemo(() => {
@@ -974,10 +995,12 @@ const ReportsManager: React.FC = () => {
                             t.date.slice(0, 10) === dayDateStr
                         )
                         .reduce((sum, t) => sum + t.amount, 0);
+                      // Chi khác: loại trừ chi nhập kho (đã tính trong giá vốn)
                       const chiKhac = cashTxData
                         .filter(
                           (t) =>
                             t.type === "expense" &&
+                            !isExcludedExpenseCategory(t.category) &&
                             t.date.slice(0, 10) === dayDateStr
                         )
                         .reduce((sum, t) => sum + t.amount, 0);
