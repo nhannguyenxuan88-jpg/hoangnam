@@ -253,7 +253,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         `CUS-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
       // Check if customer exists in local state
-      const existingCustomer = customers.find((c) => c.id === customer.id);
+      let existingCustomer = customers.find((c) => c.id === customer.id);
+
+      // Nếu không có trong local state nhưng có ID, kiểm tra trong database
+      if (!existingCustomer && customer.id) {
+        try {
+          const { data: dbCustomer } = await supabase
+            .from("customers")
+            .select("id")
+            .eq("id", customer.id)
+            .single();
+          if (dbCustomer) {
+            existingCustomer = { id: dbCustomer.id } as Customer;
+          }
+        } catch {
+          // Không tìm thấy trong DB, sẽ insert mới
+        }
+      }
 
       try {
         if (existingCustomer) {
@@ -299,8 +315,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
               segment: customer.segment || "New",
               loyaltypoints: customer.loyaltyPoints ?? 0,
               totalspent: customer.totalSpent ?? 0,
-              visitcount: customer.visitCount ?? 1,
-              lastvisit: customer.lastVisit || new Date().toISOString(),
+              visitcount: customer.visitCount ?? 0, // Mặc định 0, sẽ tăng khi có phiếu sửa/bán hàng
+              lastvisit: customer.lastVisit || null, // Null nếu chưa có giao dịch
             },
           ]);
 

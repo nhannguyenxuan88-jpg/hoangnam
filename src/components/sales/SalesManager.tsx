@@ -3049,23 +3049,28 @@ const SalesManager: React.FC = () => {
       setReceiptDiscount(orderDiscount + lineDiscounts);
 
       // Create customer if new (has phone nhưng chưa chọn từ danh sách)
+      let newCustomerId: string | undefined;
       if (!selectedCustomer && customerPhone && customerName) {
         const existingCustomer = customers.find(
           (c) => c.phone === customerPhone
         );
         if (!existingCustomer) {
+          newCustomerId = `CUST-${Date.now()}`;
           upsertCustomer({
-            id: `CUST-${Date.now()}`,
+            id: newCustomerId,
             name: customerName,
             phone: customerPhone,
             status: "active",
             segment: "New",
             loyaltyPoints: 0,
             totalSpent: 0,
-            visitCount: 1,
-            lastVisit: new Date().toISOString(),
+            visitCount: 0, // Bắt đầu từ 0, sẽ được tăng lên 1 sau khi tạo đơn
+            lastVisit: null,
             created_at: new Date().toISOString(),
           });
+        } else {
+          // Dùng ID của khách hàng đã tồn tại
+          newCustomerId = existingCustomer.id;
         }
       }
       // Gọi RPC atomic đảm bảo tất cả bước (xuất kho, tiền mặt, cập nhật tồn, ghi hóa đơn, audit) thực hiện trong 1 transaction server
@@ -3081,6 +3086,39 @@ const SalesManager: React.FC = () => {
         branchId: currentBranchId,
       } as any);
       if ((rpcRes as any)?.error) throw (rpcRes as any).error;
+
+      // Cập nhật visitCount và totalSpent cho khách hàng nếu có
+      const customerId =
+        selectedCustomer?.id || newCustomerId || customerObj.id;
+      if (customerId) {
+        try {
+          // Lấy thông tin hiện tại của khách hàng
+          const { data: currentCustomer } = await supabase
+            .from("customers")
+            .select("totalSpent, visitCount")
+            .eq("id", customerId)
+            .single();
+
+          const currentTotal = currentCustomer?.totalSpent || 0;
+          const currentVisits = currentCustomer?.visitCount || 0;
+
+          // Cập nhật totalSpent, visitCount, lastVisit
+          await supabase
+            .from("customers")
+            .update({
+              totalSpent: currentTotal + total,
+              visitCount: currentVisits + 1,
+              lastVisit: new Date().toISOString(),
+            })
+            .eq("id", customerId);
+
+          console.log(
+            `[Sale] Updated customer ${customerObj.name}: totalSpent ${currentTotal} + ${total}, visits ${currentVisits} + 1`
+          );
+        } catch (err) {
+          console.error("[Sale] Error updating customer stats:", err);
+        }
+      }
 
       // Calculate paid amount based on payment type
       const paidAmount =

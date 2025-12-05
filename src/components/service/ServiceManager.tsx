@@ -1025,29 +1025,43 @@ export default function ServiceManager() {
         );
 
         // Cập nhật totalSpent và visitCount cho khách hàng
-        if (customer.id && total > 0) {
+        // Luôn cập nhật visitCount, chỉ cộng totalSpent nếu total > 0
+        if (customer.id || customer.phone) {
           try {
-            const { data: currentCustomer } = await supabase
+            // Tìm khách hàng theo ID hoặc phone
+            let query = supabase
               .from("customers")
-              .select("totalSpent, visitCount")
-              .eq("id", customer.id)
-              .single();
+              .select("id, totalSpent, visitCount");
 
-            const currentTotal = currentCustomer?.totalSpent || 0;
-            const currentVisits = currentCustomer?.visitCount || 0;
+            if (customer.id) {
+              query = query.eq("id", customer.id);
+            } else if (customer.phone) {
+              query = query.eq("phone", customer.phone);
+            }
 
-            await supabase
-              .from("customers")
-              .update({
-                totalSpent: currentTotal + total,
-                visitCount: currentVisits + 1,
-                lastVisit: new Date().toISOString(),
-              })
-              .eq("id", customer.id);
+            const { data: currentCustomer } = await query.single();
 
-            console.log(
-              `[WorkOrder] Updated customer ${customer.name}: totalSpent ${currentTotal} + ${total}, visits ${currentVisits} + 1`
-            );
+            if (currentCustomer) {
+              const currentTotal = currentCustomer?.totalSpent || 0;
+              const currentVisits = currentCustomer?.visitCount || 0;
+
+              await supabase
+                .from("customers")
+                .update({
+                  totalSpent: total > 0 ? currentTotal + total : currentTotal,
+                  visitCount: currentVisits + 1,
+                  lastVisit: new Date().toISOString(),
+                })
+                .eq("id", currentCustomer.id);
+
+              console.log(
+                `[WorkOrder] Updated customer ${customer.name}: totalSpent ${currentTotal} + ${total}, visits ${currentVisits} + 1`
+              );
+            } else {
+              console.warn(
+                `[WorkOrder] Customer not found in DB for update: ${customer.name} (${customer.phone})`
+              );
+            }
           } catch (err) {
             console.error("[WorkOrder] Error updating customer stats:", err);
           }
@@ -5709,44 +5723,11 @@ const WorkOrderModal: React.FC<{
                   : order.paymentDate,
               };
 
-          // Update cash transactions in context AND insert to database if new transactions created
+          // Update cash transactions in context (database insert đã được xử lý trong atomic function)
+          // Chỉ cập nhật local state, KHÔNG insert lại vào database
           if (depositTxId && depositAmount > order.depositAmount!) {
             const additionalDeposit =
               depositAmount - (order.depositAmount || 0);
-            // INSERT additional deposit to database
-            try {
-              const { error: depositError } = await supabase
-                .from("cash_transactions")
-                .insert({
-                  id: depositTxId,
-                  type: "income",
-                  category: "service_deposit",
-                  amount: additionalDeposit,
-                  date: new Date().toISOString(),
-                  description: `Đặt cọc bổ sung #${(
-                    formatWorkOrderId(
-                      order.id,
-                      storeSettings?.work_order_prefix
-                    ) || ""
-                  )
-                    .split("-")
-                    .pop()} - ${formData.customerName}`,
-                  branchid: currentBranchId,
-                  paymentsource: formData.paymentMethod,
-                  workorderid: order.id,
-                });
-              if (depositError) {
-                console.error(
-                  "[handleSave-update] Failed to insert additional deposit:",
-                  depositError
-                );
-              }
-            } catch (err) {
-              console.error(
-                "[handleSave-update] Error inserting additional deposit:",
-                err
-              );
-            }
 
             setCashTransactions((prev: any[]) => [
               ...prev,
@@ -5793,40 +5774,8 @@ const WorkOrderModal: React.FC<{
           ) {
             const additionalPaymentAmount =
               totalAdditionalPayment - (order.additionalPayment || 0);
-            // INSERT additional payment to database
-            try {
-              const { error: paymentError } = await supabase
-                .from("cash_transactions")
-                .insert({
-                  id: paymentTxId,
-                  type: "income",
-                  category: "service_income",
-                  amount: additionalPaymentAmount,
-                  date: new Date().toISOString(),
-                  description: `Thu tiền bổ sung #${(
-                    formatWorkOrderId(
-                      order.id,
-                      storeSettings?.work_order_prefix
-                    ) || ""
-                  )
-                    .split("-")
-                    .pop()} - ${formData.customerName}`,
-                  branchid: currentBranchId,
-                  paymentsource: formData.paymentMethod,
-                  workorderid: order.id,
-                });
-              if (paymentError) {
-                console.error(
-                  "[handleSave-update] Failed to insert additional payment:",
-                  paymentError
-                );
-              }
-            } catch (err) {
-              console.error(
-                "[handleSave-update] Error inserting additional payment:",
-                err
-              );
-            }
+            // Database insert đã được xử lý trong atomic function
+            // Chỉ cập nhật local state
 
             setCashTransactions((prev: any[]) => [
               ...prev,
