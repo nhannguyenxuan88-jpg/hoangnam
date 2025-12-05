@@ -4378,7 +4378,10 @@ const InventoryManager: React.FC = () => {
       }
       if (search && search.trim()) {
         const term = search.trim();
-        query = query.or(`name.ilike.%${term}%,sku.ilike.%${term}%`);
+        // Tìm kiếm theo tên, SKU và danh mục
+        query = query.or(
+          `name.ilike.%${term}%,sku.ilike.%${term}%,category.ilike.%${term}%`
+        );
       }
 
       const { data, error } = await query;
@@ -5117,7 +5120,7 @@ const InventoryManager: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Tìm kiếm theo tên hoặc SKU..."
+              placeholder="Tìm theo tên, SKU, danh mục..."
               value={search}
               onChange={(e) => {
                 setPage(1);
@@ -5194,7 +5197,7 @@ const InventoryManager: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Tìm kiếm theo tên hoặc SKU..."
+                  placeholder="Tìm theo tên, SKU hoặc danh mục..."
                   value={search}
                   onChange={(e) => {
                     setPage(1);

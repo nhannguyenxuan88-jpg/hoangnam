@@ -54,7 +54,10 @@ export async function fetchPartsPaged(params?: {
     if (params?.search && params.search.trim()) {
       const term = params.search.trim();
       // Supabase 'or' syntax; ilike for case-insensitive partial match
-      query = query.or(`name.ilike.%${term}%,sku.ilike.%${term}%`);
+      // Tìm kiếm theo tên, SKU và danh mục
+      query = query.or(
+        `name.ilike.%${term}%,sku.ilike.%${term}%,category.ilike.%${term}%`
+      );
     }
     const { data, error, count } = await query;
     if (error)

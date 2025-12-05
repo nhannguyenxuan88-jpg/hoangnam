@@ -12,8 +12,15 @@ export default defineConfig(({ mode }) => {
     },
     resolve: { alias: { "@": path.resolve(process.cwd(), "src") } },
     build: {
+      // Cache-busting: thêm hash vào tên file để trình duyệt luôn tải bản mới nhất
       rollupOptions: {
         input: path.resolve(process.cwd(), "index.html"),
+        output: {
+          // Thêm content hash vào tên file - khi code thay đổi, hash thay đổi
+          entryFileNames: "assets/[name]-[hash].js",
+          chunkFileNames: "assets/[name]-[hash].js",
+          assetFileNames: "assets/[name]-[hash].[ext]",
+        },
       },
     },
     // Note: API keys should be handled server-side, not exposed in client bundle
