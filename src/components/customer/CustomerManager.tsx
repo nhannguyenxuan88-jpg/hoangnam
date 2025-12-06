@@ -465,10 +465,18 @@ const CustomerManager: React.FC = () => {
           ).toISOString()
         : null;
 
+    // Get latest km from most recent work order
+    const sortedWorkOrders = [...customerWorkOrders].sort((a, b) => {
+      const dateA = new Date(a.creationDate || a.id).getTime();
+      const dateB = new Date(b.creationDate || b.id).getTime();
+      return dateB - dateA;
+    });
+    const latestKm = sortedWorkOrders[0]?.currentKm || null;
+
     // 1 điểm = 10,000đ
     const loyaltyPoints = Math.floor(totalSpent / 10000);
 
-    return { totalSpent, visitCount, loyaltyPoints, lastVisit };
+    return { totalSpent, visitCount, loyaltyPoints, lastVisit, latestKm };
   };
 
   // Auto-classify customers on mount only
@@ -1138,11 +1146,13 @@ const CustomerManager: React.FC = () => {
                       visitCount,
                       loyaltyPoints: points,
                       lastVisit,
+                      latestKm,
                     } = customerStatsMap.get(customer.id) || {
                       totalSpent: 0,
                       visitCount: 0,
                       loyaltyPoints: 0,
                       lastVisit: null,
+                      latestKm: null,
                     };
                     const pointsPercent = Math.min((points / 10000) * 100, 100);
                     const vehicles =
@@ -1218,7 +1228,7 @@ const CustomerManager: React.FC = () => {
                             </span>
                           </div>
                         ) : null}
-                        <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
+                        <div className="mt-4 grid grid-cols-4 gap-3 text-sm">
                           <div>
                             <p className="text-[11px] uppercase text-slate-500">
                               Tổng chi
@@ -1233,6 +1243,14 @@ const CustomerManager: React.FC = () => {
                             </p>
                             <p className="text-base font-semibold text-slate-900 dark:text-slate-100">
                               {visitCount}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase text-slate-500">
+                              Km hiện tại
+                            </p>
+                            <p className="text-base font-semibold text-blue-600 dark:text-blue-400">
+                              {latestKm ? `${latestKm.toLocaleString()} km` : "—"}
                             </p>
                           </div>
                           <div>

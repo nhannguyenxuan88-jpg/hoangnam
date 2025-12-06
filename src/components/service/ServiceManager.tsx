@@ -918,7 +918,9 @@ export default function ServiceManager() {
 
       // Determine payment status
       let paymentStatus: "unpaid" | "paid" | "partial" = "unpaid";
-      if (totalPaid >= total) {
+      // Fix: Chỉ coi là "paid" khi total > 0 VÀ totalPaid >= total
+      // Nếu total = 0 nhưng có deposit → vẫn là "partial" (đặt cọc trước)
+      if (total > 0 && totalPaid >= total) {
         paymentStatus = "paid";
       } else if (totalPaid > 0) {
         paymentStatus = "partial";
@@ -2481,6 +2483,43 @@ export default function ServiceManager() {
                                     </span>
                                   )}
                               </div>
+                            </div>
+                          )}
+
+                          {/* Payment details - Show deposit/partial info when applicable */}
+                          {((order.depositAmount && order.depositAmount > 0) || 
+                            order.paymentStatus === "partial") && (
+                            <div className="space-y-1 pt-1 border-t border-slate-200 dark:border-slate-700">
+                              {order.depositAmount && order.depositAmount > 0 && (
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded font-medium">
+                                    💰 Đã cọc
+                                  </span>
+                                  <span className="text-purple-600 dark:text-purple-400 font-medium">
+                                    {formatCurrency(order.depositAmount)}
+                                  </span>
+                                </div>
+                              )}
+                              {totalAmount > 0 && (order.remainingAmount ?? 0) > 0 && (
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded font-medium">
+                                    ⏳ Còn nợ
+                                  </span>
+                                  <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                    {formatCurrency(order.remainingAmount ?? 0)}
+                                  </span>
+                                </div>
+                              )}
+                              {order.paymentStatus === "paid" && totalAmount > 0 && (order.remainingAmount ?? 0) === 0 && (
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-500/20 text-green-600 dark:text-green-400 rounded font-medium">
+                                    ✓ Đã thanh toán đủ
+                                  </span>
+                                  <span className="text-green-600 dark:text-green-400 font-medium">
+                                    {formatCurrency(order.totalPaid || 0)}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           )}
 

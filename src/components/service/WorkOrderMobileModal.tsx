@@ -1863,21 +1863,21 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                         <div className="space-y-1 pt-2 border-t border-slate-700">
                           {isDeposit && depositAmount > 0 && (
                             <div className="flex justify-between text-xs">
-                              <span className="text-green-400">
-                                Đã đặt cọc:
+                              <span className="text-purple-400">
+                                💰 Đã đặt cọc:
                               </span>
-                              <span className="font-medium text-green-400">
-                                -{formatCurrency(depositAmount)}
+                              <span className="font-medium text-purple-400">
+                                {formatCurrency(depositAmount)}
                               </span>
                             </div>
                           )}
                           {showPaymentInput && partialAmount > 0 && (
                             <div className="flex justify-between text-xs">
-                              <span className="text-green-400">
-                                Thanh toán thêm:
+                              <span className="text-blue-400">
+                                ➕ Thanh toán thêm:
                               </span>
-                              <span className="font-medium text-green-400">
-                                -{formatCurrency(partialAmount)}
+                              <span className="font-medium text-blue-400">
+                                {formatCurrency(partialAmount)}
                               </span>
                             </div>
                           )}
@@ -1887,8 +1887,8 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                                 (isDeposit ? depositAmount : 0) -
                                 (showPaymentInput ? partialAmount : 0) >
                               0
-                                ? "Còn phải thu:"
-                                : "Đã thanh toán đủ"}
+                                ? "⏳ Còn phải thu:"
+                                : "✓ Đã thanh toán đủ"}
                             </span>
                             <span
                               className={`text-base font-bold ${
@@ -1896,14 +1896,14 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                                   (isDeposit ? depositAmount : 0) -
                                   (showPaymentInput ? partialAmount : 0) >
                                 0
-                                  ? "text-red-400"
+                                  ? "text-amber-400"
                                   : "text-green-400"
                               }`}
                             >
                               {formatCurrency(
-                                total -
+                                Math.max(0, total -
                                   (isDeposit ? depositAmount : 0) -
-                                  (showPaymentInput ? partialAmount : 0)
+                                  (showPaymentInput ? partialAmount : 0))
                               )}
                             </span>
                           </div>

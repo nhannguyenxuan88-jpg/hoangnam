@@ -408,6 +408,17 @@ export function ServiceManagerMobile({
                       </div>
                     </div>
                   </div>
+                  {/* Issue Description */}
+                  {workOrder.issueDescription && (
+                    <div className="flex items-start gap-2 bg-slate-800/30 rounded-lg p-2">
+                      <span className="text-sm">🔧</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-slate-300 text-xs line-clamp-2">
+                          {workOrder.issueDescription}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Footer */}
@@ -423,26 +434,61 @@ export function ServiceManagerMobile({
                       {formatCurrency(workOrder.total || 0)}
                     </div>
                   </div>
-                  {/* Payment info */}
-                  {((workOrder.depositAmount && workOrder.depositAmount > 0) ||
-                    (workOrder.additionalPayment &&
-                      workOrder.additionalPayment > 0)) && (
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-green-400">
-                        💰 Đã thu:{" "}
-                        {formatCurrency(
-                          (workOrder.depositAmount || 0) +
-                            (workOrder.additionalPayment || 0)
-                        )}
-                      </span>
-                      {(workOrder.remainingAmount ?? 0) > 0 && (
-                        <span className="text-amber-400">
-                          Còn lại:{" "}
-                          {formatCurrency(workOrder.remainingAmount || 0)}
+                  
+                  {/* Payment Status - Always show clear info */}
+                  <div className="space-y-1">
+                    {/* Đã thanh toán đủ */}
+                    {workOrder.paymentStatus === "paid" && workOrder.total > 0 && workOrder.remainingAmount === 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/20 text-green-400 rounded-md font-medium text-xs">
+                          ✓ Đã thanh toán đủ
                         </span>
-                      )}
-                    </div>
-                  )}
+                        <span className="text-green-400 text-xs font-medium">
+                          {formatCurrency(workOrder.totalPaid || 0)}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Đặt cọc / Thanh toán 1 phần - Hiển thị khi có depositAmount > 0 HOẶC paymentStatus = partial */}
+                    {((workOrder.depositAmount && workOrder.depositAmount > 0) || workOrder.paymentStatus === "partial") && (
+                      <div className="space-y-1">
+                        {workOrder.depositAmount && workOrder.depositAmount > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-md font-medium text-xs">
+                              💰 Đã cọc
+                            </span>
+                            <span className="text-purple-400 text-xs font-medium">
+                              {formatCurrency(workOrder.depositAmount)}
+                            </span>
+                          </div>
+                        )}
+                        {workOrder.additionalPayment && workOrder.additionalPayment > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-blue-400 text-xs">
+                              + Trả thêm: {formatCurrency(workOrder.additionalPayment)}
+                            </span>
+                          </div>
+                        )}
+                        {workOrder.total > 0 && (workOrder.remainingAmount ?? 0) > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-amber-400 text-xs">
+                              ⏳ Còn nợ
+                            </span>
+                            <span className="text-amber-400 text-xs font-bold">
+                              {formatCurrency(workOrder.remainingAmount || 0)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Chưa thanh toán */}
+                    {workOrder.paymentStatus === "unpaid" && (!workOrder.depositAmount || workOrder.depositAmount === 0) && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-700 text-slate-300 rounded-md font-medium text-xs">
+                        ⚪ Chưa thanh toán
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
