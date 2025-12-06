@@ -18,6 +18,7 @@ import { supabase } from "../../supabaseClient";
 import type { WorkOrder } from "../../types";
 import { useNavigate } from "react-router-dom";
 import { WORK_ORDER_STATUS, PAYMENT_STATUS } from "../../constants";
+import { useWorkOrdersRepo } from "../../hooks/useWorkOrdersRepository";
 
 interface StoreSettings {
   store_name?: string;
@@ -40,8 +41,19 @@ interface ServiceHistoryProps {
 export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
   currentBranchId,
 }) => {
-  const { workOrders } = useAppContext();
+  const { workOrders: contextWorkOrders, setWorkOrders } = useAppContext();
+  const { data: fetchedWorkOrders } = useWorkOrdersRepo();
+  const workOrders = fetchedWorkOrders || contextWorkOrders;
   const navigate = useNavigate();
+
+  // Sync fetched work orders to context
+  useEffect(() => {
+    if (fetchedWorkOrders) {
+      console.log("[ServiceHistory] Fetched work orders:", fetchedWorkOrders);
+      console.log("[ServiceHistory] Sample order:", fetchedWorkOrders[0]);
+      setWorkOrders(fetchedWorkOrders);
+    }
+  }, [fetchedWorkOrders, setWorkOrders]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -983,10 +995,16 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({
                             </span>
                           </div>
                         )}
+                        {order.depositAmount && order.depositAmount > 0 && (
+                          <div className="flex justify-between text-right text-xs text-green-500">
+                            <span>Đã đặt cọc:</span>
+                            <span>-{formatCurrency(order.depositAmount)}</span>
+                          </div>
+                        )}
                         {order.additionalPayment &&
                           order.additionalPayment > 0 && (
                             <div className="flex justify-between text-right text-xs text-green-500">
-                              <span>Thanh toán trước:</span>
+                              <span>Thanh toán thêm:</span>
                               <span>
                                 -{formatCurrency(order.additionalPayment)}
                               </span>
