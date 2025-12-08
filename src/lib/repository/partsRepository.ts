@@ -52,11 +52,17 @@ export async function fetchPartsPaged(params?: {
       query = query.eq("category", params.category);
     }
     if (params?.search && params.search.trim()) {
-      const term = params.search.trim();
-      // Supabase 'or' syntax; ilike for case-insensitive partial match
-      // Tìm kiếm theo tên, SKU và danh mục
+      const term = params.search.trim().toLowerCase();
+
+      // Loại bỏ ký tự đặc biệt để tìm kiếm tốt hơn
+      // VD: Tìm "NHB35P" sẽ tìm thấy 'Bộ nắp trước tay lái "NHB35P"'
+      const cleanTerm = term.replace(/['"]/g, ""); // Xóa dấu ngoặc kép/đơn
+
+      // Tìm kiếm trong name, sku, category, description
+      // Supabase chỉ hỗ trợ OR, không hỗ trợ AND cho nhiều điều kiện phức tạp
+      // Giải pháp: Tìm với OR, sau đó filter ở client nếu cần
       query = query.or(
-        `name.ilike.%${term}%,sku.ilike.%${term}%,category.ilike.%${term}%`
+        `name.ilike.%${cleanTerm}%,sku.ilike.%${cleanTerm}%,category.ilike.%${cleanTerm}%,description.ilike.%${cleanTerm}%`
       );
     }
     const { data, error, count } = await query;

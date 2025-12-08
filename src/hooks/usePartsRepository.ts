@@ -48,7 +48,13 @@ export const usePartsRepoPaged = (params: {
 export const useCreatePartRepo = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: createPart,
+    mutationFn: async (input: Partial<Part>) => {
+      const result = await createPart(input);
+      if (!result.ok) {
+        throw result.error;
+      }
+      return result.data; // Return unwrapped data
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["partsRepo"] });
       qc.invalidateQueries({ queryKey: ["partsRepoPaged"] });

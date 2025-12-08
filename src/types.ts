@@ -392,6 +392,44 @@ export interface SupplierDebt {
   branchId: string;
 }
 
+// Employee Advance (Ứng lương)
+export interface EmployeeAdvance {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  advanceAmount: number; // Số tiền ứng
+  advanceDate: string; // Ngày ứng
+  reason?: string; // Lý do
+  paymentMethod: "cash" | "transfer"; // Nguồn tiền: Tiền mặt hoặc Chuyển khoản
+  status: "pending" | "approved" | "rejected" | "paid"; // Trạng thái
+  approvedBy?: string; // Người duyệt
+  approvedDate?: string; // Ngày duyệt
+
+  // Trả góp
+  isInstallment: boolean; // Có trả góp không
+  installmentMonths?: number; // Số tháng trả góp
+  monthlyDeduction?: number; // Số tiền trừ hàng tháng
+  remainingAmount: number; // Còn nợ
+  paidAmount: number; // Đã trả
+
+  branchId: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface EmployeeAdvancePayment {
+  id: string;
+  advanceId: string;
+  employeeId: string;
+  amount: number; // Số tiền trả
+  paymentDate: string; // Ngày trả
+  paymentMonth: string; // Tháng lương (YYYY-MM)
+  payrollRecordId?: string; // Link to payroll record
+  notes?: string;
+  branchId: string;
+  created_at: string;
+}
+
 // High-level app state snapshot (not strictly used by context but handy)
 export interface AppState {
   user: UserSession | null;

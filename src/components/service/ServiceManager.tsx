@@ -212,6 +212,9 @@ export default function ServiceManager() {
     "all"
   );
   const [activeTab, setActiveTab] = useState<ServiceTabKey>("all");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [technicianFilter, setTechnicianFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all");
   const [rowActionMenuId, setRowActionMenuId] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
@@ -382,13 +385,59 @@ export default function ServiceManager() {
       );
     }
 
+    // Date filter
+    if (dateFilter !== "all") {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      filtered = filtered.filter((o) => {
+        const orderDate = new Date(o.creationDate || (o as any).creationdate);
+
+        if (dateFilter === "today") {
+          return orderDate >= today;
+        } else if (dateFilter === "week") {
+          const weekAgo = new Date(today);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return orderDate >= weekAgo;
+        } else if (dateFilter === "month") {
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          return orderDate >= monthAgo;
+        }
+        return true;
+      });
+    }
+
+    // Technician filter
+    if (technicianFilter !== "all") {
+      filtered = filtered.filter((o) => o.technicianName === technicianFilter);
+    }
+
+    // Payment filter
+    if (paymentFilter !== "all") {
+      filtered = filtered.filter((o) => {
+        const status = o.paymentStatus || (o as any).paymentstatus;
+        if (paymentFilter === "paid") return status === "paid";
+        if (paymentFilter === "unpaid") return status === "unpaid";
+        if (paymentFilter === "partial") return status === "partial";
+        return true;
+      });
+    }
+
     return filtered.sort((a, b) => {
       const dateA = a.creationDate || (a as any).creationdate;
       const dateB = b.creationDate || (b as any).creationdate;
       if (!dateA || !dateB) return 0;
       return new Date(dateB).getTime() - new Date(dateA).getTime();
     });
-  }, [displayWorkOrders, activeTab, searchQuery]);
+  }, [
+    displayWorkOrders,
+    activeTab,
+    searchQuery,
+    dateFilter,
+    technicianFilter,
+    paymentFilter,
+  ]);
 
   const stats = useMemo(() => {
     const pending = displayWorkOrders.filter(
@@ -2205,21 +2254,37 @@ export default function ServiceManager() {
           </div>
 
           {/* Filters - inline */}
-          <select className="px-2 py-1.5 text-xs bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg">
-            <option>Tất cả ngày</option>
-            <option>Hôm nay</option>
-            <option>7 ngày qua</option>
-            <option>30 ngày qua</option>
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="px-2 py-1.5 text-xs bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg"
+          >
+            <option value="all">Tất cả ngày</option>
+            <option value="today">Hôm nay</option>
+            <option value="week">7 ngày qua</option>
+            <option value="month">30 ngày qua</option>
           </select>
-          <select className="px-2 py-1.5 text-xs bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg">
-            <option>Tất cả KTV</option>
-            <option>KTV 1</option>
-            <option>KTV 2</option>
+          <select
+            value={technicianFilter}
+            onChange={(e) => setTechnicianFilter(e.target.value)}
+            className="px-2 py-1.5 text-xs bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg"
+          >
+            <option value="all">Tất cả KTV</option>
+            {employees.map((emp) => (
+              <option key={emp.id} value={emp.name}>
+                {emp.name}
+              </option>
+            ))}
           </select>
-          <select className="px-2 py-1.5 text-xs bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg">
-            <option>Thanh toán</option>
-            <option>Đã TT</option>
-            <option>Chưa TT</option>
+          <select
+            value={paymentFilter}
+            onChange={(e) => setPaymentFilter(e.target.value)}
+            className="px-2 py-1.5 text-xs bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg"
+          >
+            <option value="all">Thanh toán</option>
+            <option value="paid">Đã TT</option>
+            <option value="unpaid">Chưa TT</option>
+            <option value="partial">Trả trước</option>
           </select>
 
           {/* Spacer */}
@@ -7553,7 +7618,8 @@ const WorkOrderModal: React.FC<{
                 </label>
                 <input
                   type="text"
-                  placeholder="VD: Exciter, Vision, Wave..."
+                  list="vehicle-models-list"
+                  placeholder="VD: Exciter, Vision, Wave... (có gợi ý)"
                   value={newVehicle.model}
                   onChange={(e) =>
                     setNewVehicle({ ...newVehicle, model: e.target.value })
@@ -7561,6 +7627,11 @@ const WorkOrderModal: React.FC<{
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   autoFocus
                 />
+                <datalist id="vehicle-models-list">
+                  {POPULAR_MOTORCYCLES.map((model) => (
+                    <option key={model} value={model} />
+                  ))}
+                </datalist>
               </div>
 
               <div>

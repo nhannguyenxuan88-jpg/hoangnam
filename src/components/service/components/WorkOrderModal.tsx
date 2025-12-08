@@ -767,7 +767,7 @@ const WorkOrderModal: React.FC<{
         currentKm: formData.currentKm,
         issueDescription: formData.issueDescription || "",
         technicianName: formData.technicianName || "",
-        status: formData.status || "Tiï¿½p nhï¿½n",
+        status: formData.status || "Tiếp nhận",
         laborCost: formData.laborCost || 0,
         discount: discount,
         partsUsed: selectedParts,
@@ -1201,7 +1201,7 @@ const WorkOrderModal: React.FC<{
 
       // 3. Validate total > 0
       if (total <= 0) {
-        showToast.error("Tï¿½"ng tiï¿½n phï¿½i lï¿½:n hï¿½n 0");
+        showToast.error("Tổng tiền phải lớn hơn 0");
         return;
       }
 
@@ -1576,8 +1576,8 @@ const WorkOrderModal: React.FC<{
                 formData.paymentMethod || "cash",
                 0 // Sá»‘ tiá»n = 0 vÃ¬ Ä‘Ã£ thanh toÃ¡n háº¿t rá»“i, chá»‰ cáº§n trá»« kho
               );
-              if (!result.success) {
-                showToast.warning("ÄÃ£ lÆ°u phiáº¿u nhÆ°ng cÃ³ lá»—i khi trá»« kho: " + (result.error?.message || "Unknown error"));
+              if (!result.ok) {
+                showToast.warning("ÄÃ£ lÆ°u phiáº¿u nhÆ°ng cÃ³ lá»—i khi trá»« kho: " + (result.error.message || "Unknown error"));
               }
             } catch (error: any) {
               console.error("[handleSave] Error deducting inventory:", error);
@@ -1927,8 +1927,8 @@ const WorkOrderModal: React.FC<{
                 formData.paymentMethod || "cash",
                 0 // Sá»‘ tiá»n = 0 vÃ¬ Ä‘Ã£ thanh toÃ¡n háº¿t rá»“i, chá»‰ cáº§n trá»« kho
               );
-              if (!result.success) {
-                showToast.warning("ÄÃ£ cáº­p nháº­t phiáº¿u nhÆ°ng cÃ³ lá»—i khi trá»« kho: " + (result.error?.message || "Unknown error"));
+              if (!result.ok) {
+                showToast.warning("ÄÃ£ cáº­p nháº­t phiáº¿u nhÆ°ng cÃ³ lá»—i khi trá»« kho: " + (result.error.message || "Unknown error"));
               }
             } catch (error: any) {
               console.error("[handleSave] Error deducting inventory:", error);
@@ -2158,7 +2158,7 @@ const WorkOrderModal: React.FC<{
                                       )}
                                       {customer.licensePlate && (
                                         <span className="font-mono font-medium">
-                                          {customer.vehicleModel && """}{" "}
+                                          {customer.vehicleModel && " - "}
                                           {customer.licensePlate}
                                         </span>
                                       )}
@@ -2366,7 +2366,17 @@ const WorkOrderModal: React.FC<{
                 </label>
                 <input
                   type="number"
-                  placeholder="15000"`n                  value={formData.currentKm || ""}`n                  onChange={(e) =>`n                    setFormData({`n                      ...formData,`n                      currentKm: e.target.value`n                        ? parseInt(e.target.value)`n                        : undefined,`n                    })`n                  }`n                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  placeholder="15000"
+                  value={formData.currentKm || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      currentKm: e.target.value
+                        ? parseInt(e.target.value)
+                        : undefined,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 />
               </div>
 
@@ -3665,3 +3675,13 @@ const WorkOrderModal: React.FC<{
 };
 
 export default WorkOrderModal;
+
+
+
+
+
+
+
+
+
+

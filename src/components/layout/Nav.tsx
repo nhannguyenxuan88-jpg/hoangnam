@@ -26,6 +26,7 @@ import {
   X,
   Menu,
   Home,
+  DollarSign,
 } from "lucide-react";
 
 export function Nav() {

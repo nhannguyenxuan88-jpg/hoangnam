@@ -14,11 +14,13 @@ import {
   Trash2,
   Phone,
   Mail,
+  Wallet,
 } from "lucide-react";
 import { useAppContext } from "../../contexts/AppContext";
 import { Employee, AttendanceRecord } from "../../types";
 import { formatCurrency, formatDate } from "../../utils/format";
 import PayrollManager from "../payroll/PayrollManager";
+import EmployeeAdvanceManager from "./EmployeeAdvanceManager";
 import { showToast } from "../../utils/toast";
 import {
   useEmployeesRepo,
@@ -27,7 +29,7 @@ import {
   useDeleteEmployeeRepo,
 } from "../../hooks/useEmployeesRepository";
 
-type Tab = "list" | "attendance" | "payroll" | "history";
+type Tab = "list" | "attendance" | "payroll" | "advance" | "history";
 
 const EmployeeManager: React.FC = () => {
   const { employees: contextEmployees, setEmployees } = useAppContext();
@@ -217,6 +219,11 @@ const EmployeeManager: React.FC = () => {
             icon: <DollarSign className="w-3.5 h-3.5" />,
           },
           {
+            key: "advance",
+            label: "Ứng lương",
+            icon: <Wallet className="w-3.5 h-3.5" />,
+          },
+          {
             key: "history",
             label: "Lịch sử",
             icon: <History className="w-3.5 h-3.5" />,
@@ -390,6 +397,8 @@ const EmployeeManager: React.FC = () => {
       )}
 
       {activeTab === "payroll" && <PayrollManager />}
+
+      {activeTab === "advance" && <EmployeeAdvanceManager />}
 
       {activeTab === "history" && (
         <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-8 text-center">

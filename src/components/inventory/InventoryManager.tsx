@@ -2324,6 +2324,8 @@ const EditReceiptModal: React.FC<{
   );
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+  const [showEditProductModal, setShowEditProductModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
 
   // Fetch suppliers from database
   const { data: allSuppliers = [] } = useQuery({
@@ -2347,23 +2349,76 @@ const EditReceiptModal: React.FC<{
   const [items, setItems] = useState(
     receipt.items.map((item) => ({
       id: item.id,
+      partId: item.partId,
       partName: item.partName,
+      sku: (item as any).sku || "",
       quantity: item.quantity,
       unitPrice: item.unitPrice || 0,
       totalPrice: item.quantity * (item.unitPrice || 0),
       notes: item.notes || "",
     }))
   );
-  const [payments, setPayments] = useState([
-    {
-      time: "15:31",
-      date: receipt.date,
-      payer: "Xuân Nhan",
-      cashier: "(Tiền mặt)",
-      amount: receipt.total,
-    },
-  ]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [isPaid, setIsPaid] = useState(true);
+
+  // Fetch cash transactions for this receipt
+  const { data: cashTransactions = [] } = useQuery({
+    queryKey: ["cash-transactions-receipt", receipt.receiptCode],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cash_transactions")
+        .select("*, profiles(full_name)")
+        .eq("reference", receipt.receiptCode)
+        .eq("branch_id", currentBranchId)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Update payments when cash transactions load
+  React.useEffect(() => {
+    console.log("[EditReceiptModal] Cash transactions:", cashTransactions);
+    console.log("[EditReceiptModal] Receipt code:", receipt.receiptCode);
+    console.log("[EditReceiptModal] Branch ID:", currentBranchId);
+
+    if (cashTransactions.length > 0) {
+      setPayments(
+        cashTransactions.map((tx: any) => {
+          const txDate = new Date(tx.created_at);
+          return {
+            time: txDate.toLocaleTimeString("vi-VN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            date: txDate,
+            payer: tx.description || "--",
+            cashier: `${tx.profiles?.full_name || "--"} (${
+              tx.payment_method === "cash" ? "Tiền mặt" : "Chuyển khoản"
+            })`,
+            amount: Math.abs(tx.amount),
+          };
+        })
+      );
+    } else {
+      console.log(
+        "[EditReceiptModal] No cash transactions found, showing placeholder"
+      );
+      // Show placeholder payment if no transactions found
+      setPayments([
+        {
+          time: new Date(receipt.date).toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          date: receipt.date,
+          payer: "Chưa có giao dịch",
+          cashier: "--",
+          amount: 0,
+        },
+      ]);
+    }
+  }, [cashTransactions, receipt]);
 
   // Extract phone from notes if available
   React.useEffect(() => {
@@ -2462,8 +2517,77 @@ const EditReceiptModal: React.FC<{
   };
 
   const handleEditItem = (index: number) => {
-    setEditingItemIndex(index);
-    showToast.info("Click vào ô số lượng hoặc đơn giá để chỉnh sửa");
+    const item = items[index];
+
+    // Fetch part details including selling prices
+    if (item.partId && !item.partId.startsWith("new-")) {
+      supabase
+        .from("parts")
+        .select("price, wholesale_price")
+        .eq("id", item.partId)
+        .single()
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setEditingProduct({
+              ...item,
+              index,
+              sellingPrice: data.price || 0,
+              wholesalePrice: data.wholesale_price || 0,
+            });
+          } else {
+            setEditingProduct({
+              ...item,
+              index,
+              sellingPrice: 0,
+              wholesalePrice: 0,
+            });
+          }
+          setShowEditProductModal(true);
+        });
+    } else {
+      setEditingProduct({ ...item, index, sellingPrice: 0, wholesalePrice: 0 });
+      setShowEditProductModal(true);
+    }
+  };
+
+  const handleSaveEditedProduct = async (updatedProduct: any) => {
+    const index = updatedProduct.index;
+    const newItems = [...items];
+
+    // Update item with new values including selling prices
+    newItems[index] = {
+      ...newItems[index],
+      partName: updatedProduct.partName,
+      sku: updatedProduct.sku,
+      quantity: updatedProduct.quantity,
+      unitPrice: updatedProduct.unitPrice,
+      totalPrice: updatedProduct.quantity * updatedProduct.unitPrice,
+      sellingPrice: updatedProduct.sellingPrice,
+      wholesalePrice: updatedProduct.wholesalePrice,
+    };
+
+    setItems(newItems);
+    setShowEditProductModal(false);
+    setEditingProduct(null);
+
+    // If product exists in database, update selling prices
+    if (updatedProduct.partId && !updatedProduct.partId.startsWith("new-")) {
+      try {
+        const { error } = await supabase
+          .from("parts")
+          .update({
+            price: updatedProduct.sellingPrice || 0,
+            wholesale_price: updatedProduct.wholesalePrice || 0,
+          })
+          .eq("id", updatedProduct.partId);
+
+        if (error) throw error;
+        showToast.success("Đã cập nhật giá bán");
+      } catch (error) {
+        console.error("Error updating prices:", error);
+        showToast.error("Không thể cập nhật giá bán vào database");
+      }
+    }
   };
 
   const handleItemMenu = (index: number) => {
@@ -2648,6 +2772,9 @@ const EditReceiptModal: React.FC<{
                         -
                       </th>
                       <th className="px-3 py-2 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
+                        SKU
+                      </th>
+                      <th className="px-3 py-2 text-left text-sm font-medium text-slate-700 dark:text-slate-300">
                         Tên
                       </th>
                       <th className="px-3 py-2 text-center text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -2675,22 +2802,18 @@ const EditReceiptModal: React.FC<{
                         <td className="px-3 py-3 text-sm text-slate-900 dark:text-slate-100">
                           {index + 1}
                         </td>
+                        <td className="px-3 py-3 text-xs text-slate-600 dark:text-slate-400">
+                          {item.sku || "--"}
+                        </td>
                         <td className="px-3 py-3">
                           <div className="text-sm text-slate-900 dark:text-slate-100">
                             {item.partName}
                           </div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400">
-                            [Khác]
-                          </div>
-                          <div className="text-xs text-slate-500">
-                            - ĐG Bán lẻ: {formatCurrency(70000)}
-                          </div>
-                          <div className="text-xs text-slate-500">
-                            - ĐG Bán sỉ: {formatCurrency(0)}
-                          </div>
-                          <div className="text-xs text-red-500">
-                            (Đã xuất kho)
-                          </div>
+                          {item.sku && (
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                              SKU: {item.sku}
+                            </div>
+                          )}
                         </td>
                         <td className="px-3 py-3 text-center">
                           <input
@@ -2940,6 +3063,138 @@ const EditReceiptModal: React.FC<{
           onAdd={handleAddProduct}
           currentBranchId={currentBranchId}
         />
+
+        {/* Edit Product Modal */}
+        {showEditProductModal && editingProduct && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-lg w-full max-w-md">
+              <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  Chỉnh sửa sản phẩm
+                </h3>
+              </div>
+              <div className="p-4 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Tên sản phẩm
+                  </label>
+                  <input
+                    type="text"
+                    value={editingProduct.partName}
+                    onChange={(e) =>
+                      setEditingProduct({
+                        ...editingProduct,
+                        partName: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    SKU
+                  </label>
+                  <input
+                    type="text"
+                    value={editingProduct.sku || ""}
+                    onChange={(e) =>
+                      setEditingProduct({
+                        ...editingProduct,
+                        sku: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Số lượng
+                    </label>
+                    <input
+                      type="number"
+                      value={editingProduct.quantity}
+                      onChange={(e) =>
+                        setEditingProduct({
+                          ...editingProduct,
+                          quantity: Number(e.target.value),
+                        })
+                      }
+                      min="1"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Giá nhập
+                    </label>
+                    <FormattedNumberInput
+                      value={editingProduct.unitPrice}
+                      onValue={(val) =>
+                        setEditingProduct({
+                          ...editingProduct,
+                          unitPrice: val,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Giá bán lẻ
+                    </label>
+                    <FormattedNumberInput
+                      value={editingProduct.sellingPrice || 0}
+                      onValue={(val) =>
+                        setEditingProduct({
+                          ...editingProduct,
+                          sellingPrice: val,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Giá bán sỉ
+                    </label>
+                    <FormattedNumberInput
+                      value={editingProduct.wholesalePrice || 0}
+                      onValue={(val) =>
+                        setEditingProduct({
+                          ...editingProduct,
+                          wholesalePrice: val,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditProductModal(false);
+                    setEditingProduct(null);
+                  }}
+                  className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveEditedProduct(editingProduct)}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                >
+                  Lưu
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -4512,11 +4767,26 @@ const InventoryManager: React.FC = () => {
 
   // Sau khi chuyển sang server filter, filteredParts = repoParts (có thể thêm client filter tồn kho nếu cần)
   const filteredParts = useMemo(() => {
-    const baseList =
+    let baseList =
       showDuplicatesOnly && duplicateSkus.size > 0
         ? duplicatePartsData || []
         : repoParts;
 
+    // Client-side multi-keyword search refinement
+    // Khi người dùng nhập nhiều từ, filter thêm để chỉ hiện sản phẩm có TẤT CẢ các từ
+    if (search && search.trim()) {
+      const keywords = search.trim().toLowerCase().split(/\s+/);
+      if (keywords.length > 1) {
+        baseList = baseList.filter((part: any) => {
+          const searchText = `${part.name || ""} ${part.sku || ""} ${
+            part.category || ""
+          } ${part.description || ""}`.toLowerCase();
+          return keywords.every((keyword) => searchText.includes(keyword));
+        });
+      }
+    }
+
+    // Stock filter
     if (stockFilter === "all") {
       return baseList;
     }
@@ -4538,6 +4808,7 @@ const InventoryManager: React.FC = () => {
     duplicatePartsData,
     stockFilter,
     currentBranchId,
+    search,
   ]);
 
   // Auto-disable duplicate filter when no duplicates remain
@@ -4649,41 +4920,61 @@ const InventoryManager: React.FC = () => {
         const processedItems = await Promise.all(
           items.map(async (item) => {
             if (item._isNewProduct && item._productData) {
+              console.log("🆕 Đang tạo sản phẩm mới:", item._productData.name);
+
               // Create the new product in DB
-              const createRes = await createPartMutation.mutateAsync({
-                name: item._productData.name,
-                sku: item._productData.sku,
-                barcode: item._productData.barcode || "",
-                category: item._productData.category,
-                description: item._productData.description || "",
-                stock: { [currentBranchId]: 0 }, // Stock = 0, sẽ cập nhật khi hoàn tất phiếu nhập
-                costPrice: { [currentBranchId]: item._productData.importPrice },
-                retailPrice: {
-                  [currentBranchId]: item._productData.retailPrice,
-                },
-                wholesalePrice: {
-                  [currentBranchId]:
-                    item._productData.wholesalePrice ||
-                    Math.round(item._productData.retailPrice * 0.9),
-                },
-              });
+              try {
+                const createdPart = await createPartMutation.mutateAsync({
+                  name: item._productData.name,
+                  sku: item._productData.sku,
+                  barcode: item._productData.barcode || "",
+                  category: item._productData.category,
+                  description: item._productData.description || "",
+                  stock: { [currentBranchId]: 0 }, // Stock = 0, sẽ cập nhật khi hoàn tất phiếu nhập
+                  costPrice: {
+                    [currentBranchId]: item._productData.importPrice,
+                  },
+                  retailPrice: {
+                    [currentBranchId]: item._productData.retailPrice,
+                  },
+                  wholesalePrice: {
+                    [currentBranchId]:
+                      item._productData.wholesalePrice ||
+                      Math.round(item._productData.retailPrice * 0.9),
+                  },
+                });
 
-              // Get the real part ID from the created product
-              const partData = (createRes as any)?.data || createRes;
-              const realPartId = partData?.id || item.partId;
+                // mutateAsync now returns Part directly (unwrapped)
+                const realPartId = createdPart?.id;
 
-              console.log(
-                `✅ Created new product: ${item._productData.name} with ID: ${realPartId}`
-              );
+                if (!realPartId || realPartId.startsWith("temp-")) {
+                  console.error(
+                    "❌ Không lấy được ID thật sau khi tạo sản phẩm:",
+                    createdPart
+                  );
+                  throw new Error(
+                    `Không thể tạo sản phẩm ${item._productData.name}`
+                  );
+                }
 
-              return {
-                partId: realPartId,
-                partName: item.partName,
-                quantity: item.quantity,
-                importPrice: item.importPrice,
-                sellingPrice: item.sellingPrice,
-                wholesalePrice: item.wholesalePrice || 0,
-              };
+                console.log(
+                  `✅ Đã tạo sản phẩm: ${item._productData.name} với ID: ${realPartId}`
+                );
+
+                return {
+                  partId: realPartId,
+                  partName: item.partName,
+                  quantity: item.quantity,
+                  importPrice: item.importPrice,
+                  sellingPrice: item.sellingPrice,
+                  wholesalePrice: item.wholesalePrice || 0,
+                };
+              } catch (error) {
+                console.error("❌ Lỗi khi tạo sản phẩm:", error);
+                throw new Error(
+                  `Không thể tạo sản phẩm ${item._productData.name}: ${error}`
+                );
+              }
             }
             // Existing product, return as-is
             return {

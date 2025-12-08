@@ -12,6 +12,7 @@ import {
   useDeleteCashTxRepo,
 } from "../../hooks/useCashTransactionsRepository";
 import { useUpdatePaymentSourceBalanceRepo } from "../../hooks/usePaymentSourcesRepository";
+import { supabase } from "../../supabaseClient";
 
 const CashBook: React.FC = () => {
   const {
@@ -29,6 +30,24 @@ const CashBook: React.FC = () => {
   const updateCashTxRepo = useUpdateCashTxRepo();
   const deleteCashTxRepo = useDeleteCashTxRepo();
   const updatePaymentSourceBalanceRepo = useUpdatePaymentSourceBalanceRepo();
+  
+  // Fetch profiles for user names
+  const [profilesMap, setProfilesMap] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      const { data, error } = await supabase.from("profiles").select("id, name");
+      if (!error && data) {
+        const map: Record<string, string> = {};
+        data.forEach((profile: any) => {
+          map[profile.id] = profile.name;
+        });
+        setProfilesMap(map);
+      }
+    };
+    fetchProfiles();
+  }, []);
+  
   const [filterType, setFilterType] = useState<"all" | "income" | "expense">(
     "all"
   );
@@ -36,6 +55,7 @@ const CashBook: React.FC = () => {
   const [filterDateRange, setFilterDateRange] = useState<
     "today" | "week" | "month" | "all"
   >("month");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTransaction, setEditingTransaction] =
     useState<CashTransaction | null>(null);
@@ -93,6 +113,19 @@ const CashBook: React.FC = () => {
         break;
     }
 
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (tx) =>
+          ((tx as any).description || "").toLowerCase().includes(query) ||
+          (tx.notes || "").toLowerCase().includes(query) ||
+          ((tx as any).reference || "").toLowerCase().includes(query) ||
+          ((tx as any).recipient || "").toLowerCase().includes(query) ||
+          getCategoryLabel(tx.category).toLowerCase().includes(query)
+      );
+    }
+
     return filtered.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
@@ -102,6 +135,7 @@ const CashBook: React.FC = () => {
     filterType,
     filterPaymentSource,
     filterDateRange,
+    searchQuery,
   ]);
 
   // Helper to check if transaction is income type (including "deposit" for backwards compatibility)
@@ -537,6 +571,19 @@ const CashBook: React.FC = () => {
               </select>
             </div>
 
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Tìm kiếm:
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm theo nội dung, mã phiếu, đối tượng..."
+                className="flex-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
+              />
+            </div>
+
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Thời gian:
@@ -669,7 +716,7 @@ const CashBook: React.FC = () => {
             <thead className="bg-slate-50 dark:bg-slate-700">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
-                  Ngày
+                  Ngày/Giờ
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
                   Loại
@@ -685,6 +732,9 @@ const CashBook: React.FC = () => {
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
                   Nguồn tiền
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
+                  Người tạo
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
                   Số tiền
@@ -721,7 +771,15 @@ const CashBook: React.FC = () => {
                     className="hover:bg-slate-50 dark:hover:bg-slate-700/50"
                   >
                     <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-100">
-                      {formatDate(new Date(tx.date))}
+                      <div className="flex flex-col">
+                        <span>{formatDate(new Date(tx.date))}</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          {new Date(tx.date).toLocaleTimeString("vi-VN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -741,7 +799,16 @@ const CashBook: React.FC = () => {
                       {(tx as any).recipient || "--"}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                      {(tx as any).description || tx.notes || "--"}
+                      <div className="flex flex-col">
+                        <span>
+                          {(tx as any).description || tx.notes || "--"}
+                        </span>
+                        {(tx as any).reference && (
+                          <span className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">
+                            ({(tx as any).reference})
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
                       {(() => {
@@ -753,6 +820,9 @@ const CashBook: React.FC = () => {
                         if (source === "bank") return "Ngân hàng";
                         return source || "--";
                       })()}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                      {profilesMap[(tx as any).created_by] || "--"}
                     </td>
                     <td
                       className={`px-4 py-3 text-right text-sm font-semibold ${
