@@ -65,6 +65,8 @@ export async function fetchCustomerDebts(): Promise<
         remainingAmount: row.remaining_amount,
         createdDate: row.created_date,
         branchId: row.branch_id,
+        workOrderId: row.work_order_id, // 🔹 Add this to filter duplicates
+        saleId: row.sale_id,
       };
     });
 
