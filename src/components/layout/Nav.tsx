@@ -419,6 +419,13 @@ export function Nav() {
                         color="fuchsia"
                         onClick={() => setShowMobileMenu(false)}
                       />
+                      <MobileDrawerLink
+                        to="/tax-report"
+                        icon={<DollarSign className="w-5 h-5" />}
+                        label="Báo cáo thuế"
+                        color="amber"
+                        onClick={() => setShowMobileMenu(false)}
+                      />
                     </div>
                   </div>
                 )}

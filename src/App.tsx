@@ -50,6 +50,9 @@ const PayrollManager = lazy(
 const ReportsManager = lazy(
   () => import("./components/reports/ReportsManager")
 );
+const TaxReportExport = lazy(
+  () => import("./components/reports/TaxReportExport")
+);
 const EmployeeManager = lazy(
   () => import("./components/employee/EmployeeManager")
 );
@@ -133,6 +136,11 @@ const PayrollPage = () => (
 const ReportsPage = () => (
   <Suspense fallback={<PageLoader />}>
     <ReportsManager />
+  </Suspense>
+);
+const TaxReportPage = () => (
+  <Suspense fallback={<PageLoader />}>
+    <TaxReportExport />
   </Suspense>
 );
 const EmployeesPage = () => (
@@ -292,6 +300,16 @@ const MainLayout: React.FC = () => {
             element={
               <ProtectedRoute requiredRoles={["owner", "manager"]}>
                 <ReportsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tax-report"
+            element={
+              <ProtectedRoute
+                requiredRoles={["owner", "manager", "accountant"]}
+              >
+                <TaxReportPage />
               </ProtectedRoute>
             }
           />

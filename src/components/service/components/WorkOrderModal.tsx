@@ -2970,8 +2970,24 @@ const WorkOrderModal: React.FC<{
                             }`}
                           />
                         </td>
-                        <td className="px-4 py-2 text-right text-sm text-slate-900 dark:text-slate-100">
-                          {formatCurrency(part.price)}
+                        <td className="px-4 py-2 text-right">
+                          <NumberInput
+                            placeholder="Đơn giá"
+                            value={part.price || ""}
+                            onChange={(val) => {
+                              setSelectedParts(
+                                selectedParts.map((p, i) =>
+                                  i === idx ? { ...p, price: val } : p
+                                )
+                              );
+                            }}
+                            disabled={!canEditPriceAndParts}
+                            className={`w-28 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-right bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm ${
+                              !canEditPriceAndParts
+                                ? "opacity-50 cursor-not-allowed"
+                                : ""
+                            }`}
+                          />
                         </td>
                         <td className="px-4 py-2 text-right text-sm font-semibold text-slate-900 dark:text-slate-100">
                           {formatCurrency(part.price * part.quantity)}

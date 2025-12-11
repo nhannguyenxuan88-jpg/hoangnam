@@ -11,6 +11,7 @@ import {
   Tag,
   Check,
   BriefcaseBusiness,
+  FileText,
 } from "lucide-react";
 import { useAppContext } from "../../contexts/AppContext";
 import { useSalesRepo } from "../../hooks/useSalesRepository";
@@ -31,7 +32,13 @@ import {
   exportDetailedInventoryReport,
 } from "../../utils/excelExport";
 
-type ReportTab = "revenue" | "cashflow" | "inventory" | "payroll" | "debt";
+type ReportTab =
+  | "revenue"
+  | "cashflow"
+  | "inventory"
+  | "payroll"
+  | "debt"
+  | "tax";
 type DateRange = "today" | "week" | "month" | "quarter" | "year" | "custom";
 
 const REPORT_TAB_CONFIGS: Array<{
@@ -91,6 +98,16 @@ const REPORT_TAB_CONFIGS: Array<{
     inactiveClass:
       "bg-white dark:bg-slate-900/60 text-rose-700 dark:text-rose-200 border-rose-200 dark:border-rose-800 hover:bg-rose-50/70 dark:hover:bg-rose-900/20",
     dotClass: "bg-rose-400",
+  },
+  {
+    key: "tax",
+    label: "Báo cáo thuế",
+    icon: <FileText className="w-4 h-4" />,
+    activeClass:
+      "bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-transparent shadow-lg shadow-indigo-500/30",
+    inactiveClass:
+      "bg-white dark:bg-slate-900/60 text-indigo-700 dark:text-indigo-200 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50/70 dark:hover:bg-indigo-900/20",
+    dotClass: "bg-indigo-400",
   },
 ];
 
@@ -1664,6 +1681,31 @@ const ReportsManager: React.FC = () => {
                     ))
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "tax" && (
+          <div className="space-y-6">
+            <div className="text-center py-12">
+              <FileText className="w-16 h-16 mx-auto mb-4 text-indigo-600 dark:text-indigo-400" />
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+                Xuất báo cáo thuế
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
+                Xuất file XML theo định dạng chuẩn Tổng cục Thuế để nhập vào
+                phần mềm kê khai thuế (HTKK)
+              </p>
+              <a
+                href="#/tax-report"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+              >
+                <FileText className="w-5 h-5" />
+                Mở trang xuất báo cáo thuế
+              </a>
+              <div className="mt-6 text-sm text-slate-500 dark:text-slate-400">
+                <p>💡 Hỗ trợ: Tờ khai VAT (01/GTGT) và Báo cáo doanh thu</p>
               </div>
             </div>
           </div>

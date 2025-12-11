@@ -1522,8 +1522,26 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                                 </span>
                               )}
                             </div>
-                            <div className="text-[11px] text-slate-400 mt-0.5">
-                              {formatCurrency(part.sellingPrice)} / cái
+                            <div className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                              <span className="text-[10px]">Giá:</span>
+                              <input
+                                type="text"
+                                value={formatNumberWithDots(part.sellingPrice)}
+                                onChange={(e) => {
+                                  const newPrice = parseFormattedNumber(
+                                    e.target.value
+                                  );
+                                  setSelectedParts(
+                                    selectedParts.map((p) =>
+                                      p.partId === part.partId
+                                        ? { ...p, sellingPrice: newPrice }
+                                        : p
+                                    )
+                                  );
+                                }}
+                                className="w-20 px-1.5 py-0.5 bg-[#2b2b40] border border-slate-600 rounded text-[#ffc700] text-[11px] text-right focus:border-blue-500 focus:outline-none"
+                              />
+                              <span className="text-[10px]">/ cái</span>
                             </div>
                           </div>
                           <div className="text-[#50cd89] font-bold">
