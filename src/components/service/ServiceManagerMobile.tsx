@@ -169,9 +169,9 @@ export function ServiceManagerMobile({
 
   return (
     <div className="md:hidden flex flex-col h-screen bg-[#151521]">
-      {/* KPI CARDS - Clickable for filtering */}
+      {/* KPI CARDS - Clickable for filtering - 4 columns compact */}
       <div className="bg-[#1e1e2d] border-b border-gray-800 p-3">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-4 gap-1.5">
           {/* Tiếp nhận */}
           <button
             onClick={() =>
@@ -179,21 +179,15 @@ export function ServiceManagerMobile({
                 statusFilter === "Tiếp nhận" ? "all" : "Tiếp nhận"
               )
             }
-            className={`p-3 rounded-xl text-left transition-all ${
+            className={`p-2 rounded-lg text-center transition-all ${
               statusFilter === "Tiếp nhận"
-                ? "bg-gradient-to-br from-[#009ef7]/20 to-[#009ef7]/10 border-2 border-[#009ef7] shadow-lg shadow-[#009ef7]/20"
-                : "bg-[#2b2b40] border border-gray-700 hover:border-[#009ef7]/50"
+                ? "bg-gradient-to-br from-[#009ef7]/20 to-[#009ef7]/10 border-2 border-[#009ef7]"
+                : "bg-[#2b2b40] border border-gray-700"
             }`}
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-gray-400 font-medium">
-                Tiếp nhận
-              </span>
-              <FileText className="w-4 h-4 text-[#009ef7]" />
-            </div>
-            <div className="text-2xl font-black text-white">
-              {kpis.tiepNhan}
-            </div>
+            <FileText className="w-4 h-4 text-[#009ef7] mx-auto mb-0.5" />
+            <div className="text-lg font-bold text-white">{kpis.tiepNhan}</div>
+            <span className="text-[8px] text-gray-400">Tiếp nhận</span>
           </button>
 
           {/* Đang sửa */}
@@ -201,19 +195,15 @@ export function ServiceManagerMobile({
             onClick={() =>
               setStatusFilter(statusFilter === "Đang sửa" ? "all" : "Đang sửa")
             }
-            className={`p-3 rounded-xl text-left transition-all ${
+            className={`p-2 rounded-lg text-center transition-all ${
               statusFilter === "Đang sửa"
-                ? "bg-gradient-to-br from-[#f1416c]/20 to-[#f1416c]/10 border-2 border-[#f1416c] shadow-lg shadow-[#f1416c]/20"
-                : "bg-[#2b2b40] border border-gray-700 hover:border-[#f1416c]/50"
+                ? "bg-gradient-to-br from-[#f1416c]/20 to-[#f1416c]/10 border-2 border-[#f1416c]"
+                : "bg-[#2b2b40] border border-gray-700"
             }`}
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-gray-400 font-medium">
-                Đang sửa
-              </span>
-              <Wrench className="w-4 h-4 text-[#f1416c]" />
-            </div>
-            <div className="text-2xl font-black text-white">{kpis.dangSua}</div>
+            <Wrench className="w-4 h-4 text-[#f1416c] mx-auto mb-0.5" />
+            <div className="text-lg font-bold text-white">{kpis.dangSua}</div>
+            <span className="text-[8px] text-gray-400">Đang sửa</span>
           </button>
 
           {/* Đã sửa xong */}
@@ -223,21 +213,17 @@ export function ServiceManagerMobile({
                 statusFilter === "Đã sửa xong" ? "all" : "Đã sửa xong"
               )
             }
-            className={`p-3 rounded-xl text-left transition-all ${
+            className={`p-2 rounded-lg text-center transition-all ${
               statusFilter === "Đã sửa xong"
-                ? "bg-gradient-to-br from-[#50cd89]/20 to-[#50cd89]/10 border-2 border-[#50cd89] shadow-lg shadow-[#50cd89]/20"
-                : "bg-[#2b2b40] border border-gray-700 hover:border-[#50cd89]/50"
+                ? "bg-gradient-to-br from-[#50cd89]/20 to-[#50cd89]/10 border-2 border-[#50cd89]"
+                : "bg-[#2b2b40] border border-gray-700"
             }`}
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-gray-400 font-medium">
-                Đã sửa xong
-              </span>
-              <Check className="w-4 h-4 text-[#50cd89]" />
-            </div>
-            <div className="text-2xl font-black text-white">
+            <Check className="w-4 h-4 text-[#50cd89] mx-auto mb-0.5" />
+            <div className="text-lg font-bold text-white">
               {kpis.daHoanThanh}
             </div>
+            <span className="text-[8px] text-gray-400">Đã sửa</span>
           </button>
 
           {/* Trả máy */}
@@ -245,19 +231,15 @@ export function ServiceManagerMobile({
             onClick={() =>
               setStatusFilter(statusFilter === "Trả máy" ? "all" : "Trả máy")
             }
-            className={`p-3 rounded-xl text-left transition-all ${
+            className={`p-2 rounded-lg text-center transition-all ${
               statusFilter === "Trả máy"
-                ? "bg-gradient-to-br from-purple-500/20 to-purple-500/10 border-2 border-purple-500 shadow-lg shadow-purple-500/20"
-                : "bg-[#2b2b40] border border-gray-700 hover:border-purple-500/50"
+                ? "bg-gradient-to-br from-purple-500/20 to-purple-500/10 border-2 border-purple-500"
+                : "bg-[#2b2b40] border border-gray-700"
             }`}
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-gray-400 font-medium">
-                Trả máy
-              </span>
-              <Key className="w-4 h-4 text-purple-500" />
-            </div>
-            <div className="text-2xl font-black text-white">{kpis.traMay}</div>
+            <Key className="w-4 h-4 text-purple-500 mx-auto mb-0.5" />
+            <div className="text-lg font-bold text-white">{kpis.traMay}</div>
+            <span className="text-[8px] text-gray-400">Trả máy</span>
           </button>
         </div>
 
@@ -361,21 +343,22 @@ export function ServiceManagerMobile({
             <div
               key={workOrder.id}
               onClick={() => onEditWorkOrder(workOrder)}
-              className="bg-[#1e1e2d] rounded-xl border border-gray-800 overflow-hidden active:scale-[0.99] transition-transform"
+              className="bg-[#1e1e2d] rounded-lg border border-gray-800 overflow-hidden active:scale-[0.99] transition-transform"
             >
               {/* Card Content */}
-              <div className="p-3">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <div className="text-[#009ef7] font-mono text-sm font-semibold mb-0.5">
+              <div className="p-2.5">
+                {/* Header - Single row: ID + Date + Status */}
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#009ef7] font-mono text-xs font-semibold">
                       {formatWorkOrderId(workOrder.id)}
-                    </div>
-                    <div className="text-xs text-gray-500">
+                    </span>
+                    <span className="text-[10px] text-gray-500">
                       {formatDate(workOrder.creationDate)}
-                    </div>
+                    </span>
                   </div>
                   <div
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-semibold ${getStatusColor(
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-semibold ${getStatusColor(
                       workOrder.status
                     )}`}
                   >
@@ -384,110 +367,67 @@ export function ServiceManagerMobile({
                   </div>
                 </div>
 
-                {/* Customer & Vehicle */}
-                <div className="space-y-2 mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">👤</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white font-medium text-sm truncate">
-                        {workOrder.customerName}
-                      </div>
-                      <div className="text-gray-400 text-xs">
-                        {workOrder.customerPhone}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🏍️</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-gray-300 text-sm truncate">
-                        {workOrder.vehicleModel}
-                      </div>
-                      <div className="text-[#009ef7] text-xs font-mono">
-                        {workOrder.licensePlate}
-                      </div>
-                    </div>
-                  </div>
-                  {/* Issue Description */}
-                  {workOrder.issueDescription && (
-                    <div className="flex items-start gap-2 bg-slate-800/30 rounded-lg p-2">
-                      <span className="text-sm">🔧</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-slate-300 text-xs line-clamp-2">
-                          {workOrder.issueDescription}
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                {/* Customer & Vehicle - Single row */}
+                <div className="flex items-center gap-2 mb-1.5 text-sm">
+                  <span className="text-xs">👤</span>
+                  <span className="text-white font-medium flex-1 min-w-0 truncate">
+                    {workOrder.customerName}
+                  </span>
+                  <span className="text-gray-500 text-xs shrink-0">
+                    {workOrder.customerPhone}
+                  </span>
                 </div>
-
-                {/* Footer */}
-                <div className="pt-2 border-t border-gray-800 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-gray-400">
-                      KTV:{" "}
-                      <span className="text-gray-300">
-                        {workOrder.technicianName || "Chưa phân"}
-                      </span>
-                    </div>
-                    <div className="text-white font-bold text-base">
-                      {formatCurrency(workOrder.total || 0)}
-                    </div>
+                <div className="flex items-center gap-2 mb-1.5 text-sm">
+                  <span className="text-xs">🏍️</span>
+                  <span className="text-gray-300 flex-1 min-w-0 truncate">
+                    {workOrder.vehicleModel}
+                  </span>
+                  <span className="text-[#009ef7] text-xs font-mono shrink-0">
+                    {workOrder.licensePlate}
+                  </span>
+                </div>
+                {/* Issue Description - More compact */}
+                {workOrder.issueDescription && (
+                  <div className="flex items-center gap-1.5 text-slate-400 text-xs mb-1.5 truncate">
+                    <span>🔧</span>
+                    <span className="truncate">
+                      {workOrder.issueDescription}
+                    </span>
                   </div>
-                  
-                  {/* Payment Status - Always show clear info */}
-                  <div className="space-y-1">
-                    {/* Đã thanh toán đủ */}
-                    {workOrder.paymentStatus === "paid" && workOrder.total > 0 && workOrder.remainingAmount === 0 && (
-                      <div className="flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-500/20 text-green-400 rounded-md font-medium text-xs">
-                          ✓ Đã thanh toán đủ
+                )}
+
+                {/* Footer - Compact single row */}
+                <div className="pt-1.5 border-t border-gray-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs flex-1 min-w-0">
+                    <span className="text-gray-500 shrink-0">KTV:</span>
+                    <span className="text-gray-300 truncate">
+                      {workOrder.technicianName || "Chưa phân"}
+                    </span>
+                    {/* Payment badge */}
+                    {workOrder.paymentStatus === "paid" &&
+                      workOrder.remainingAmount === 0 && (
+                        <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px]">
+                          ✓ Đủ
                         </span>
-                        <span className="text-green-400 text-xs font-medium">
-                          {formatCurrency(workOrder.totalPaid || 0)}
+                      )}
+                    {((workOrder.depositAmount &&
+                      workOrder.depositAmount > 0) ||
+                      workOrder.paymentStatus === "partial") &&
+                      (workOrder.remainingAmount ?? 0) > 0 && (
+                        <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded text-[10px]">
+                          Nợ {formatCurrency(workOrder.remainingAmount || 0)}
                         </span>
-                      </div>
-                    )}
-                    
-                    {/* Đặt cọc / Thanh toán 1 phần - Hiển thị khi có depositAmount > 0 HOẶC paymentStatus = partial */}
-                    {((workOrder.depositAmount && workOrder.depositAmount > 0) || workOrder.paymentStatus === "partial") && (
-                      <div className="space-y-1">
-                        {workOrder.depositAmount && workOrder.depositAmount > 0 && (
-                          <div className="flex items-center justify-between">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-md font-medium text-xs">
-                              💰 Đã cọc
-                            </span>
-                            <span className="text-purple-400 text-xs font-medium">
-                              {formatCurrency(workOrder.depositAmount)}
-                            </span>
-                          </div>
-                        )}
-                        {workOrder.additionalPayment && workOrder.additionalPayment > 0 && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-blue-400 text-xs">
-                              + Trả thêm: {formatCurrency(workOrder.additionalPayment)}
-                            </span>
-                          </div>
-                        )}
-                        {workOrder.total > 0 && (workOrder.remainingAmount ?? 0) > 0 && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-amber-400 text-xs">
-                              ⏳ Còn nợ
-                            </span>
-                            <span className="text-amber-400 text-xs font-bold">
-                              {formatCurrency(workOrder.remainingAmount || 0)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Chưa thanh toán */}
-                    {workOrder.paymentStatus === "unpaid" && (!workOrder.depositAmount || workOrder.depositAmount === 0) && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-700 text-slate-300 rounded-md font-medium text-xs">
-                        ⚪ Chưa thanh toán
-                      </span>
-                    )}
+                      )}
+                    {workOrder.paymentStatus === "unpaid" &&
+                      (!workOrder.depositAmount ||
+                        workOrder.depositAmount === 0) && (
+                        <span className="px-1.5 py-0.5 bg-slate-700 text-slate-400 rounded text-[10px]">
+                          Chưa TT
+                        </span>
+                      )}
+                  </div>
+                  <div className="text-white font-bold text-sm">
+                    {formatCurrency(workOrder.total || 0)}
                   </div>
                 </div>
               </div>
