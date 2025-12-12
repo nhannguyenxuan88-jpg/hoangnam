@@ -28,6 +28,8 @@ export function useEmployeeAdvances(branchId?: string) {
 
       return (data || []).map((item) => ({
         ...item,
+        employeeId: item.employee_id,
+        employeeName: item.employee_name,
         advanceAmount: parseFloat(item.advance_amount),
         monthlyDeduction: item.monthly_deduction
           ? parseFloat(item.monthly_deduction)
@@ -36,9 +38,11 @@ export function useEmployeeAdvances(branchId?: string) {
         paidAmount: parseFloat(item.paid_amount),
         advanceDate: item.advance_date,
         approvedDate: item.approved_date,
+        approvedBy: item.approved_by,
         isInstallment: item.is_installment,
         installmentMonths: item.installment_months,
         paymentMethod: item.payment_method,
+        branchId: item.branch_id,
       })) as EmployeeAdvance[];
     },
   });

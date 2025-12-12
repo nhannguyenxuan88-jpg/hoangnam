@@ -1006,6 +1006,7 @@ const getCategoryLabel = (category?: string) => {
     other_income: "Thu khác",
     inventory_purchase: "Mua hàng",
     salary: "Lương nhân viên",
+    employee_advance: "Ứng lương",
     loan_payment: "Trả nợ vay",
     debt_collection: "Thu nợ khách hàng",
     debt_payment: "Trả nợ nhà cung cấp",
