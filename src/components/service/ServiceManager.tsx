@@ -17,7 +17,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAppContext } from "../../contexts/AppContext";
-import type { WorkOrder, Part, WorkOrderPart, Vehicle } from "../../types";
+import type {
+  WorkOrder,
+  Part,
+  WorkOrderPart,
+  Vehicle,
+  Customer,
+} from "../../types";
 import {
   formatCurrency,
   formatDate,
@@ -744,6 +750,63 @@ export default function ServiceManager() {
       }
     } catch (err) {
       console.error("❌ Error in createWorkOrderNotification:", err);
+    }
+  };
+
+  // Helper: Update vehicle currentKm and maintenance records
+  const updateVehicleKmAndMaintenance = async (
+    customer: Customer,
+    vehicleId: string,
+    currentKm: number,
+    partsUsed: Array<{ partName: string }>,
+    additionalServices: Array<{ description: string }>,
+    issueDescription?: string
+  ) => {
+    try {
+      // Find the vehicle in customer's vehicles array
+      const vehicle = customer.vehicles?.find((v) => v.id === vehicleId);
+      if (!vehicle) {
+        console.warn(
+          "[updateVehicleKmAndMaintenance] Vehicle not found:",
+          vehicleId
+        );
+        return;
+      }
+
+      // Detect maintenance types from the work order
+      const maintenanceTypes = detectMaintenancesFromWorkOrder(
+        partsUsed,
+        additionalServices,
+        issueDescription
+      );
+
+      // Update vehicle with new km and maintenance records
+      const updatedVehicle = updateVehicleMaintenances(
+        { ...vehicle, currentKm },
+        maintenanceTypes,
+        currentKm
+      );
+
+      // Update the vehicles array
+      const updatedVehicles = customer.vehicles?.map((v) =>
+        v.id === vehicleId ? updatedVehicle : v
+      ) || [updatedVehicle];
+
+      // Save to database via upsertCustomer
+      await upsertCustomer({
+        ...customer,
+        vehicles: updatedVehicles,
+      });
+
+      console.log("[updateVehicleKmAndMaintenance] Updated vehicle:", {
+        vehicleId,
+        currentKm,
+        maintenanceTypes,
+        updatedVehicle,
+      });
+    } catch (err) {
+      console.error("[updateVehicleKmAndMaintenance] Error:", err);
+      // Don't throw - this is a non-critical update
     }
   };
 
@@ -4465,7 +4528,6 @@ export default function ServiceManager() {
     </div>
   );
 }
-
 
 const StatusBadge: React.FC<{ status: WorkOrderStatus }> = ({ status }) => {
   const styles = {
