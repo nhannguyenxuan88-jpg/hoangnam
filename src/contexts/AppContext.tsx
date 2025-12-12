@@ -307,47 +307,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
           if (customer.phone) {
             const { data: duplicates } = await supabase
               .from("customers")
-              .select("id")
+              .select("id, name, vehiclemodel, licenseplate, vehicles")
               .eq("phone", customer.phone)
               .limit(1);
 
-            // Nếu tìm thấy khách hàng với cùng SĐT
+            // Nếu tìm thấy khách hàng với cùng SĐT - CẬP NHẬT thay vì báo lỗi
             if (duplicates && duplicates.length > 0) {
               const existingId = duplicates[0].id;
+              console.log(
+                "Khách hàng đã tồn tại với SĐT này, chuyển sang UPDATE:",
+                customer.phone,
+                "ID:",
+                existingId
+              );
 
-              // Nếu đó là cùng 1 khách hàng (có cùng customerId), thực hiện UPDATE
-              if (existingId === customerId) {
-                console.log(
-                  "Khách hàng đã tồn tại, chuyển sang UPDATE:",
-                  customer.phone
+              // Cập nhật thông tin khách hàng hiện có (merge vehicles nếu cần)
+              const existingVehicles = duplicates[0].vehicles || [];
+              let updatedVehicles = existingVehicles;
+
+              // Nếu có xe mới, thêm vào danh sách
+              if (customer.vehicles && customer.vehicles.length > 0) {
+                const newVehicle = customer.vehicles[0];
+                const vehicleExists = existingVehicles.some(
+                  (v: any) =>
+                    v.licensePlate === newVehicle.licensePlate ||
+                    v.id === newVehicle.id
                 );
-                const { error: updateError } = await supabase
-                  .from("customers")
-                  .update({
-                    name: customer.name || "Khách hàng",
-                    vehiclemodel: customer.vehicleModel || null,
-                    licenseplate: customer.licensePlate || null,
-                    vehicles: customer.vehicles || [],
-                    status: customer.status || "active",
-                    segment: customer.segment || "New",
-                    loyaltypoints: customer.loyaltyPoints ?? 0,
-                    totalspent: customer.totalSpent ?? 0,
-                    visitcount: customer.visitCount ?? 0,
-                    lastvisit: customer.lastVisit || null,
-                  })
-                  .eq("id", existingId);
-
-                if (updateError) {
-                  console.error("Lỗi cập nhật khách hàng:", updateError);
-                  showToast.error("Lỗi cập nhật khách hàng");
+                if (!vehicleExists && newVehicle.licensePlate) {
+                  updatedVehicles = [...existingVehicles, newVehicle];
                 }
-                return;
-              } else {
-                // Đây là khách hàng khác với cùng SĐT - báo lỗi
-                console.error("Số điện thoại đã tồn tại:", customer.phone);
-                showToast.error("Số điện thoại này đã tồn tại trong hệ thống");
-                return;
               }
+
+              const { error: updateError } = await supabase
+                .from("customers")
+                .update({
+                  name: customer.name || duplicates[0].name || "Khách hàng",
+                  vehiclemodel:
+                    customer.vehicleModel || duplicates[0].vehiclemodel || null,
+                  licenseplate:
+                    customer.licensePlate || duplicates[0].licenseplate || null,
+                  vehicles: updatedVehicles,
+                  lastvisit: new Date().toISOString(),
+                })
+                .eq("id", existingId);
+
+              if (updateError) {
+                console.error("Lỗi cập nhật khách hàng:", updateError);
+              } else {
+                console.log("Đã cập nhật khách hàng:", existingId);
+              }
+
+              // Cập nhật local state với ID thực của khách hàng
+              setCustomers((prev) => {
+                const existingIndex = prev.findIndex(
+                  (c) => c.id === existingId
+                );
+                if (existingIndex >= 0) {
+                  return prev.map((c) =>
+                    c.id === existingId
+                      ? ({
+                          ...c,
+                          name: customer.name || c.name,
+                          vehicleModel: customer.vehicleModel || c.vehicleModel,
+                          licensePlate: customer.licensePlate || c.licensePlate,
+                          vehicles: updatedVehicles,
+                        } as Customer)
+                      : c
+                  );
+                }
+                return prev;
+              });
+              return; // Kết thúc, không tạo mới
             }
           }
 

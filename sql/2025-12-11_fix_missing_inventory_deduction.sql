@@ -29,10 +29,10 @@ BEGIN
   -- Đếm số phiếu cần sửa
   SELECT COUNT(*) INTO v_total_orders
   FROM work_orders wo
-  WHERE wo.paymentStatus = 'paid'
+  WHERE wo.paymentstatus = 'paid'
     AND COALESCE(wo.inventory_deducted, FALSE) = FALSE
-    AND wo.partsUsed IS NOT NULL
-    AND jsonb_array_length(wo.partsUsed) > 0;
+    AND wo.partsused IS NOT NULL
+    AND jsonb_array_length(wo.partsused) > 0;
   
   RAISE NOTICE '📊 Tìm thấy % phiếu đã thanh toán nhưng chưa trừ kho', v_total_orders;
   RAISE NOTICE '';
@@ -53,22 +53,22 @@ BEGIN
   FOR v_order IN 
     SELECT *
     FROM work_orders wo
-    WHERE wo.paymentStatus = 'paid'
+    WHERE wo.paymentstatus = 'paid'
       AND COALESCE(wo.inventory_deducted, FALSE) = FALSE
-      AND wo.partsUsed IS NOT NULL
-      AND jsonb_array_length(wo.partsUsed) > 0
-    ORDER BY wo.creationDate ASC
+      AND wo.partsused IS NOT NULL
+      AND jsonb_array_length(wo.partsused) > 0
+    ORDER BY wo.creationdate ASC
   LOOP
     RAISE NOTICE '📋 Phiếu: % (Ngày: %)', 
       SUBSTRING(v_order.id, 1, 8) || '...', 
-      v_order.creationDate::date;
+      v_order.creationdate::date;
     
-    v_branch_id := v_order.branchId;
+    v_branch_id := v_order.branchid;
     
     -- Kiểm tra xem đã có inventory transaction chưa
     IF EXISTS (
       SELECT 1 FROM inventory_transactions 
-      WHERE workOrderId = v_order.id 
+      WHERE "workOrderId" = v_order.id 
         AND type = 'Xuất kho'
     ) THEN
       RAISE NOTICE '   ⚠️  Skip: Đã có giao dịch xuất kho rồi';
@@ -78,7 +78,7 @@ BEGIN
     END IF;
     
     -- Xử lý từng phụ tùng
-    FOR v_part IN SELECT * FROM jsonb_array_elements(v_order.partsUsed)
+    FOR v_part IN SELECT * FROM jsonb_array_elements(v_order.partsused)
     LOOP
       v_part_id := (v_part->>'partId');
       v_part_name := (v_part->>'partName');
@@ -127,8 +127,8 @@ BEGIN
       
       -- 3. Tạo inventory transaction
       INSERT INTO inventory_transactions(
-        id, type, partId, partName, quantity, date, unitPrice, totalPrice,
-        branchId, notes, workOrderId
+        id, type, "partId", "partName", quantity, date, "unitPrice", "totalPrice",
+        "branchId", notes, "workOrderId"
       )
       VALUES (
         gen_random_uuid()::text,
@@ -136,11 +136,11 @@ BEGIN
         v_part_id,
         v_part_name,
         v_quantity,
-        v_order.creationDate,
+        v_order.creationdate,
         v_unit_price,
         v_total_price,
         v_branch_id,
-        '[AUTO-FIX 2025-12-11] Xuất kho cho phiếu đã thanh toán',
+        '[AUTO-FIX 2025-12-12] Xuất kho cho phiếu đã thanh toán',
         v_order.id
       );
       
@@ -175,6 +175,6 @@ SELECT
   SUM(CASE WHEN inventory_deducted = TRUE THEN 1 ELSE 0 END) as deducted,
   SUM(CASE WHEN inventory_deducted = FALSE THEN 1 ELSE 0 END) as not_deducted
 FROM work_orders
-WHERE paymentStatus = 'paid'
-  AND partsUsed IS NOT NULL
-  AND jsonb_array_length(partsUsed) > 0;
+WHERE paymentstatus = 'paid'
+  AND partsused IS NOT NULL
+  AND jsonb_array_length(partsused) > 0;

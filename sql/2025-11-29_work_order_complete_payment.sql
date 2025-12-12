@@ -4,6 +4,20 @@ ADD COLUMN IF NOT EXISTS inventory_deducted BOOLEAN DEFAULT FALSE;
 
 COMMENT ON COLUMN public.work_orders.inventory_deducted IS 'True if inventory has been deducted from stock (happens when paid)';
 
+-- Drop ALL existing versions of function to avoid ambiguity
+DO $$
+DECLARE
+  func_oid oid;
+BEGIN
+  FOR func_oid IN 
+    SELECT oid FROM pg_proc WHERE proname = 'work_order_complete_payment' AND pronamespace = 'public'::regnamespace
+  LOOP
+    EXECUTE 'DROP FUNCTION IF EXISTS ' || func_oid::regprocedure || ' CASCADE';
+  END LOOP;
+EXCEPTION WHEN OTHERS THEN
+  NULL; -- Ignore errors if no functions exist
+END $$;
+
 -- Function to complete/pay work order and deduct inventory
 CREATE OR REPLACE FUNCTION public.work_order_complete_payment(
   p_order_id TEXT,
@@ -45,7 +59,7 @@ BEGIN
   END IF;
 
   -- Branch scope guard
-  IF v_order.branchId IS DISTINCT FROM public.mc_current_branch() THEN
+  IF v_order.branchid IS DISTINCT FROM public.mc_current_branch() THEN
     RAISE EXCEPTION 'BRANCH_MISMATCH';
   END IF;
 
@@ -55,7 +69,7 @@ BEGIN
   END IF;
 
   -- Calculate new payment totals
-  v_new_total_paid := COALESCE(v_order.totalPaid, 0) + p_payment_amount;
+  v_new_total_paid := COALESCE(v_order.totalpaid, 0) + p_payment_amount;
   v_new_remaining := v_order.total - v_new_total_paid;
   
   -- Determine new payment status
@@ -68,10 +82,10 @@ BEGIN
   END IF;
 
   -- If becoming fully paid and inventory not yet deducted, deduct now
-  IF v_new_payment_status = 'paid' AND v_order.inventory_deducted = FALSE THEN
+  IF v_new_payment_status = 'paid' AND COALESCE(v_order.inventory_deducted, FALSE) = FALSE THEN
     -- Process each part: release reservation and deduct actual stock
-    IF v_order.partsUsed IS NOT NULL THEN
-      FOR v_part IN SELECT * FROM jsonb_array_elements(v_order.partsUsed)
+    IF v_order.partsused IS NOT NULL THEN
+      FOR v_part IN SELECT * FROM jsonb_array_elements(v_order.partsused)
       LOOP
         v_part_id := (v_part->>'partId');
         v_part_name := (v_part->>'partName');
@@ -80,8 +94,8 @@ BEGIN
         IF v_quantity > 0 THEN
           -- Get current stock and reserved with row lock
           SELECT 
-            COALESCE((stock->>v_order.branchId)::int, 0),
-            COALESCE((reservedStock->>v_order.branchId)::int, 0)
+            COALESCE((stock->>v_order.branchid)::int, 0),
+            COALESCE((reservedstock->>v_order.branchid)::int, 0)
           INTO v_current_stock, v_current_reserved
           FROM parts WHERE id = v_part_id FOR UPDATE;
 
@@ -102,9 +116,9 @@ BEGIN
 
           -- Release reservation
           UPDATE parts 
-          SET reservedStock = jsonb_set(
-            COALESCE(reservedStock, '{}'::jsonb),
-            ARRAY[v_order.branchId],
+          SET reservedstock = jsonb_set(
+            COALESCE(reservedstock, '{}'::jsonb),
+            ARRAY[v_order.branchid],
             to_jsonb(GREATEST(0, v_current_reserved - v_quantity)),
             true
           )
@@ -114,7 +128,7 @@ BEGIN
           UPDATE parts 
           SET stock = jsonb_set(
             stock,
-            ARRAY[v_order.branchId],
+            ARRAY[v_order.branchid],
             to_jsonb(v_current_stock - v_quantity),
             true
           )
@@ -122,8 +136,8 @@ BEGIN
 
           -- Create inventory transaction (Xuất kho)
           INSERT INTO inventory_transactions(
-            id, type, partId, partName, quantity, date, unitPrice, totalPrice,
-            branchId, notes, workOrderId
+            id, type, "partId", "partName", quantity, date, "unitPrice", "totalPrice",
+            "branchId", notes, "workOrderId"
           )
           VALUES (
             gen_random_uuid()::text,
@@ -132,9 +146,9 @@ BEGIN
             v_part_name,
             v_quantity,
             NOW(),
-            public.mc_avg_cost(v_part_id, v_order.branchId),
-            public.mc_avg_cost(v_part_id, v_order.branchId) * v_quantity,
-            v_order.branchId,
+            public.mc_avg_cost(v_part_id, v_order.branchid),
+            public.mc_avg_cost(v_part_id, v_order.branchid) * v_quantity,
+            v_order.branchid,
             'Xuất kho khi thanh toán phiếu sửa',
             p_order_id
           );
@@ -152,7 +166,7 @@ BEGIN
   IF p_payment_amount > 0 AND p_payment_method IS NOT NULL THEN
     v_payment_tx_id := gen_random_uuid()::text;
     INSERT INTO cash_transactions(
-      id, category, amount, date, description, branchId, paymentSource, reference
+      id, category, amount, date, description, "branchId", "paymentSource", reference
     )
     VALUES (
       v_payment_tx_id,
@@ -160,7 +174,7 @@ BEGIN
       p_payment_amount,
       NOW(),
       'Thanh toán phiếu sửa chữa ' || p_order_id,
-      v_order.branchId,
+      v_order.branchid,
       p_payment_method,
       p_order_id
     );
@@ -169,13 +183,13 @@ BEGIN
   -- Update work order
   UPDATE work_orders
   SET
-    paymentStatus = v_new_payment_status,
-    paymentMethod = COALESCE(p_payment_method, paymentMethod),
-    totalPaid = v_new_total_paid,
-    remainingAmount = GREATEST(0, v_new_remaining),
-    additionalPayment = COALESCE(additionalPayment, 0) + p_payment_amount,
-    cashTransactionId = COALESCE(v_payment_tx_id, cashTransactionId),
-    paymentDate = CASE WHEN v_payment_tx_id IS NOT NULL THEN NOW() ELSE paymentDate END,
+    paymentstatus = v_new_payment_status,
+    paymentmethod = COALESCE(p_payment_method, paymentmethod),
+    totalpaid = v_new_total_paid,
+    remainingamount = GREATEST(0, v_new_remaining),
+    additionalpayment = COALESCE(additionalpayment, 0) + p_payment_amount,
+    cashtransactionid = COALESCE(v_payment_tx_id, cashtransactionid),
+    paymentdate = CASE WHEN v_payment_tx_id IS NOT NULL THEN NOW() ELSE paymentdate END,
     inventory_deducted = CASE WHEN v_new_payment_status = 'paid' THEN TRUE ELSE inventory_deducted END
   WHERE id = p_order_id;
 
@@ -199,7 +213,7 @@ BEGIN
       'work_order.payment',
       'work_orders',
       p_order_id,
-      jsonb_build_object('totalPaid', v_order.totalPaid, 'paymentStatus', v_order.paymentStatus),
+      jsonb_build_object('totalPaid', v_order.totalpaid, 'paymentStatus', v_order.paymentstatus),
       v_result->'workOrder',
       NOW()
     );
