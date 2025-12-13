@@ -4562,6 +4562,8 @@ const InventoryManager: React.FC = () => {
   const [showDuplicatesOnly, setShowDuplicatesOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -4767,12 +4769,15 @@ const InventoryManager: React.FC = () => {
 
   // Sau khi chuyển sang server filter, filteredParts = repoParts (có thể thêm client filter tồn kho nếu cần)
   const filteredParts = useMemo(() => {
-    // ✨ FIX: When searching, use allPartsData instead of repoParts to search ALL items
+    // ✨ FIX: When searching or filtering by stock, use allPartsData instead of repoParts to show ALL items
     let baseList;
     if (showDuplicatesOnly && duplicateSkus.size > 0) {
       baseList = duplicatePartsData || [];
     } else if (search && search.trim()) {
       // When searching, use allPartsData to show ALL matching results (not just current page)
+      baseList = allPartsData || [];
+    } else if (stockFilter !== "all") {
+      // When filtering by stock status, use allPartsData to show all matching items across all pages
       baseList = allPartsData || [];
     } else {
       // Normal pagination mode
@@ -4800,7 +4805,7 @@ const InventoryManager: React.FC = () => {
 
     const branchKey = currentBranchId || "";
 
-    return baseList.filter((part: any) => {
+    const filtered = baseList.filter((part: any) => {
       const qty = part.stock?.[branchKey] || 0;
       if (stockFilter === "in-stock") return qty > 0;
       if (stockFilter === "low-stock")
@@ -4808,6 +4813,55 @@ const InventoryManager: React.FC = () => {
       if (stockFilter === "out-of-stock") return qty === 0;
       return true;
     });
+
+    // Apply sorting if sortField is set
+    if (sortField) {
+      filtered.sort((a: any, b: any) => {
+        let aVal, bVal;
+
+        if (sortField === "name") {
+          aVal = a.name?.toLowerCase() || "";
+          bVal = b.name?.toLowerCase() || "";
+        } else if (sortField === "sku") {
+          aVal = a.sku?.toLowerCase() || "";
+          bVal = b.sku?.toLowerCase() || "";
+        } else if (sortField === "category") {
+          aVal = a.category?.toLowerCase() || "";
+          bVal = b.category?.toLowerCase() || "";
+        } else if (sortField === "stock") {
+          aVal = a.stock?.[branchKey] || 0;
+          bVal = b.stock?.[branchKey] || 0;
+        } else if (sortField === "costPrice") {
+          aVal = a.costPrice?.[branchKey] || 0;
+          bVal = b.costPrice?.[branchKey] || 0;
+        } else if (sortField === "retailPrice") {
+          aVal = a.retailPrice?.[branchKey] || 0;
+          bVal = b.retailPrice?.[branchKey] || 0;
+        } else if (sortField === "wholesalePrice") {
+          aVal = a.wholesalePrice?.[branchKey] || 0;
+          bVal = b.wholesalePrice?.[branchKey] || 0;
+        } else if (sortField === "totalValue") {
+          const stockA = a.stock?.[branchKey] || 0;
+          const stockB = b.stock?.[branchKey] || 0;
+          const costA = a.costPrice?.[branchKey] || 0;
+          const costB = b.costPrice?.[branchKey] || 0;
+          aVal = stockA * costA;
+          bVal = stockB * costB;
+        } else {
+          return 0;
+        }
+
+        if (typeof aVal === "string" && typeof bVal === "string") {
+          return sortDirection === "asc"
+            ? aVal.localeCompare(bVal, "vi")
+            : bVal.localeCompare(aVal, "vi");
+        } else {
+          return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
+        }
+      });
+    }
+
+    return filtered;
   }, [
     repoParts,
     allPartsData,
@@ -4817,6 +4871,8 @@ const InventoryManager: React.FC = () => {
     stockFilter,
     currentBranchId,
     search,
+    sortField,
+    sortDirection,
   ]);
 
   // Auto-disable duplicate filter when no duplicates remain
@@ -5236,6 +5292,17 @@ const InventoryManager: React.FC = () => {
   const handleCategoryFilterChange = (value: string) => {
     setPage(1);
     setCategoryFilter(value);
+  };
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // New field, start with ascending
+      setSortField(field);
+      setSortDirection("asc");
+    }
   };
 
   const resetFilters = () => {
@@ -5813,12 +5880,84 @@ const InventoryManager: React.FC = () => {
                           className="w-3.5 h-3.5 text-blue-600 rounded border-slate-300 dark:border-slate-600 focus:ring-blue-500"
                         />
                       </th>
-                      <th className="px-3 py-2.5 text-left">Sản phẩm</th>
-                      <th className="px-3 py-2.5 text-center">Tồn kho</th>
-                      <th className="px-3 py-2.5 text-right">Giá nhập</th>
-                      <th className="px-3 py-2.5 text-right">Giá bán lẻ</th>
-                      <th className="px-3 py-2.5 text-right">Giá bán sỉ</th>
-                      <th className="px-3 py-2.5 text-right">Giá trị tồn</th>
+                      <th
+                        className="px-3 py-2.5 text-left cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none w-[280px]"
+                        onClick={() => handleSort("name")}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span>Sản phẩm</span>
+                          {sortField === "name" && (
+                            <span className="text-blue-500">
+                              {sortDirection === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2.5 text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none w-[100px]"
+                        onClick={() => handleSort("stock")}
+                      >
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span>Tồn kho</span>
+                          {sortField === "stock" && (
+                            <span className="text-blue-500">
+                              {sortDirection === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2.5 text-right cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none w-[110px]"
+                        onClick={() => handleSort("costPrice")}
+                      >
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span>Giá nhập</span>
+                          {sortField === "costPrice" && (
+                            <span className="text-blue-500">
+                              {sortDirection === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2.5 text-right cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none w-[110px]"
+                        onClick={() => handleSort("retailPrice")}
+                      >
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span>Giá bán lẻ</span>
+                          {sortField === "retailPrice" && (
+                            <span className="text-blue-500">
+                              {sortDirection === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2.5 text-right cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none w-[110px]"
+                        onClick={() => handleSort("wholesalePrice")}
+                      >
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span>Giá bán sỉ</span>
+                          {sortField === "wholesalePrice" && (
+                            <span className="text-blue-500">
+                              {sortDirection === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                      <th
+                        className="px-3 py-2.5 text-right cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none w-[120px]"
+                        onClick={() => handleSort("totalValue")}
+                      >
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span>Giá trị tồn</span>
+                          {sortField === "totalValue" && (
+                            <span className="text-blue-500">
+                              {sortDirection === "asc" ? "↑" : "↓"}
+                            </span>
+                          )}
+                        </div>
+                      </th>
                       <th className="px-3 py-2.5 text-center w-14">
                         Hành động
                       </th>
@@ -5890,10 +6029,10 @@ const InventoryManager: React.FC = () => {
                                 className="w-3.5 h-3.5 text-blue-600 rounded border-slate-300 dark:border-slate-600 focus:ring-blue-500"
                               />
                             </td>
-                            <td className="px-3 py-2 min-w-[180px]">
-                              <div className="flex items-center gap-3">
+                            <td className="px-3 py-2">
+                              <div className="flex items-center gap-2">
                                 <div
-                                  className="h-9 w-9 rounded-lg overflow-hidden flex items-center justify-center text-sm font-semibold text-white flex-shrink-0"
+                                  className="h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center text-xs font-semibold text-white flex-shrink-0"
                                   style={
                                     part.imageUrl
                                       ? undefined
