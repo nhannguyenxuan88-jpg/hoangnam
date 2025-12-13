@@ -2,21 +2,26 @@ import React, { useState, useEffect, useCallback } from "react";
 import { formatNumberWithDots, parseFormattedNumber } from "../../utils/format";
 
 interface NumberInputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> {
+  extends Omit<
+    React.InputHTMLAttributes<HTMLInputElement>,
+    "onChange" | "value"
+  > {
   value: number | string | null | undefined;
   onChange: (value: number) => void;
   /** Whether to allow decimal numbers */
   allowDecimal?: boolean;
+  /** Whether to allow negative numbers */
+  allowNegative?: boolean;
   /** Suffix to display (e.g., "đ", "%") */
   suffix?: string;
 }
 
 /**
  * Number input with Vietnamese thousand separator formatting (dots)
- * 
+ *
  * Displays numbers with dots (e.g., 1.500.000) while editing,
  * and returns clean numeric values on change.
- * 
+ *
  * @example
  * ```tsx
  * <NumberInput
@@ -31,6 +36,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   value,
   onChange,
   allowDecimal = false,
+  allowNegative = false,
   suffix,
   className,
   ...props
@@ -39,14 +45,15 @@ export const NumberInput: React.FC<NumberInputProps> = ({
 
   // Sync display value when external value changes
   useEffect(() => {
-    const numValue = typeof value === "string" ? parseFormattedNumber(value) : (value || 0);
+    const numValue =
+      typeof value === "string" ? parseFormattedNumber(value) : value || 0;
     setDisplayValue(numValue ? formatNumberWithDots(numValue) : "");
   }, [value]);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const inputValue = e.target.value;
-      
+
       // Allow empty input
       if (inputValue === "") {
         setDisplayValue("");
@@ -54,9 +61,18 @@ export const NumberInput: React.FC<NumberInputProps> = ({
         return;
       }
 
-      // Remove all non-numeric characters except dots and commas
+      // Check for negative sign
+      const isNegative = allowNegative && inputValue.startsWith("-");
+
+      // 🔹 Cho phép nhập chỉ dấu "-" mà chưa có số
+      if (allowNegative && inputValue === "-") {
+        setDisplayValue("-");
+        return; // Không gọi onChange cho đến khi có số
+      }
+
+      // Remove all non-numeric characters except dots and commas (and minus if allowed)
       let cleaned = inputValue.replace(/[^\d.,]/g, "");
-      
+
       // For decimal, replace comma with dot for parsing
       if (allowDecimal) {
         // Keep only the last decimal separator
@@ -72,12 +88,17 @@ export const NumberInput: React.FC<NumberInputProps> = ({
       }
 
       // Parse to number
-      const numValue = parseFloat(cleaned);
-      
+      let numValue = parseFloat(cleaned);
+
       if (isNaN(numValue)) {
         setDisplayValue("");
         onChange(0);
         return;
+      }
+
+      // Apply negative sign if needed
+      if (isNegative) {
+        numValue = -Math.abs(numValue);
       }
 
       // Format and display
@@ -85,21 +106,27 @@ export const NumberInput: React.FC<NumberInputProps> = ({
         // For decimals, format integer part and keep decimal part
         const [intPart, decPart] = cleaned.split(".");
         const formattedInt = formatNumberWithDots(parseInt(intPart) || 0);
-        setDisplayValue(decPart !== undefined ? `${formattedInt},${decPart}` : formattedInt);
+        const formatted =
+          decPart !== undefined ? `${formattedInt},${decPart}` : formattedInt;
+        setDisplayValue(isNegative ? `-${formatted}` : formatted);
       } else {
-        setDisplayValue(formatNumberWithDots(numValue));
+        const formatted = formatNumberWithDots(Math.abs(numValue));
+        setDisplayValue(isNegative ? `-${formatted}` : formatted);
       }
-      
+
       onChange(numValue);
     },
-    [onChange, allowDecimal]
+    [onChange, allowDecimal, allowNegative]
   );
 
-  const handleFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
-    // Select all on focus for easy replacement
-    e.target.select();
-    props.onFocus?.(e);
-  }, [props]);
+  const handleFocus = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      // Select all on focus for easy replacement
+      e.target.select();
+      props.onFocus?.(e);
+    },
+    [props]
+  );
 
   return (
     <div className="relative">

@@ -1550,6 +1550,18 @@ const WorkOrderModal: React.FC<{
               0
             );
 
+            // 🔹 TRƯỜNG HỢP ĐẶC BIỆT: Giá bán âm + Giá nhập = 0 → Tự động chi tiền
+            const negativeSalesPayment = additionalServices.reduce(
+              (sum, service) => {
+                // Chỉ tính các service có giá bán âm VÀ giá nhập = 0
+                if (service.price < 0 && (service.costPrice || 0) === 0) {
+                  return sum + Math.abs(service.price * service.quantity);
+                }
+                return sum;
+              },
+              0
+            );
+
             if (totalOutsourcingCost > 0) {
               const outsourcingTxId = `EXPENSE-${Date.now()}`;
 
@@ -1630,6 +1642,96 @@ const WorkOrderModal: React.FC<{
                 }
               } catch (err) {
                 console.error("Error creating outsourcing expense:", err);
+              }
+            }
+
+            // 🔹 Xử lý khoản chi từ giá bán âm (costPrice = 0)
+            if (negativeSalesPayment > 0) {
+              const negativeSalesTxId = `EXPENSE-NEG-${Date.now()}`;
+
+              try {
+                console.log("[Negative Sales] Inserting expense transaction:", {
+                  id: negativeSalesTxId,
+                  amount: -negativeSalesPayment,
+                  branchid: currentBranchId,
+                });
+
+                const negativeServices = additionalServices.filter(
+                  (s) => s.price < 0 && (s.costPrice || 0) === 0
+                );
+
+                const { error: negExpenseError } = await supabase
+                  .from("cash_transactions")
+                  .insert({
+                    id: negativeSalesTxId,
+                    type: "expense",
+                    category: "refund", // Hoặc category phù hợp
+                    amount: -negativeSalesPayment, // Negative for expense
+                    date: new Date().toISOString(),
+                    description: `Chi tiền (giá bán âm) - Phiếu #${orderId
+                      .split("-")
+                      .pop()} - ${negativeServices
+                      .map((s) => s.description)
+                      .join(", ")}`,
+                    branchid: currentBranchId,
+                    paymentsource: "cash",
+                    reference: orderId,
+                  });
+
+                if (negExpenseError) {
+                  console.error(
+                    "[Negative Sales] Insert FAILED:",
+                    negExpenseError
+                  );
+                  showToast.error(
+                    `Lỗi tạo phiếu chi (giá bán âm): ${negExpenseError.message}`
+                  );
+                } else {
+                  console.log("[Negative Sales] Insert SUCCESS");
+                  // Update context
+                  setCashTransactions((prev: any[]) => [
+                    ...prev,
+                    {
+                      id: negativeSalesTxId,
+                      type: "expense",
+                      category: "refund",
+                      amount: -negativeSalesPayment,
+                      date: new Date().toISOString(),
+                      description: `Chi tiền (giá bán âm) - Phiếu #${orderId
+                        .split("-")
+                        .pop()}`,
+                      branchId: currentBranchId,
+                      paymentSource: "cash",
+                      reference: orderId,
+                    },
+                  ]);
+
+                  // Update payment sources balance
+                  setPaymentSources((prev: any[]) =>
+                    prev.map((ps) => {
+                      if (ps.id === "cash") {
+                        return {
+                          ...ps,
+                          balance: {
+                            ...ps.balance,
+                            [currentBranchId]:
+                              (ps.balance[currentBranchId] || 0) -
+                              negativeSalesPayment,
+                          },
+                        };
+                      }
+                      return ps;
+                    })
+                  );
+
+                  showToast.info(
+                    `Đã tạo phiếu chi ${formatCurrency(
+                      negativeSalesPayment
+                    )} từ giá bán âm`
+                  );
+                }
+              } catch (err) {
+                console.error("Error creating negative sales expense:", err);
               }
             }
           }
@@ -3094,7 +3196,7 @@ const WorkOrderModal: React.FC<{
                     <th className="px-4 py-2 text-center text-xs font-medium text-slate-600 dark:text-slate-300">
                       <button
                         onClick={() => {
-                          if (newService.description && newService.price >= 0) {
+                          if (newService.description) {
                             setAdditionalServices([
                               ...additionalServices,
                               { ...newService, id: `SRV-${Date.now()}` },
@@ -3201,11 +3303,11 @@ const WorkOrderModal: React.FC<{
                     <td className="px-4 py-2">
                       <NumberInput
                         placeholder="Giá nhập"
-                        value={newService.costPrice || ""}
+                        value={newService.costPrice ?? ""}
                         onChange={(val) =>
                           setNewService({
                             ...newService,
-                            costPrice: val,
+                            costPrice: Math.max(0, val), // Chỉ cho phép >= 0
                           })
                         }
                         className="w-full px-2 py-1 border border-orange-300 dark:border-orange-600 rounded text-right bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm"
@@ -3214,13 +3316,14 @@ const WorkOrderModal: React.FC<{
                     <td className="px-4 py-2">
                       <NumberInput
                         placeholder="Đơn giá"
-                        value={newService.price || ""}
+                        value={newService.price ?? ""}
                         onChange={(val) =>
                           setNewService({
                             ...newService,
-                            price: val,
+                            price: val, // Cho phép số âm
                           })
                         }
+                        allowNegative={true}
                         className="w-full px-2 py-1 border border-slate-300 dark:border-slate-600 rounded text-right bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm"
                       />
                     </td>
