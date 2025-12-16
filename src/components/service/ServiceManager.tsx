@@ -3,17 +3,23 @@ import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   FileText,
+  Bike,
   Wrench,
   Check,
+  Settings,
   TrendingUp,
   Search,
   Plus,
   Smartphone,
+  PhoneCall,
   HandCoins,
   Printer,
   History,
   ChevronDown,
   Share2,
+  Edit2,
+  Clock,
+  AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAppContext } from "../../contexts/AppContext";
@@ -1487,6 +1493,13 @@ export default function ServiceManager() {
     }
   };
 
+  const formatMaskedPhone = (phone?: string) => {
+    if (!phone) return "N/A";
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 4) return phone;
+    return `*** *** ${digits.slice(-4)}`;
+  };
+
   // Handle delete work order - using hook for proper query invalidation
   const handleDelete = async (workOrder: WorkOrder) => {
     if (!confirm(`Xác nhận xóa phiếu ${formatWorkOrderId(workOrder.id)}?`)) {
@@ -2456,9 +2469,6 @@ export default function ServiceManager() {
           <table className="w-full">
             <thead className="bg-slate-50 dark:bg-slate-700/50">
               <tr>
-                <th className="px-2 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 w-12">
-                  <input type="checkbox" className="rounded" />
-                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300">
                   Mã phiếu
                 </th>
@@ -2480,7 +2490,7 @@ export default function ServiceManager() {
               {filteredOrders.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={5}
                     className="px-4 py-12 text-center text-slate-400"
                   >
                     Không có phiếu sửa chữa nào.
@@ -2536,29 +2546,57 @@ export default function ServiceManager() {
                     order.paymentStatus === "paid"
                       ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300"
                       : "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300";
-                  const visibleParts = order.partsUsed?.slice(0, 2) || [];
-                  const remainingParts =
-                    (order.partsUsed?.length || 0) - visibleParts.length;
-                  const visibleServices =
-                    order.additionalServices?.slice(0, 2) || [];
-                  const remainingServices =
-                    (order.additionalServices?.length || 0) -
-                    visibleServices.length;
+                  const parts = order.partsUsed || [];
+                  const services = order.additionalServices || [];
+
+                  const partsSummary = parts
+                    .slice(0, 2)
+                    .map((p) =>
+                      `${p.partName || ""}${
+                        p.quantity > 1 ? ` x${p.quantity}` : ""
+                      }`.trim()
+                    )
+                    .filter(Boolean)
+                    .join(", ")
+                    .trim();
+                  const partsSuffix =
+                    parts.length > 2 ? ` +${parts.length - 2}` : "";
+                  const partsTitle = parts
+                    .map((p) =>
+                      `${p.partName || ""}${
+                        p.quantity > 1 ? ` x${p.quantity}` : ""
+                      }`.trim()
+                    )
+                    .filter(Boolean)
+                    .join(", ");
+
+                  const servicesSummary = services
+                    .slice(0, 2)
+                    .map((s: any) =>
+                      `${s.description || ""}${
+                        (s.quantity || 1) > 1 ? ` x${s.quantity || 1}` : ""
+                      }`.trim()
+                    )
+                    .filter(Boolean)
+                    .join(", ")
+                    .trim();
+                  const servicesSuffix =
+                    services.length > 2 ? ` +${services.length - 2}` : "";
+                  const servicesTitle = services
+                    .map((s: any) =>
+                      `${s.description || ""}${
+                        (s.quantity || 1) > 1 ? ` x${s.quantity || 1}` : ""
+                      }`.trim()
+                    )
+                    .filter(Boolean)
+                    .join(", ");
 
                   return (
                     <tr
                       key={order.id}
                       onClick={() => handleOpenModal(order)}
-                      className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/30 cursor-pointer transition-colors"
+                      className="group bg-white dark:bg-slate-800 hover:bg-blue-50/50 dark:hover:bg-slate-700/50 cursor-pointer transition-all duration-150 hover:shadow-sm border-l-4 border-transparent hover:border-blue-500"
                     >
-                      {/* Checkbox column */}
-                      <td
-                        className="px-2 py-4 align-top"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <input type="checkbox" className="rounded" />
-                      </td>
-
                       {/* Column 1: Mã phiếu */}
                       <td className="px-4 py-4 align-top">
                         <div className="space-y-0.5">
@@ -2582,89 +2620,99 @@ export default function ServiceManager() {
 
                       {/* Column 2: Khách hàng */}
                       <td className="px-4 py-4 align-top">
-                        <div className="space-y-0.5">
-                          <div className="font-semibold text-base text-slate-900 dark:text-slate-100">
+                        <div className="space-y-1">
+                          <div className="font-bold text-lg text-slate-900 dark:text-slate-100">
                             {order.customerName}
                           </div>
-                          <div className="text-xs text-slate-600 dark:text-slate-400">
-                            {order.customerPhone}
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                            <Smartphone className="w-3.5 h-3.5" />
+                            <span className="font-mono">
+                              {formatMaskedPhone(order.customerPhone)}
+                            </span>
+                            {order.customerPhone && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCallCustomer(order.customerPhone || "");
+                                }}
+                                className="ml-1 inline-flex items-center justify-center w-7 h-7 rounded-md text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                aria-label={`Gọi khách: ${order.customerPhone}`}
+                                title={`Gọi: ${order.customerPhone}`}
+                              >
+                                <PhoneCall className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
-                          <div className="text-xs text-slate-500">
-                            <span className="font-medium">Xe: </span>
-                            <span>{order.vehicleModel || "N/A"}</span>
+                          <div className="text-xs text-slate-600 dark:text-slate-400">
+                            <Bike className="w-3.5 h-3.5 inline-block mr-1 text-slate-400" />
+                            <span className="font-medium">
+                              {order.vehicleModel || "N/A"}
+                            </span>
                             {order.licensePlate && (
-                              <span className="ml-1">
-                                - {order.licensePlate}
+                              <span className="ml-1.5 px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-slate-700 dark:text-slate-300 font-mono text-[10px]">
+                                {order.licensePlate}
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-slate-500 italic mt-1">
-                            {order.issueDescription || "Không có mô tả"}
-                          </div>
+                          {order.issueDescription &&
+                            order.issueDescription !== "Không có mô tả" && (
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400 italic line-clamp-2 mt-1.5">
+                                {order.issueDescription}
+                              </div>
+                            )}
                         </div>
                       </td>
 
                       {/* Column 3: Chi tiết - Compact format */}
                       <td className="px-4 py-4 align-top">
-                        <div className="space-y-1.5 max-w-[180px]">
-                          {visibleParts.length > 0 && (
-                            <div className="text-xs">
-                              <span className="text-slate-500 dark:text-slate-400">
-                                🔧{" "}
-                              </span>
-                              <span className="text-slate-700 dark:text-slate-300">
-                                {visibleParts.slice(0, 2).map((p, i) => (
-                                  <span key={i}>
-                                    {p.partName?.length > 20
-                                      ? p.partName.substring(0, 20) + "..."
-                                      : p.partName}
-                                    {p.quantity > 1 && ` x${p.quantity}`}
-                                    {i < Math.min(visibleParts.length, 2) - 1 &&
-                                      ", "}
-                                  </span>
-                                ))}
-                                {visibleParts.length > 2 && (
+                        <div className="space-y-1.5 max-w-[220px]">
+                          {servicesSummary && (
+                            <div
+                              className="text-xs flex items-start gap-1.5"
+                              title={
+                                servicesTitle
+                                  ? `Dịch vụ: ${servicesTitle}`
+                                  : "Dịch vụ"
+                              }
+                            >
+                              <Settings className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
+                              <span className="text-slate-700 dark:text-slate-300 line-clamp-1">
+                                {servicesSummary}
+                                {servicesSuffix && (
                                   <span className="text-slate-400">
-                                    {" "}
-                                    +{visibleParts.length - 2}
+                                    {servicesSuffix}
                                   </span>
                                 )}
                               </span>
                             </div>
                           )}
 
-                          {visibleServices.length > 0 && (
-                            <div className="text-xs">
-                              <span className="text-slate-500 dark:text-slate-400">
-                                ⚙️{" "}
-                              </span>
-                              <span className="text-slate-700 dark:text-slate-300">
-                                {visibleServices.slice(0, 2).map((s, i) => (
-                                  <span key={i}>
-                                    {s.description?.length > 15
-                                      ? s.description.substring(0, 15) + "..."
-                                      : s.description}
-                                    {i <
-                                      Math.min(visibleServices.length, 2) - 1 &&
-                                      ", "}
-                                  </span>
-                                ))}
-                                {visibleServices.length > 2 && (
+                          {partsSummary && (
+                            <div
+                              className="text-xs flex items-start gap-1.5"
+                              title={
+                                partsTitle
+                                  ? `Phụ tùng: ${partsTitle}`
+                                  : "Phụ tùng"
+                              }
+                            >
+                              <Wrench className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
+                              <span className="text-slate-700 dark:text-slate-300 line-clamp-1">
+                                {partsSummary}
+                                {partsSuffix && (
                                   <span className="text-slate-400">
-                                    {" "}
-                                    +{visibleServices.length - 2}
+                                    {partsSuffix}
                                   </span>
                                 )}
                               </span>
                             </div>
                           )}
 
-                          {visibleParts.length === 0 &&
-                            visibleServices.length === 0 && (
-                              <div className="text-xs text-slate-400 italic">
-                                —
-                              </div>
-                            )}
+                          {!partsSummary && !servicesSummary && (
+                            <div className="text-xs text-slate-400 italic">
+                              —
+                            </div>
+                          )}
                         </div>
                       </td>
 
@@ -2678,8 +2726,11 @@ export default function ServiceManager() {
 
                           {/* Lợi nhuận - Chỉ hiển thị cho owner */}
                           {isOwner && order.paymentStatus === "paid" && (
-                            <div className="flex items-center gap-1 text-xs">
-                              <span className="text-slate-500">LN:</span>
+                            <div
+                              className="flex items-center gap-1 text-xs"
+                              title="Lợi nhuận và biên lợi nhuận trên tổng tiền"
+                            >
+                              <span className="text-slate-500">LN</span>
                               <span
                                 className={`font-semibold ${
                                   orderProfit > 0
@@ -2692,7 +2743,7 @@ export default function ServiceManager() {
                               </span>
                               {totalAmount > 0 && (
                                 <span className="text-slate-400">
-                                  (
+                                  (Biên LN{" "}
                                   {Math.round(
                                     (orderProfit / totalAmount) * 100
                                   )}
@@ -2705,13 +2756,16 @@ export default function ServiceManager() {
                           {/* Progress bar + Đã thu */}
                           {totalAmount > 0 && (
                             <div className="space-y-1">
-                              <div className="h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700">
+                              <div
+                                className="h-2 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"
+                                title={`Đã thanh toán ${paymentProgress}%`}
+                              >
                                 <div
-                                  className={`h-full rounded-full transition-all ${
+                                  className={`h-full rounded-full transition-all duration-300 ${
                                     paymentProgress >= 100
-                                      ? "bg-emerald-500"
+                                      ? "bg-gradient-to-r from-emerald-500 to-emerald-600"
                                       : paymentProgress > 0
-                                      ? "bg-blue-500"
+                                      ? "bg-gradient-to-r from-blue-500 to-blue-600"
                                       : "bg-slate-300"
                                   }`}
                                   style={{
@@ -2719,16 +2773,22 @@ export default function ServiceManager() {
                                   }}
                                 />
                               </div>
-                              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                                <span>
-                                  Đã thu:{" "}
-                                  {formatCurrency(Math.max(0, paidAmount))}
+                              <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400">
+                                <span className="flex items-center gap-1">
+                                  <span className="font-medium text-slate-600 dark:text-slate-300">
+                                    Đã thu:
+                                  </span>
+                                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                    {formatCurrency(Math.max(0, paidAmount))}
+                                  </span>
                                 </span>
                                 {order.remainingAmount !== undefined &&
                                   order.remainingAmount > 0 && (
-                                    <span className="text-red-500 font-medium">
-                                      Còn{" "}
-                                      {formatCurrency(order.remainingAmount)}
+                                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium">
+                                      <span>Còn</span>
+                                      <span className="font-bold">
+                                        {formatCurrency(order.remainingAmount)}
+                                      </span>
                                     </span>
                                   )}
                               </div>
@@ -2743,7 +2803,7 @@ export default function ServiceManager() {
                                 order.depositAmount > 0 && (
                                   <div className="flex items-center justify-between text-xs">
                                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded font-medium">
-                                      💰 Đã cọc
+                                      <HandCoins className="w-3 h-3" /> Đã cọc
                                     </span>
                                     <span className="text-purple-600 dark:text-purple-400 font-medium">
                                       {formatCurrency(order.depositAmount)}
@@ -2754,7 +2814,7 @@ export default function ServiceManager() {
                                 (order.remainingAmount ?? 0) > 0 && (
                                   <div className="flex items-center justify-between text-xs">
                                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded font-medium">
-                                      ⏳ Còn nợ
+                                      <Clock className="w-3 h-3" /> Còn nợ
                                     </span>
                                     <span className="text-amber-600 dark:text-amber-400 font-medium">
                                       {formatCurrency(
@@ -2768,7 +2828,8 @@ export default function ServiceManager() {
                                 (order.remainingAmount ?? 0) === 0 && (
                                   <div className="flex items-center justify-between text-xs">
                                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-500/20 text-green-600 dark:text-green-400 rounded font-medium">
-                                      ✓ Đã thanh toán đủ
+                                      <Check className="w-3 h-3" /> Đã thanh
+                                      toán đủ
                                     </span>
                                     <span className="text-green-600 dark:text-green-400 font-medium">
                                       {formatCurrency(order.totalPaid || 0)}
@@ -2817,49 +2878,75 @@ export default function ServiceManager() {
                               }}
                               aria-haspopup="menu"
                               aria-expanded={rowActionMenuId === order.id}
-                              className="px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                              className="w-10 h-10 inline-flex items-center justify-center border border-slate-200 dark:border-slate-600 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                             >
                               <ChevronDown className="w-4 h-4" />
                             </button>
                             {rowActionMenuId === order.id && (
                               <div
-                                className="fixed w-48 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-xl z-[9999]"
+                                className="fixed w-52 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-2xl z-[9999] overflow-hidden"
                                 style={{
                                   top: dropdownPosition.top,
                                   right: dropdownPosition.right,
                                 }}
                               >
-                                <button
-                                  onClick={() => {
-                                    handlePrintOrder(order);
-                                    setRowActionMenuId(null);
-                                  }}
-                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-t-lg"
-                                >
-                                  <Printer className="w-4 h-4" /> In phiếu
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    handleCallCustomer(
-                                      order.customerPhone || ""
-                                    );
-                                    setRowActionMenuId(null);
-                                  }}
-                                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700"
-                                >
-                                  <Smartphone className="w-4 h-4" /> Gọi khách
-                                </button>
-                                {!order.refunded && (
+                                <div className="py-1">
                                   <button
                                     onClick={() => {
-                                      handleRefundOrder(order);
+                                      handleOpenModal(order);
                                       setRowActionMenuId(null);
                                     }}
-                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-b-lg"
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                                   >
-                                    Hủy/Hoàn tiền
+                                    <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                      <Edit2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <span>Xem chi tiết</span>
                                   </button>
-                                )}
+                                  <button
+                                    onClick={() => {
+                                      handlePrintOrder(order);
+                                      setRowActionMenuId(null);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                                  >
+                                    <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                                      <Printer className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                    </div>
+                                    <span>In phiếu</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      handleCallCustomer(
+                                        order.customerPhone || ""
+                                      );
+                                      setRowActionMenuId(null);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                                  >
+                                    <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                      <Smartphone className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                    </div>
+                                    <span>Gọi khách hàng</span>
+                                  </button>
+                                  {!order.refunded && (
+                                    <>
+                                      <div className="my-1 border-t border-slate-200 dark:border-slate-700"></div>
+                                      <button
+                                        onClick={() => {
+                                          handleRefundOrder(order);
+                                          setRowActionMenuId(null);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                      >
+                                        <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                          <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                        </div>
+                                        <span>Hủy / Hoàn tiền</span>
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -4581,7 +4668,8 @@ export default function ServiceManager() {
             <div className="p-6 space-y-4">
               <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
                 <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  ⚠️ <strong>Cảnh báo:</strong> Hành động này sẽ:
+                  <AlertTriangle className="w-4 h-4 inline-block mr-1 align-[-2px]" />
+                  <strong>Cảnh báo:</strong> Hành động này sẽ:
                 </p>
                 <ul className="mt-2 text-sm text-yellow-700 dark:text-yellow-300 list-disc list-inside space-y-1">
                   <li>Hoàn trả tồn kho các phụ tùng đã sử dụng</li>
