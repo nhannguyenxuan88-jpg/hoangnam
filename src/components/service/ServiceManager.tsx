@@ -20,6 +20,9 @@ import {
   Edit2,
   Clock,
   AlertTriangle,
+  RefreshCw,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAppContext } from "../../contexts/AppContext";
@@ -90,6 +93,7 @@ export default function ServiceManager() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const { profile } = useAuth(); // Get user profile early for createCustomerDebtIfNeeded
+  const isOwner = profile?.role === USER_ROLES.OWNER; // Check if user is owner
 
   const {
     parts: contextParts,
@@ -174,13 +178,21 @@ export default function ServiceManager() {
   // State for date range filter
   const [dateRangeDays, setDateRangeDays] = useState<number>(7); // Default 7 days
 
+  const [fetchLimit, setFetchLimit] = useState<number>(100);
+
   // Fetch work orders from Supabase with filtering (optimized)
-  const { data: fetchedWorkOrders, isLoading: workOrdersLoading } =
-    useWorkOrdersFilteredRepo({
-      limit: 100,
-      daysBack: dateRangeDays,
-      branchId: currentBranchId,
-    });
+  const {
+    data: fetchedWorkOrders,
+    isLoading: workOrdersLoading,
+    isFetching: workOrdersFetching,
+    isError: workOrdersIsError,
+    error: workOrdersError,
+    refetch: refetchWorkOrders,
+  } = useWorkOrdersFilteredRepo({
+    limit: fetchLimit,
+    daysBack: dateRangeDays,
+    branchId: currentBranchId,
+  });
 
   // Fetch customers from Supabase directly
   const [fetchedCustomers, setFetchedCustomers] = useState<any[]>([]);
@@ -237,11 +249,15 @@ export default function ServiceManager() {
   const [dateFilter, setDateFilter] = useState("week"); // Default to 7 days
   const [technicianFilter, setTechnicianFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
+  const [showProfit, setShowProfit] = useState(false); // Toggle profit visibility
   const [rowActionMenuId, setRowActionMenuId] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
     right: 0,
   });
+
+  const PAGE_SIZE = 20;
+  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
 
   // Sync dateFilter with dateRangeDays for API query
   useEffect(() => {
@@ -255,6 +271,14 @@ export default function ServiceManager() {
       setDateRangeDays(30);
     }
   }, [dateFilter]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchQuery, activeTab, dateFilter, technicianFilter, paymentFilter]);
+
+  useEffect(() => {
+    setFetchLimit(100);
+  }, [dateRangeDays, currentBranchId]);
 
   // Track mobile state for responsive layout
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -382,15 +406,6 @@ export default function ServiceManager() {
   const filteredOrders = useMemo(() => {
     let filtered = displayWorkOrders.filter((o) => !o.refunded);
 
-    console.log(
-      "[ServiceManager] Total displayWorkOrders:",
-      displayWorkOrders.length
-    );
-    console.log(
-      "[ServiceManager] Work orders status:",
-      displayWorkOrders.map((o) => ({ id: o.id, status: o.status }))
-    );
-
     if (activeTab === "delivered") {
       filtered = filtered.filter((o) => o.status === "Trả máy");
     } else {
@@ -403,12 +418,6 @@ export default function ServiceManager() {
       else if (activeTab === "done")
         filtered = filtered.filter((o) => o.status === "Đã sửa xong");
     }
-
-    console.log(
-      "[ServiceManager] After tab filter:",
-      activeTab,
-      filtered.length
-    );
 
     // Search filter
     if (searchQuery) {
@@ -473,6 +482,35 @@ export default function ServiceManager() {
     technicianFilter,
     paymentFilter,
   ]);
+
+  const paginatedOrders = useMemo(
+    () => filteredOrders.slice(0, visibleCount),
+    [filteredOrders, visibleCount]
+  );
+  const hasMoreOrders = filteredOrders.length > visibleCount;
+  const showTableSkeleton =
+    (workOrdersLoading || workOrdersFetching) &&
+    (displayWorkOrders?.length ?? 0) === 0;
+  const showTableError =
+    workOrdersIsError && (displayWorkOrders?.length ?? 0) === 0;
+
+  // Scroll-to-load: auto load more when sentinel becomes visible
+  useEffect(() => {
+    const sentinel = document.getElementById("service-table-scroll-sentinel");
+    if (!sentinel || !hasMoreOrders || workOrdersFetching) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          handleLoadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: "200px" }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreOrders, workOrdersFetching]);
 
   // Tạo danh sách chỉ lọc theo ngày để tính stats (không bị ảnh hưởng bởi filter thanh toán/KTV)
   const dateFilteredOrders = useMemo(() => {
@@ -1500,6 +1538,23 @@ export default function ServiceManager() {
     return `*** *** ${digits.slice(-4)}`;
   };
 
+  const clearFilters = () => {
+    setSearchQuery("");
+    setActiveTab("all");
+    setTechnicianFilter("all");
+    setPaymentFilter("all");
+    setDateFilter("week");
+  };
+
+  const handleLoadMore = () => {
+    setVisibleCount((c) => c + PAGE_SIZE);
+    const loadedCount =
+      fetchedWorkOrders?.length ?? displayWorkOrders?.length ?? 0;
+    if (!workOrdersFetching && loadedCount >= fetchLimit) {
+      setFetchLimit((l) => l + 100);
+    }
+  };
+
   // Handle delete work order - using hook for proper query invalidation
   const handleDelete = async (workOrder: WorkOrder) => {
     if (!confirm(`Xác nhận xóa phiếu ${formatWorkOrderId(workOrder.id)}?`)) {
@@ -2263,10 +2318,12 @@ export default function ServiceManager() {
                 Hoàn thành
               </p>
               <p className="text-xl font-semibold text-emerald-600 dark:text-emerald-400">
-                {completionRate}%
+                {totalOpenTickets > 0 ? `${completionRate}%` : "—"}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {stats.done} phiếu chờ giao
+                {totalOpenTickets > 0
+                  ? `${stats.done} phiếu chờ giao`
+                  : "Không có dữ liệu"}
               </p>
             </div>
           </div>
@@ -2437,6 +2494,46 @@ export default function ServiceManager() {
 
           {/* Action Buttons */}
           <button
+            onClick={() => refetchWorkOrders()}
+            disabled={workOrdersFetching}
+            className="px-2.5 py-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1 disabled:opacity-50"
+            aria-label="Làm mới dữ liệu"
+            title="Làm mới"
+          >
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${
+                workOrdersFetching ? "animate-spin" : ""
+              }`}
+            />
+          </button>
+          <button
+            onClick={clearFilters}
+            className="px-2.5 py-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1"
+            aria-label="Xóa bộ lọc"
+            title="Xóa bộ lọc"
+          >
+            <Search className="w-3.5 h-3.5" /> Reset
+          </button>
+          {isOwner && (
+            <button
+              onClick={() => setShowProfit(!showProfit)}
+              className={`px-2.5 py-1.5 border rounded-lg text-xs font-medium flex items-center gap-1 transition-colors ${
+                showProfit
+                  ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30"
+                  : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
+              }`}
+              aria-label={showProfit ? "Ẩn lợi nhuận" : "Hiện lợi nhuận"}
+              title={showProfit ? "Ẩn lợi nhuận" : "Hiện lợi nhuận"}
+            >
+              {showProfit ? (
+                <Eye className="w-3.5 h-3.5" />
+              ) : (
+                <EyeOff className="w-3.5 h-3.5" />
+              )}
+              {showProfit ? "Ẩn LN" : "Hiện LN"}
+            </button>
+          )}
+          <button
             onClick={() => setShowTemplateModal(true)}
             className="px-2.5 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-xs font-medium flex items-center gap-1"
             aria-label="Mở danh sách mẫu sửa chữa"
@@ -2464,10 +2561,24 @@ export default function ServiceManager() {
 
       {/* Table */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+        {workOrdersIsError && (displayWorkOrders?.length ?? 0) > 0 && (
+          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-amber-50/60 dark:bg-amber-900/10 text-amber-800 dark:text-amber-200 flex items-center justify-between gap-3">
+            <div className="text-sm">
+              Không thể tải dữ liệu mới. Bạn vẫn đang xem dữ liệu cũ.
+            </div>
+            <button
+              onClick={() => refetchWorkOrders()}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/80 dark:bg-slate-800 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 hover:bg-white dark:hover:bg-slate-700"
+            >
+              <RefreshCw className="w-4 h-4" /> Thử lại
+            </button>
+          </div>
+        )}
+
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-slate-50 dark:bg-slate-700/50">
+            <thead className="bg-slate-50 dark:bg-slate-700/50 sticky top-0 z-10">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300">
                   Mã phiếu
@@ -2478,7 +2589,7 @@ export default function ServiceManager() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300">
                   Chi tiết
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300">
+                <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300">
                   Thanh toán & trạng thái
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-slate-600 dark:text-slate-300">
@@ -2487,17 +2598,86 @@ export default function ServiceManager() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-800">
-              {filteredOrders.length === 0 ? (
+              {showTableSkeleton ? (
+                Array.from({ length: 6 }).map((_, idx) => (
+                  <tr key={`skeleton-${idx}`} className="animate-pulse">
+                    <td className="px-4 py-4">
+                      <div className="h-4 w-40 bg-slate-200 dark:bg-slate-700 rounded" />
+                      <div className="mt-2 h-3 w-28 bg-slate-200 dark:bg-slate-700 rounded" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="h-4 w-44 bg-slate-200 dark:bg-slate-700 rounded" />
+                      <div className="mt-2 h-3 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="h-3 w-56 bg-slate-200 dark:bg-slate-700 rounded" />
+                      <div className="mt-2 h-3 w-40 bg-slate-200 dark:bg-slate-700 rounded" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
+                      <div className="mt-2 h-2 w-56 bg-slate-200 dark:bg-slate-700 rounded" />
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <div className="inline-block h-9 w-9 bg-slate-200 dark:bg-slate-700 rounded-lg" />
+                    </td>
+                  </tr>
+                ))
+              ) : showTableError ? (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className="px-4 py-12 text-center text-slate-400"
-                  >
-                    Không có phiếu sửa chữa nào.
+                  <td colSpan={5} className="px-4 py-12">
+                    <div className="max-w-xl mx-auto text-center">
+                      <div className="text-slate-700 dark:text-slate-200 font-semibold">
+                        Không thể tải danh sách phiếu sửa chữa
+                      </div>
+                      <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        {String(
+                          (workOrdersError as any)?.message ||
+                            "Vui lòng thử lại"
+                        )}
+                      </div>
+                      <div className="mt-4 flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => refetchWorkOrders()}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium"
+                        >
+                          <RefreshCw className="w-4 h-4" /> Thử lại
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-16">
+                    <div className="max-w-xl mx-auto text-center">
+                      <div className="mx-auto w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-200">
+                        <Wrench className="w-6 h-6" />
+                      </div>
+                      <div className="mt-4 text-slate-900 dark:text-slate-100 font-semibold">
+                        Không có phiếu sửa chữa nào
+                      </div>
+                      <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Thử đổi bộ lọc hoặc tạo phiếu mới.
+                      </div>
+                      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleOpenModal()}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium"
+                        >
+                          <Plus className="w-4 h-4" /> Tạo phiếu
+                        </button>
+                        <button
+                          onClick={clearFilters}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
+                        >
+                          <RefreshCw className="w-4 h-4" /> Xóa bộ lọc
+                        </button>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => {
+                paginatedOrders.map((order) => {
                   // Calculate costs based on actual form data structure
                   // Tiền phụ tùng = Tổng giá phụ tùng
                   const partsCost =
@@ -2540,7 +2720,6 @@ export default function ServiceManager() {
                     ) || 0;
                   const orderProfit =
                     totalAmount - partsCostPrice - servicesCostPrice;
-                  const isOwner = profile?.role === USER_ROLES.OWNER;
 
                   const paymentPillClass =
                     order.paymentStatus === "paid"
@@ -2713,45 +2892,63 @@ export default function ServiceManager() {
                               —
                             </div>
                           )}
+
+                          {/* Status badges for tablet/mobile - show when payment column hidden */}
+                          <div className="lg:hidden flex flex-wrap items-center gap-1.5 pt-1">
+                            <StatusBadge
+                              status={order.status as WorkOrderStatus}
+                            />
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full ${paymentPillClass}`}
+                            >
+                              {order.paymentStatus === "paid"
+                                ? "Đã TT"
+                                : order.paymentStatus === "partial"
+                                ? "TT một phần"
+                                : "Chưa TT"}
+                            </span>
+                          </div>
                         </div>
                       </td>
 
-                      {/* Column 4: Thanh toán & trạng thái - Clean layout */}
-                      <td className="px-4 py-4 align-top">
+                      {/* Column 4: Thanh toán & trạng thái - Clean layout - Hidden on tablet */}
+                      <td className="hidden lg:table-cell px-4 py-4 align-top">
                         <div className="space-y-2 min-w-[200px]">
                           {/* Tổng tiền */}
                           <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                             {formatCurrency(totalAmount)}
                           </div>
 
-                          {/* Lợi nhuận - Chỉ hiển thị cho owner */}
-                          {isOwner && order.paymentStatus === "paid" && (
-                            <div
-                              className="flex items-center gap-1 text-xs"
-                              title="Lợi nhuận và biên lợi nhuận trên tổng tiền"
-                            >
-                              <span className="text-slate-500">LN</span>
-                              <span
-                                className={`font-semibold ${
-                                  orderProfit > 0
-                                    ? "text-emerald-600 dark:text-emerald-400"
-                                    : "text-red-500"
-                                }`}
+                          {/* Lợi nhuận - Chỉ hiển thị cho owner khi bật toggle */}
+                          {isOwner &&
+                            showProfit &&
+                            order.paymentStatus === "paid" && (
+                              <div
+                                className="flex items-center gap-1 text-xs"
+                                title="Lợi nhuận và biên lợi nhuận trên tổng tiền"
                               >
-                                {orderProfit > 0 ? "+" : ""}
-                                {formatCurrency(orderProfit)}
-                              </span>
-                              {totalAmount > 0 && (
-                                <span className="text-slate-400">
-                                  (Biên LN{" "}
-                                  {Math.round(
-                                    (orderProfit / totalAmount) * 100
-                                  )}
-                                  %)
+                                <span className="text-slate-500">LN</span>
+                                <span
+                                  className={`font-semibold ${
+                                    orderProfit > 0
+                                      ? "text-emerald-600 dark:text-emerald-400"
+                                      : "text-red-500"
+                                  }`}
+                                >
+                                  {orderProfit > 0 ? "+" : ""}
+                                  {formatCurrency(orderProfit)}
                                 </span>
-                              )}
-                            </div>
-                          )}
+                                {totalAmount > 0 && (
+                                  <span className="text-slate-400">
+                                    (Biên LN{" "}
+                                    {Math.round(
+                                      (orderProfit / totalAmount) * 100
+                                    )}
+                                    %)
+                                  </span>
+                                )}
+                              </div>
+                            )}
 
                           {/* Progress bar + Đã thu */}
                           {totalAmount > 0 && (
@@ -2959,6 +3156,35 @@ export default function ServiceManager() {
             </tbody>
           </table>
         </div>
+
+        {!showTableSkeleton && !showTableError && filteredOrders.length > 0 && (
+          <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              Hiển thị {Math.min(visibleCount, filteredOrders.length)} /{" "}
+              {filteredOrders.length}
+            </div>
+            {hasMoreOrders && (
+              <button
+                onClick={handleLoadMore}
+                disabled={workOrdersFetching}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+              >
+                {workOrdersFetching ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+                Xem thêm (còn {filteredOrders.length - visibleCount})
+              </button>
+            )}
+          </div>
+        )}
+
+        <div
+          id="service-table-scroll-sentinel"
+          className="h-1"
+          aria-hidden="true"
+        />
       </div>
 
       {/* Repair Templates Modal - Component tách riêng */}
