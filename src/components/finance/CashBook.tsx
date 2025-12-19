@@ -13,6 +13,13 @@ import {
 } from "../../hooks/useCashTransactionsRepository";
 import { useUpdatePaymentSourceBalanceRepo } from "../../hooks/usePaymentSourcesRepository";
 import { supabase } from "../../supabaseClient";
+import { CashBookMobile } from "./CashBookMobile";
+import {
+  AddTransactionModal,
+  EditTransactionModal,
+  DeleteConfirmModal,
+  getCategoryLabel
+} from "./CashBookModals";
 
 const CashBook: React.FC = () => {
   const {
@@ -253,1417 +260,749 @@ const CashBook: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-4">
-        <div className="flex items-center justify-between">
-          {/* Title Section */}
-          <div>
-            <h1 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white">
-              Sổ quỹ
-            </h1>
-            <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-              Theo dõi thu chi tiền mặt và chuyển khoản
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition-colors flex items-center gap-2"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              <span>Thêm giao dịch</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setInitialCashBalance(savedInitialCash.toString());
-                setInitialBankBalance(savedInitialBank.toString());
-                setShowInitialBalanceModal(true);
-              }}
-              className="p-2.5 bg-white dark:bg-slate-700 hover:bg-amber-50 dark:hover:bg-slate-600 text-amber-600 dark:text-amber-400 rounded-xl shadow-sm border border-amber-200 dark:border-slate-600 transition-all"
-              title="Cài đặt số dư ban đầu"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
+    <>
+      <div className="block md:hidden">
+        <CashBookMobile />
       </div>
-
-      {/* Modal cài đặt số dư ban đầu */}
-      {showInitialBalanceModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                Cài đặt số dư ban đầu
-              </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Nhập số dư thực tế khi bắt đầu sử dụng hệ thống
+      <div className="hidden md:block h-full flex flex-col bg-slate-50 dark:bg-slate-900">
+        {/* Header */}
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-4">
+          <div className="flex items-center justify-between">
+            {/* Title Section */}
+            <div>
+              <h1 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white">
+                Sổ quỹ
+              </h1>
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                Theo dõi thu chi tiền mặt và chuyển khoản
               </p>
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  💵 Tiền mặt
-                </label>
-                <input
-                  type="text"
-                  value={initialCashBalance}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/[^0-9]/g, "");
-                    setInitialCashBalance(value);
-                  }}
-                  placeholder="0"
-                  className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-lg font-semibold focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  Hiển thị:{" "}
-                  {formatCurrency(parseFloat(initialCashBalance) || 0)}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  🏦 Ngân hàng
-                </label>
-                <input
-                  type="text"
-                  value={initialBankBalance}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/[^0-9]/g, "");
-                    setInitialBankBalance(value);
-                  }}
-                  placeholder="0"
-                  className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-lg font-semibold focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                  Hiển thị:{" "}
-                  {formatCurrency(parseFloat(initialBankBalance) || 0)}
-                </p>
-              </div>
-              <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
-                <p className="text-xs text-amber-700 dark:text-amber-400">
-                  ⚠️ Số dư ban đầu là số tiền thực tế bạn có{" "}
-                  <strong>trước khi</strong> bắt đầu ghi chép. Các giao dịch sau
-                  sẽ được cộng/trừ từ số này.
-                </p>
-              </div>
-            </div>
-            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex gap-3">
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowInitialBalanceModal(false)}
-                className="flex-1 px-4 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-900 dark:text-white rounded-lg font-medium transition-colors"
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm transition-colors flex items-center gap-2"
               >
-                Hủy
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                <span>Thêm giao dịch</span>
               </button>
+
               <button
-                onClick={handleSaveInitialBalance}
-                className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                onClick={() => {
+                  setInitialCashBalance(savedInitialCash.toString());
+                  setInitialBankBalance(savedInitialBank.toString());
+                  setShowInitialBalanceModal(true);
+                }}
+                className="p-2.5 bg-white dark:bg-slate-700 hover:bg-amber-50 dark:hover:bg-slate-600 text-amber-600 dark:text-amber-400 rounded-xl shadow-sm border border-amber-200 dark:border-slate-600 transition-all"
+                title="Cài đặt số dư ban đầu"
               >
-                Lưu số dư
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
               </button>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Summary Cards */}
-      <div className="p-3 md:p-4">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3 mb-4">
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border-2 border-green-200 dark:border-green-800">
-            <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-xs font-medium mb-1">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 11l5-5m0 0l5 5m-5-5v12"
-                />
-              </svg>
-              <span>Thu</span>
-            </div>
-            <div className="text-green-900 dark:text-green-100 text-xl font-bold">
-              {formatCurrency(summary.income)}
-            </div>
-          </div>
-
-          <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 border-2 border-red-200 dark:border-red-800">
-            <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-xs font-medium mb-1">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 13l-5 5m0 0l-5-5m5 5V6"
-                />
-              </svg>
-              <span>Chi</span>
-            </div>
-            <div className="text-red-900 dark:text-red-100 text-xl font-bold">
-              {formatCurrency(summary.expense)}
-            </div>
-          </div>
-
-          <div className="col-span-2 md:col-span-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border-2 border-blue-200 dark:border-blue-800">
-            <div className="text-blue-600 dark:text-blue-400 text-xs font-medium mb-1">
-              Chênh lệch
-            </div>
-            <div
-              className={`text-xl font-bold ${summary.balance >= 0
-                ? "text-blue-900 dark:text-blue-100"
-                : "text-red-600 dark:text-red-400"
-                }`}
-            >
-              {formatCurrency(summary.balance)}
-            </div>
-          </div>
-
-          <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 border-2 border-amber-200 dark:border-amber-800">
-            <div className="text-amber-600 dark:text-amber-400 text-xs font-medium mb-1">
-              Tiền mặt
-            </div>
-            <div className="text-amber-900 dark:text-amber-100 text-xl font-bold">
-              {formatCurrency(summary.cashBalance)}
-            </div>
-          </div>
-
-          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border-2 border-purple-200 dark:border-purple-800">
-            <div className="text-purple-600 dark:text-purple-400 text-xs font-medium mb-1">
-              Ngân hàng
-            </div>
-            <div className="text-purple-900 dark:text-purple-100 text-xl font-bold">
-              {formatCurrency(summary.bankBalance)}
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        {/* Mobile Filters */}
-        <div className="md:hidden space-y-3 mb-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
-                Loại
-              </label>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value as any)}
-                className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-              >
-                <option value="all">Tất cả</option>
-                <option value="income">Thu</option>
-                <option value="expense">Chi</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
-                Nguồn tiền
-              </label>
-              <select
-                value={filterPaymentSource}
-                onChange={(e) => setFilterPaymentSource(e.target.value)}
-                className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-              >
-                <option value="all">Tất cả</option>
-                <option value="cash">Tiền mặt</option>
-                <option value="bank">Ngân hàng</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
-              Thời gian
-            </label>
-            <select
-              value={filterDateRange}
-              onChange={(e) => setFilterDateRange(e.target.value as any)}
-              className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-            >
-              <option value="today">Hôm nay</option>
-              <option value="week">7 ngày qua</option>
-              <option value="month">30 ngày qua</option>
-              <option value="all">Tất cả</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Desktop Filters */}
-        <div className="hidden md:block bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 mb-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Loại:
-              </span>
-              <div className="flex gap-2">
-                {[
-                  { value: "all", label: "Tất cả" },
-                  { value: "income", label: "Thu" },
-                  { value: "expense", label: "Chi" },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => setFilterType(option.value as any)}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === option.value
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
-                      }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+        {/* Modal cài đặt số dư ban đầu */}
+        {showInitialBalanceModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md">
+              <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Cài đặt số dư ban đầu
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Nhập số dư thực tế khi bắt đầu sử dụng hệ thống
+                </p>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Nguồn tiền:
-              </span>
-              <select
-                value={filterPaymentSource}
-                onChange={(e) => setFilterPaymentSource(e.target.value)}
-                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm text-slate-900 dark:text-white"
-              >
-                <option value="all">Tất cả</option>
-                <option value="cash">Tiền mặt</option>
-                <option value="bank">Ngân hàng</option>
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Tìm kiếm:
-              </span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm theo nội dung, mã phiếu, đối tượng..."
-                className="flex-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Thời gian:
-              </span>
-              <div className="flex gap-2">
-                {[
-                  { value: "today", label: "Hôm nay" },
-                  { value: "week", label: "7 ngày" },
-                  { value: "month", label: "30 ngày" },
-                  { value: "all", label: "Tất cả" },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => setFilterDateRange(option.value as any)}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterDateRange === option.value
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
-                      }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    💵 Tiền mặt
+                  </label>
+                  <input
+                    type="text"
+                    value={initialCashBalance}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, "");
+                      setInitialCashBalance(value);
+                    }}
+                    placeholder="0"
+                    className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-lg font-semibold focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Hiển thị:{" "}
+                    {formatCurrency(parseFloat(initialCashBalance) || 0)}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    🏦 Ngân hàng
+                  </label>
+                  <input
+                    type="text"
+                    value={initialBankBalance}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, "");
+                      setInitialBankBalance(value);
+                    }}
+                    placeholder="0"
+                    className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-lg font-semibold focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Hiển thị:{" "}
+                    {formatCurrency(parseFloat(initialBankBalance) || 0)}
+                  </p>
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    ⚠️ Số dư ban đầu là số tiền thực tế bạn có{" "}
+                    <strong>trước khi</strong> bắt đầu ghi chép. Các giao dịch sau
+                    sẽ được cộng/trừ từ số này.
+                  </p>
+                </div>
+              </div>
+              <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex gap-3">
+                <button
+                  onClick={() => setShowInitialBalanceModal(false)}
+                  className="flex-1 px-4 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-900 dark:text-white rounded-lg font-medium transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleSaveInitialBalance}
+                  className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Lưu số dư
+                </button>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Transactions List (Mobile) */}
-        <div className="md:hidden space-y-3">
-          {isCashTxLoading ? (
-            <div className="text-center py-8 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-              Đang tải dữ liệu...
+        {/* Summary Cards */}
+        <div className="p-3 md:p-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3 mb-4">
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border-2 border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-xs font-medium mb-1">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 11l5-5m0 0l5 5m-5-5v12"
+                  />
+                </svg>
+                <span>Thu</span>
+              </div>
+              <div className="text-green-900 dark:text-green-100 text-xl font-bold">
+                {formatCurrency(summary.income)}
+              </div>
             </div>
-          ) : filteredTransactions.length === 0 ? (
-            <div className="text-center py-8 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-              Không có giao dịch nào
+
+            <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 border-2 border-red-200 dark:border-red-800">
+              <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-xs font-medium mb-1">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 13l-5 5m0 0l-5-5m5 5V6"
+                  />
+                </svg>
+                <span>Chi</span>
+              </div>
+              <div className="text-red-900 dark:text-red-100 text-xl font-bold">
+                {formatCurrency(summary.expense)}
+              </div>
             </div>
-          ) : (
-            filteredTransactions.map((tx) => (
+
+            <div className="col-span-2 md:col-span-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border-2 border-blue-200 dark:border-blue-800">
+              <div className="text-blue-600 dark:text-blue-400 text-xs font-medium mb-1">
+                Chênh lệch
+              </div>
               <div
-                key={tx.id}
-                className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm"
+                className={`text-xl font-bold ${summary.balance >= 0
+                  ? "text-blue-900 dark:text-blue-100"
+                  : "text-red-600 dark:text-red-400"
+                  }`}
               >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <div className="font-medium text-slate-900 dark:text-white">
-                      {getCategoryLabel(tx.category)}
-                    </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {formatDate(new Date(tx.date))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`font-bold ${isIncomeType(tx.type)
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
+                {formatCurrency(summary.balance)}
+              </div>
+            </div>
+
+            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 border-2 border-amber-200 dark:border-amber-800">
+              <div className="text-amber-600 dark:text-amber-400 text-xs font-medium mb-1">
+                Tiền mặt
+              </div>
+              <div className="text-amber-900 dark:text-amber-100 text-xl font-bold">
+                {formatCurrency(summary.cashBalance)}
+              </div>
+            </div>
+
+            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border-2 border-purple-200 dark:border-purple-800">
+              <div className="text-purple-600 dark:text-purple-400 text-xs font-medium mb-1">
+                Ngân hàng
+              </div>
+              <div className="text-purple-900 dark:text-purple-100 text-xl font-bold">
+                {formatCurrency(summary.bankBalance)}
+              </div>
+            </div>
+          </div>
+
+          {/* Filters */}
+          {/* Mobile Filters */}
+          <div className="md:hidden space-y-3 mb-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+                  Loại
+                </label>
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value as any)}
+                  className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                >
+                  <option value="all">Tất cả</option>
+                  <option value="income">Thu</option>
+                  <option value="expense">Chi</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+                  Nguồn tiền
+                </label>
+                <select
+                  value={filterPaymentSource}
+                  onChange={(e) => setFilterPaymentSource(e.target.value)}
+                  className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                >
+                  <option value="all">Tất cả</option>
+                  <option value="cash">Tiền mặt</option>
+                  <option value="bank">Ngân hàng</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 block">
+                Thời gian
+              </label>
+              <select
+                value={filterDateRange}
+                onChange={(e) => setFilterDateRange(e.target.value as any)}
+                className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+              >
+                <option value="today">Hôm nay</option>
+                <option value="week">7 ngày qua</option>
+                <option value="month">30 ngày qua</option>
+                <option value="all">Tất cả</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Desktop Filters */}
+          <div className="hidden md:block bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 mb-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Loại:
+                </span>
+                <div className="flex gap-2">
+                  {[
+                    { value: "all", label: "Tất cả" },
+                    { value: "income", label: "Thu" },
+                    { value: "expense", label: "Chi" },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setFilterType(option.value as any)}
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterType === option.value
+                        ? "bg-blue-600 text-white"
+                        : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
                         }`}
                     >
-                      {isIncomeType(tx.type) ? "+" : "-"}
-                      {formatCurrency(Math.abs(tx.amount))}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600 dark:text-slate-400 truncate max-w-[50%]">
-                    {tx.notes || "--"}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                      {(() => {
-                        const source =
-                          tx.paymentSourceId ||
-                          (tx as any).paymentsource ||
-                          (tx as any).paymentSource;
-                        if (source === "cash") return "Tiền mặt";
-                        if (source === "bank") return "Ngân hàng";
-                        return source || "--";
-                      })()}
-                    </span>
-                    <button
-                      onClick={() => setEditingTransaction(tx)}
-                      className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                        />
-                      </svg>
+                      {option.label}
                     </button>
-                    <button
-                      onClick={() => setDeletingTransaction(tx)}
-                      className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+                  ))}
                 </div>
               </div>
-            ))
-          )}
-        </div>
 
-        {/* Transactions Table (Desktop) */}
-        <div className="hidden md:block bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-slate-50 dark:bg-slate-700">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
-                  Ngày/Giờ
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
-                  Loại
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
-                  Danh mục
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
-                  Đối tượng
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
-                  Nội dung
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
-                  Nguồn tiền
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
-                  Người tạo
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
-                  Số tiền
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              {isCashTxLoading ? (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="px-4 py-8 text-center text-slate-500 dark:text-slate-400"
-                  >
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    Đang tải dữ liệu...
-                  </td>
-                </tr>
-              ) : filteredTransactions.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="px-4 py-8 text-center text-slate-500 dark:text-slate-400"
-                  >
-                    Không có giao dịch nào
-                  </td>
-                </tr>
-              ) : (
-                filteredTransactions.map((tx) => (
-                  <tr
-                    key={tx.id}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-700/50"
-                  >
-                    <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-100">
-                      <div className="flex flex-col">
-                        <span>{formatDate(new Date(tx.date))}</span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">
-                          {new Date(tx.date).toLocaleTimeString("vi-VN", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Nguồn tiền:
+                </span>
+                <select
+                  value={filterPaymentSource}
+                  onChange={(e) => setFilterPaymentSource(e.target.value)}
+                  className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm text-slate-900 dark:text-white"
+                >
+                  <option value="all">Tất cả</option>
+                  <option value="cash">Tiền mặt</option>
+                  <option value="bank">Ngân hàng</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Tìm kiếm:
+                </span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Tìm theo nội dung, mã phiếu, đối tượng..."
+                  className="flex-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Thời gian:
+                </span>
+                <div className="flex gap-2">
+                  {[
+                    { value: "today", label: "Hôm nay" },
+                    { value: "week", label: "7 ngày" },
+                    { value: "month", label: "30 ngày" },
+                    { value: "all", label: "Tất cả" },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setFilterDateRange(option.value as any)}
+                      className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filterDateRange === option.value
+                        ? "bg-blue-600 text-white"
+                        : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
+                        }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Transactions List (Mobile) */}
+          <div className="md:hidden space-y-3">
+            {isCashTxLoading ? (
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                Đang tải dữ liệu...
+              </div>
+            ) : filteredTransactions.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                Không có giao dịch nào
+              </div>
+            ) : (
+              filteredTransactions.map((tx) => (
+                <div
+                  key={tx.id}
+                  className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="font-medium text-slate-900 dark:text-white">
+                        {getCategoryLabel(tx.category)}
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${isIncomeType(tx.type)
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {formatDate(new Date(tx.date))}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`font-bold ${isIncomeType(tx.type)
+                          ? "text-green-600 dark:text-green-400"
+                          : "text-red-600 dark:text-red-400"
                           }`}
                       >
-                        {isIncomeType(tx.type) ? "↑ Thu" : "↓ Chi"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                      {getCategoryLabel(tx.category)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-100 font-medium">
-                      {(tx as any).target_name || (tx as any).recipient || "--"}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                      <div className="flex flex-col">
-                        <span>
-                          {(tx as any).description || tx.notes || "--"}
-                        </span>
-                        {(tx as any).reference && (
-                          <span className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">
-                            ({(tx as any).reference})
-                          </span>
-                        )}
+                        {isIncomeType(tx.type) ? "+" : "-"}
+                        {formatCurrency(Math.abs(tx.amount))}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                      {(() => {
-                        const source =
-                          tx.paymentSourceId ||
-                          (tx as any).paymentsource ||
-                          (tx as any).paymentSource;
-                        if (source === "cash") return "Tiền mặt";
-                        if (source === "bank") return "Ngân hàng";
-                        return source || "--";
-                      })()}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
-                      {profilesMap[(tx as any).created_by] || (tx as any).created_by || "--"}
-                    </td>
-                    <td
-                      className={`px-4 py-3 text-right text-sm font-semibold ${isIncomeType(tx.type)
-                        ? "text-green-600 dark:text-green-400"
-                        : "text-red-600 dark:text-red-400"
-                        }`}
-                    >
-                      {isIncomeType(tx.type) ? "+" : "-"}
-                      {formatCurrency(Math.abs(tx.amount))}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => setEditingTransaction(tx)}
-                          className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                          title="Chỉnh sửa"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => setDeletingTransaction(tx)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          title="Xóa"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Add Transaction Modal */}
-      {showAddModal && (
-        <AddTransactionModal
-          onClose={() => setShowAddModal(false)}
-          onSave={async (transaction) => {
-            // Basic validation
-            if (!transaction.amount || transaction.amount <= 0) {
-              showToast.warning("Số tiền phải > 0");
-              return;
-            }
-            try {
-              const res = await createCashTxRepo.mutateAsync({
-                type: transaction.type,
-                amount: transaction.amount,
-                branchId: currentBranchId,
-                paymentSourceId: transaction.paymentSourceId,
-                date: transaction.date,
-                notes: transaction.notes,
-                category: transaction.category,
-                recipient: transaction.recipient,
-              });
-              if (res?.ok) {
-                // Optimistically update local state for immediate UI feedback
-                setCashTransactions((prev) => [
-                  res.data as CashTransaction,
-                  ...prev,
-                ]);
-                const delta =
-                  transaction.type === "income"
-                    ? transaction.amount
-                    : -transaction.amount;
-                await updatePaymentSourceBalanceRepo.mutateAsync({
-                  id: transaction.paymentSourceId,
-                  branchId: currentBranchId,
-                  delta,
-                });
-                setPaymentSources((prev) =>
-                  prev.map((ps) =>
-                    ps.id === transaction.paymentSourceId
-                      ? {
-                        ...ps,
-                        balance: {
-                          ...ps.balance,
-                          [currentBranchId]:
-                            (ps.balance[currentBranchId] || 0) + delta,
-                        },
-                      }
-                      : ps
-                  )
-                );
-                showToast.success("Đã thêm giao dịch sổ quỹ");
-                setShowAddModal(false);
-              } else if (res?.error) {
-                showToast.error(res.error.message || "Ghi giao dịch thất bại");
-              }
-            } catch (e: any) {
-              showToast.error(e?.message || "Lỗi không xác định");
-            }
-          }}
-        />
-      )}
-
-      {/* Edit Transaction Modal */}
-      {editingTransaction && (
-        <EditTransactionModal
-          transaction={editingTransaction}
-          onClose={() => setEditingTransaction(null)}
-          onSave={async (updatedData) => {
-            try {
-              const res = await updateCashTxRepo.mutateAsync({
-                id: editingTransaction.id,
-                ...updatedData,
-              });
-              if (res?.ok) {
-                showToast.success("Đã cập nhật giao dịch");
-                setEditingTransaction(null);
-              } else if (res?.error) {
-                showToast.error(res.error.message || "Cập nhật thất bại");
-              }
-            } catch (e: any) {
-              showToast.error(e?.message || "Lỗi không xác định");
-            }
-          }}
-        />
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {deletingTransaction && (
-        <DeleteConfirmModal
-          transaction={deletingTransaction}
-          onClose={() => setDeletingTransaction(null)}
-          onConfirm={async () => {
-            try {
-              const res = await deleteCashTxRepo.mutateAsync(
-                deletingTransaction.id
-              );
-              if (res?.ok) {
-                showToast.success("Đã xóa giao dịch");
-                setDeletingTransaction(null);
-              } else if (res?.error) {
-                showToast.error(res.error.message || "Xóa thất bại");
-              }
-            } catch (e: any) {
-              showToast.error(e?.message || "Lỗi không xác định");
-            }
-          }}
-        />
-      )}
-    </div>
-  );
-};
-
-// Helper function for category labels
-const getCategoryLabel = (category?: string) => {
-  const labels: Record<string, string> = {
-    sale_income: "Bán hàng",
-    service_income: "Dịch vụ",
-    other_income: "Thu khác",
-    inventory_purchase: "Mua hàng",
-    salary: "Lương nhân viên",
-    employee_advance: "Ứng lương",
-    loan_payment: "Trả nợ vay",
-    debt_collection: "Thu nợ khách hàng",
-    debt_payment: "Trả nợ nhà cung cấp",
-    sale_refund: "Hoàn trả",
-    other_expense: "Chi khác",
-    outsourcing: "Gia công ngoài",
-    service_deposit: "Đặt cọc dịch vụ",
-    general_income: "Thu chung",
-    general_expense: "Chi chung",
-    supplier_payment: "Chi trả NCC",
-    utilities: "Điện nước",
-    rent: "Tiền thuê mặt bằng",
-    service_cost: "Giá vốn dịch vụ",
-  };
-  return category ? labels[category] || category : "--";
-};
-
-// Add Transaction Modal Component
-export const AddTransactionModal: React.FC<{
-  onClose: () => void;
-  onSave: (transaction: any) => void;
-}> = ({ onClose, onSave }) => {
-  const [type, setType] = useState<"income" | "expense">("income");
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("");
-  const [paymentSource, setPaymentSource] = useState("cash");
-  const [recipient, setRecipient] = useState("");
-  const [notes, setNotes] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-
-  // Hide bottom navigation when modal is open
-  useEffect(() => {
-    document.body.classList.add("hide-bottom-nav");
-    return () => {
-      document.body.classList.remove("hide-bottom-nav");
-    };
-  }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const numAmount = parseFloat(amount.replace(/\./g, "")) || 0;
-    if (numAmount <= 0) {
-      return;
-    }
-    onSave({
-      type,
-      amount: numAmount,
-      category,
-      paymentSourceId: paymentSource,
-      recipient,
-      notes,
-      date: new Date(date).toISOString(),
-    });
-  };
-
-  const incomeCategories = [
-    { value: "sale_income", label: "💰 Tiền bán hàng", icon: "💰" },
-    { value: "service_income", label: "🔧 Tiền dịch vụ", icon: "🔧" },
-    { value: "other_income", label: "📥 Thu nhập khác", icon: "📥" },
-  ];
-
-  const expenseCategories = [
-    { value: "inventory_purchase", label: "📦 Mua hàng", icon: "📦" },
-    { value: "salary", label: "👥 Lương nhân viên", icon: "👥" },
-    { value: "rent", label: "🏠 Tiền thuê mặt bằng", icon: "🏠" },
-    { value: "utilities", label: "💡 Điện nước", icon: "💡" },
-    { value: "sale_refund", label: "↩️ Hoàn trả khách", icon: "↩️" },
-    { value: "other_expense", label: "📤 Chi phí khác", icon: "📤" },
-  ];
-
-  const categories = type === "income" ? incomeCategories : expenseCategories;
-
-  // Format number with dots
-  const formatNumber = (value: string) => {
-    const num = value.replace(/\D/g, "");
-    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col mb-16 sm:mb-0">
-        {/* Header with gradient */}
-        <div
-          className={`px-4 py-3 flex-shrink-0 ${type === "income"
-            ? "bg-gradient-to-r from-emerald-500 to-green-600"
-            : "bg-gradient-to-r from-rose-500 to-red-600"
-            }`}
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              {type === "income" ? "📥 Thu tiền" : "📤 Chi tiền"}
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-white/80 hover:text-white transition-colors p-1"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <form
-          id="cashTxForm"
-          onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto p-3 space-y-2.5 min-h-0"
-        >
-          {/* Type Toggle */}
-          <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
-            <button
-              type="button"
-              onClick={() => {
-                setType("income");
-                setCategory("");
-              }}
-              className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all ${type === "income"
-                ? "bg-emerald-500 text-white shadow-md"
-                : "text-slate-600 dark:text-slate-300"
-                }`}
-            >
-              📥 Thu tiền
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setType("expense");
-                setCategory("");
-              }}
-              className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all ${type === "expense"
-                ? "bg-rose-500 text-white shadow-md"
-                : "text-slate-600 dark:text-slate-300"
-                }`}
-            >
-              📤 Chi tiền
-            </button>
-          </div>
-
-          {/* Amount */}
-          <div>
-            <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-0.5 uppercase">
-              Số tiền
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={amount}
-                onChange={(e) => setAmount(formatNumber(e.target.value))}
-                placeholder="0"
-                className={`w-full px-3 py-2 text-lg font-bold bg-slate-50 dark:bg-slate-700/50 border-2 rounded-lg text-right pr-8 ${type === "income"
-                  ? "border-emerald-200 dark:border-emerald-800 focus:border-emerald-500 text-emerald-600 dark:text-emerald-400"
-                  : "border-rose-200 dark:border-rose-800 focus:border-rose-500 text-rose-600 dark:text-rose-400"
-                  } focus:outline-none`}
-                required
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400">
-                đ
-              </span>
-            </div>
-          </div>
-
-          {/* Category Grid - Compact */}
-          <div>
-            <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase">
-              Danh mục
-            </label>
-            <div className="grid grid-cols-3 gap-1">
-              {categories.map((cat) => (
-                <button
-                  key={cat.value}
-                  type="button"
-                  onClick={() => setCategory(cat.value)}
-                  className={`p-1.5 rounded-lg text-center transition-all ${category === cat.value
-                    ? type === "income"
-                      ? "bg-emerald-100 dark:bg-emerald-900/30 border-2 border-emerald-500 text-emerald-700 dark:text-emerald-300"
-                      : "bg-rose-100 dark:bg-rose-900/30 border-2 border-rose-500 text-rose-700 dark:text-rose-300"
-                    : "bg-slate-50 dark:bg-slate-700/50 border-2 border-transparent text-slate-700 dark:text-slate-300"
-                    }`}
-                >
-                  <div className="text-base leading-none">{cat.icon}</div>
-                  <div className="text-[8px] font-medium leading-tight mt-0.5">
-                    {cat.label.replace(/^\S+\s/, "")}
+                    </div>
                   </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Payment Source Toggle - Compact */}
-          <div>
-            <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1 uppercase">
-              Nguồn tiền
-            </label>
-            <div className="flex gap-1.5">
-              <button
-                type="button"
-                onClick={() => setPaymentSource("cash")}
-                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 ${paymentSource === "cash"
-                  ? "bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-500 text-amber-700 dark:text-amber-300"
-                  : "bg-slate-50 dark:bg-slate-700/50 border-2 border-transparent text-slate-600 dark:text-slate-400"
-                  }`}
-              >
-                💵 Tiền mặt
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentSource("bank")}
-                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1 ${paymentSource === "bank"
-                  ? "bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-500 text-blue-700 dark:text-blue-300"
-                  : "bg-slate-50 dark:bg-slate-700/50 border-2 border-transparent text-slate-600 dark:text-slate-400"
-                  }`}
-              >
-                🏦 Ngân hàng
-              </button>
-            </div>
-          </div>
-
-          {/* Recipient & Date Row - Compact */}
-          <div className="grid grid-cols-2 gap-1.5">
-            <div>
-              <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-0.5 uppercase">
-                Đối tượng
-              </label>
-              <input
-                type="text"
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-                placeholder={type === "income" ? "Ai trả?" : "Trả cho ai?"}
-                className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-0.5 uppercase">
-                Ngày
-              </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Notes - Compact */}
-          <div>
-            <label className="block text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-0.5 uppercase">
-              Nội dung
-            </label>
-            <input
-              type="text"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
-              placeholder="Nội dung giao dịch..."
-            />
-          </div>
-        </form>
-
-        {/* Submit Button - Fixed at bottom with safe area */}
-        <div
-          className="flex-shrink-0 p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 z-10"
-          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
-        >
-          <button
-            type="submit"
-            form="cashTxForm"
-            className={`w-full py-3.5 rounded-xl font-bold text-white text-base shadow-xl active:scale-95 transition-all ${type === "income"
-              ? "bg-gradient-to-r from-emerald-500 to-green-600"
-              : "bg-gradient-to-r from-rose-500 to-red-600"
-              }`}
-          >
-            {type === "income" ? "✓ Xác nhận thu tiền" : "✓ Xác nhận chi tiền"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Edit Transaction Modal Component
-export const EditTransactionModal: React.FC<{
-  transaction: CashTransaction;
-  onClose: () => void;
-  onSave: (updatedData: any) => void;
-}> = ({ transaction, onClose, onSave }) => {
-  const [type, setType] = useState<"income" | "expense">(
-    transaction.type === "income" || transaction.type === "deposit"
-      ? "income"
-      : "expense"
-  );
-  const [amount, setAmount] = useState(String(Math.abs(transaction.amount)));
-  const [category, setCategory] = useState(transaction.category || "");
-  const [paymentSource, setPaymentSource] = useState(
-    transaction.paymentSourceId || (transaction as any).paymentsource || "cash"
-  );
-  const [recipient, setRecipient] = useState(
-    (transaction as any).recipient || ""
-  );
-  const [notes, setNotes] = useState(
-    transaction.notes || (transaction as any).description || ""
-  );
-  const [date, setDate] = useState(
-    transaction.date
-      ? new Date(transaction.date).toISOString().split("T")[0]
-      : new Date().toISOString().split("T")[0]
-  );
-
-  // Hide bottom navigation when modal is open
-  useEffect(() => {
-    document.body.classList.add("hide-bottom-nav");
-    return () => {
-      document.body.classList.remove("hide-bottom-nav");
-    };
-  }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave({
-      type,
-      amount: parseFloat(amount),
-      category,
-      paymentSourceId: paymentSource,
-      recipient,
-      notes,
-      date: new Date(date).toISOString(),
-    });
-  };
-
-  const incomeCategories = [
-    { value: "sale_income", label: "Tiền bán hàng" },
-    { value: "service_income", label: "Tiền dịch vụ" },
-    { value: "service_deposit", label: "Đặt cọc dịch vụ" },
-    { value: "debt_collection", label: "Thu nợ khách hàng" },
-    { value: "other_income", label: "Thu nhập khác" },
-    { value: "general_income", label: "Thu chung" },
-  ];
-
-  const expenseCategories = [
-    { value: "inventory_purchase", label: "Mua hàng" },
-    { value: "salary", label: "Lương nhân viên" },
-    { value: "rent", label: "Tiền thuê mặt bằng" },
-    { value: "utilities", label: "Điện nước" },
-    { value: "outsourcing", label: "Gia công ngoài" },
-    { value: "loan_payment", label: "Trả nợ vay" },
-    { value: "debt_payment", label: "Trả nợ nhà cung cấp" },
-    { value: "sale_refund", label: "Hoàn trả khách hàng" },
-    { value: "other_expense", label: "Chi phí khác" },
-    { value: "general_expense", label: "Chi chung" },
-  ];
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-700 max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base sm:text-xl font-semibold text-slate-900 dark:text-white">
-              Chỉnh sửa giao dịch
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 sm:space-y-4"
-        >
-          {/* Type Selection */}
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Loại giao dịch
-            </label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  value="income"
-                  checked={type === "income"}
-                  onChange={(e) => setType(e.target.value as "income")}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-sm text-slate-900 dark:text-white">
-                  Thu tiền
-                </span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  value="expense"
-                  checked={type === "expense"}
-                  onChange={(e) => setType(e.target.value as "expense")}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-sm text-slate-900 dark:text-white">
-                  Chi tiền
-                </span>
-              </label>
-            </div>
-          </div>
-
-          {/* Amount */}
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Số tiền
-            </label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm sm:text-base text-slate-900 dark:text-white"
-              required
-            />
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Danh mục
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm sm:text-base text-slate-900 dark:text-white"
-            >
-              <option value="">Chọn danh mục</option>
-              {(type === "income" ? incomeCategories : expenseCategories).map(
-                (cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                )
-              )}
-            </select>
-          </div>
-
-          {/* Recipient/Payer */}
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Đối tượng
-            </label>
-            <input
-              type="text"
-              value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-              placeholder={
-                type === "income" ? "Thu tiền từ ai?" : "Chi tiền cho ai?"
-              }
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm sm:text-base text-slate-900 dark:text-white"
-            />
-          </div>
-
-          {/* Payment Source */}
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Nguồn tiền
-            </label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  value="cash"
-                  checked={paymentSource === "cash"}
-                  onChange={(e) => setPaymentSource(e.target.value)}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-sm text-slate-900 dark:text-white">
-                  Tiền mặt
-                </span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  value="bank"
-                  checked={paymentSource === "bank"}
-                  onChange={(e) => setPaymentSource(e.target.value)}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-sm text-slate-900 dark:text-white">
-                  Ngân hàng
-                </span>
-              </label>
-            </div>
-          </div>
-
-          {/* Date */}
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Ngày giao dịch
-            </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm sm:text-base text-slate-900 dark:text-white"
-              required
-            />
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Nội dung
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm sm:text-base text-slate-900 dark:text-white resize-none"
-              placeholder="Ghi chú về giao dịch..."
-            />
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-2 sm:gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-900 dark:text-white rounded-lg text-sm sm:text-base font-medium transition-colors"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm sm:text-base font-medium transition-colors"
-            >
-              Cập nhật
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Delete Confirmation Modal Component
-export const DeleteConfirmModal: React.FC<{
-  transaction: CashTransaction;
-  onClose: () => void;
-  onConfirm: () => void;
-}> = ({ transaction, onClose, onConfirm }) => {
-  const isIncome =
-    transaction.type === "income" || transaction.type === "deposit";
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full border border-slate-200 dark:border-slate-700">
-        <div className="p-6">
-          <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full">
-            <svg
-              className="w-6 h-6 text-red-600 dark:text-red-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-          </div>
-
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white text-center mb-2">
-            Xác nhận xóa giao dịch
-          </h3>
-
-          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-slate-500 dark:text-slate-400">
-                Loại:
-              </span>
-              <span
-                className={`text-sm font-medium ${isIncome ? "text-green-600" : "text-red-600"
-                  }`}
-              >
-                {isIncome ? "Thu" : "Chi"}
-              </span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-slate-500 dark:text-slate-400">
-                Số tiền:
-              </span>
-              <span
-                className={`text-sm font-bold ${isIncome ? "text-green-600" : "text-red-600"
-                  }`}
-              >
-                {isIncome ? "+" : "-"}
-                {formatCurrency(Math.abs(transaction.amount))}
-              </span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-slate-500 dark:text-slate-400">
-                Ngày:
-              </span>
-              <span className="text-sm text-slate-900 dark:text-white">
-                {formatDate(new Date(transaction.date))}
-              </span>
-            </div>
-            {transaction.notes && (
-              <div className="flex justify-between items-start">
-                <span className="text-sm text-slate-500 dark:text-slate-400">
-                  Nội dung:
-                </span>
-                <span className="text-sm text-slate-900 dark:text-white text-right max-w-[60%]">
-                  {transaction.notes}
-                </span>
-              </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-600 dark:text-slate-400 truncate max-w-[50%]">
+                      {tx.notes || "--"}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                        {(() => {
+                          const source =
+                            tx.paymentSourceId ||
+                            (tx as any).paymentsource ||
+                            (tx as any).paymentSource;
+                          if (source === "cash") return "Tiền mặt";
+                          if (source === "bank") return "Ngân hàng";
+                          return source || "--";
+                        })()}
+                      </span>
+                      <button
+                        onClick={() => setEditingTransaction(tx)}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => setDeletingTransaction(tx)}
+                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
             )}
           </div>
 
-          <p className="text-sm text-slate-600 dark:text-slate-400 text-center mb-6">
-            Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa giao
-            dịch này?
-          </p>
-
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-900 dark:text-white rounded-lg font-medium transition-colors"
-            >
-              Hủy
-            </button>
-            <button
-              onClick={onConfirm}
-              className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
-            >
-              Xóa
-            </button>
+          {/* Transactions Table (Desktop) */}
+          <div className="hidden md:block bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-slate-50 dark:bg-slate-700">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
+                    Ngày/Giờ
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
+                    Loại
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
+                    Danh mục
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
+                    Đối tượng
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
+                    Nội dung
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
+                    Nguồn tiền
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
+                    Người tạo
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
+                    Số tiền
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">
+                    Thao tác
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                {isCashTxLoading ? (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-4 py-8 text-center text-slate-500 dark:text-slate-400"
+                    >
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                      Đang tải dữ liệu...
+                    </td>
+                  </tr>
+                ) : filteredTransactions.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-4 py-8 text-center text-slate-500 dark:text-slate-400"
+                    >
+                      Không có giao dịch nào
+                    </td>
+                  </tr>
+                ) : (
+                  filteredTransactions.map((tx) => (
+                    <tr
+                      key={tx.id}
+                      className="hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                    >
+                      <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-100">
+                        <div className="flex flex-col">
+                          <span>{formatDate(new Date(tx.date))}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            {new Date(tx.date).toLocaleTimeString("vi-VN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${isIncomeType(tx.type)
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                            : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                            }`}
+                        >
+                          {isIncomeType(tx.type) ? "↑ Thu" : "↓ Chi"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                        {getCategoryLabel(tx.category)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-900 dark:text-slate-100 font-medium">
+                        {(tx as any).target_name || (tx as any).recipient || "--"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                        <div className="flex flex-col">
+                          <span>
+                            {(tx as any).description || tx.notes || "--"}
+                          </span>
+                          {(tx as any).reference && (
+                            <span className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">
+                              ({(tx as any).reference})
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                        {(() => {
+                          const source =
+                            tx.paymentSourceId ||
+                            (tx as any).paymentsource ||
+                            (tx as any).paymentSource;
+                          if (source === "cash") return "Tiền mặt";
+                          if (source === "bank") return "Ngân hàng";
+                          return source || "--";
+                        })()}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                        {profilesMap[(tx as any).created_by] || (tx as any).created_by || "--"}
+                      </td>
+                      <td
+                        className={`px-4 py-3 text-right text-sm font-semibold ${isIncomeType(tx.type)
+                          ? "text-green-600 dark:text-green-400"
+                          : "text-red-600 dark:text-red-400"
+                          }`}
+                      >
+                        {isIncomeType(tx.type) ? "+" : "-"}
+                        {formatCurrency(Math.abs(tx.amount))}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => setEditingTransaction(tx)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                            title="Chỉnh sửa"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => setDeletingTransaction(tx)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="Xóa"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
+
+        {/* Add Transaction Modal */}
+        {showAddModal && (
+          <AddTransactionModal
+            onClose={() => setShowAddModal(false)}
+            onSave={async (transaction) => {
+              // Basic validation
+              if (!transaction.amount || transaction.amount <= 0) {
+                showToast.warning("Số tiền phải > 0");
+                return;
+              }
+              try {
+                const res = await createCashTxRepo.mutateAsync({
+                  type: transaction.type,
+                  amount: transaction.amount,
+                  branchId: currentBranchId,
+                  paymentSourceId: transaction.paymentSourceId,
+                  date: transaction.date,
+                  notes: transaction.notes,
+                  category: transaction.category,
+                  recipient: transaction.recipient,
+                });
+                if (res?.ok) {
+                  // Optimistically update local state for immediate UI feedback
+                  setCashTransactions((prev) => [
+                    res.data as CashTransaction,
+                    ...prev,
+                  ]);
+                  const delta =
+                    transaction.type === "income"
+                      ? transaction.amount
+                      : -transaction.amount;
+                  await updatePaymentSourceBalanceRepo.mutateAsync({
+                    id: transaction.paymentSourceId,
+                    branchId: currentBranchId,
+                    delta,
+                  });
+                  setPaymentSources((prev) =>
+                    prev.map((ps) =>
+                      ps.id === transaction.paymentSourceId
+                        ? {
+                          ...ps,
+                          balance: {
+                            ...ps.balance,
+                            [currentBranchId]:
+                              (ps.balance[currentBranchId] || 0) + delta,
+                          },
+                        }
+                        : ps
+                    )
+                  );
+                  showToast.success("Đã thêm giao dịch sổ quỹ");
+                  setShowAddModal(false);
+                } else if (res?.error) {
+                  showToast.error(res.error.message || "Ghi giao dịch thất bại");
+                }
+              } catch (e: any) {
+                showToast.error(e?.message || "Lỗi không xác định");
+              }
+            }}
+          />
+        )}
+
+        {/* Edit Transaction Modal */}
+        {editingTransaction && (
+          <EditTransactionModal
+            transaction={editingTransaction}
+            onClose={() => setEditingTransaction(null)}
+            onSave={async (updatedData) => {
+              try {
+                const res = await updateCashTxRepo.mutateAsync({
+                  id: editingTransaction.id,
+                  ...updatedData,
+                });
+                if (res?.ok) {
+                  showToast.success("Đã cập nhật giao dịch");
+                  setEditingTransaction(null);
+                } else if (res?.error) {
+                  showToast.error(res.error.message || "Cập nhật thất bại");
+                }
+              } catch (e: any) {
+                showToast.error(e?.message || "Lỗi không xác định");
+              }
+            }}
+          />
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deletingTransaction && (
+          <DeleteConfirmModal
+            transaction={deletingTransaction}
+            onClose={() => setDeletingTransaction(null)}
+            onConfirm={async () => {
+              try {
+                const res = await deleteCashTxRepo.mutateAsync(
+                  deletingTransaction.id
+                );
+                if (res?.ok) {
+                  showToast.success("Đã xóa giao dịch");
+                  setDeletingTransaction(null);
+                } else if (res?.error) {
+                  showToast.error(res.error.message || "Xóa thất bại");
+                }
+              } catch (e: any) {
+                showToast.error(e?.message || "Lỗi không xác định");
+              }
+            }}
+          />
+        )}
       </div>
-    </div>
+    </>
   );
 };
+
 
 export default CashBook;

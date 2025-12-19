@@ -13,33 +13,8 @@ import {
 import { useUpdatePaymentSourceBalanceRepo } from "../../hooks/usePaymentSourcesRepository";
 import { supabase } from "../../supabaseClient";
 import { Plus, Search, Filter, Wallet, ArrowUpCircle, ArrowDownCircle, MoreVertical, Edit2, Trash2 } from "lucide-react";
-import { AddTransactionModal, EditTransactionModal, DeleteConfirmModal } from "./CashBook";
+import { AddTransactionModal, EditTransactionModal, DeleteConfirmModal, getCategoryLabel } from "./CashBookModals";
 
-// Helper function for category labels
-const getCategoryLabel = (category?: string) => {
-    const labels: Record<string, string> = {
-        sale_income: "Bán hàng",
-        service_income: "Dịch vụ",
-        other_income: "Thu khác",
-        inventory_purchase: "Mua hàng",
-        salary: "Lương nhân viên",
-        employee_advance: "Ứng lương",
-        loan_payment: "Trả nợ vay",
-        debt_collection: "Thu nợ khách hàng",
-        debt_payment: "Trả nợ nhà cung cấp",
-        sale_refund: "Hoàn trả",
-        other_expense: "Chi khác",
-        outsourcing: "Gia công ngoài",
-        service_deposit: "Đặt cọc dịch vụ",
-        general_income: "Thu chung",
-        general_expense: "Chi chung",
-        supplier_payment: "Chi trả NCC",
-        utilities: "Điện nước",
-        rent: "Tiền thuê mặt bằng",
-        service_cost: "Giá vốn dịch vụ",
-    };
-    return category ? labels[category] || category : "--";
-};
 
 export const CashBookMobile: React.FC = () => {
     const {
@@ -380,28 +355,26 @@ export const CashBookMobile: React.FC = () => {
                                     </span>
                                 </div>
                             </div>
-                            {(tx.notes || (tx as any).recipient) && (
-                                <div className="mt-3 pt-3 border-t border-slate-800 flex justify-between items-end">
-                                    <p className="text-sm text-slate-300 line-clamp-2 flex-1 mr-2">
-                                        {(tx as any).recipient && <span className="font-medium text-blue-400 mr-1">{(tx as any).recipient}:</span>}
-                                        {tx.notes || (tx as any).description}
-                                    </p>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setEditingTransaction(tx)}
-                                            className="p-2 bg-slate-800 rounded-lg text-blue-400"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => setDeletingTransaction(tx)}
-                                            className="p-2 bg-slate-800 rounded-lg text-red-400"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
+                            <div className="mt-3 pt-3 border-t border-slate-800 flex justify-between items-center">
+                                <p className="text-sm text-slate-300 line-clamp-1 flex-1 mr-2">
+                                    {(tx as any).recipient && <span className="font-medium text-blue-400 mr-1">{(tx as any).recipient}:</span>}
+                                    {tx.notes || (tx as any).description || <span className="italic text-slate-500">Không có ghi chú</span>}
+                                </p>
+                                <div className="flex gap-2 shrink-0">
+                                    <button
+                                        onClick={() => setEditingTransaction(tx)}
+                                        className="p-2 bg-slate-800 rounded-lg text-blue-400 hover:bg-slate-700 active:scale-95 transition-all"
+                                    >
+                                        <Edit2 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => setDeletingTransaction(tx)}
+                                        className="p-2 bg-slate-800 rounded-lg text-red-400 hover:bg-slate-700 active:scale-95 transition-all"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     ))
                 )}

@@ -573,95 +573,104 @@ export const SettingsManager = () => {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="border-b border-slate-200 dark:border-slate-700 -mx-4 px-4 md:mx-0 md:px-0">
-        <div className="flex gap-2 md:gap-4 overflow-x-auto pb-px">
-          {[
-            {
-              id: "general",
-              label: "Thông tin chung",
-              shortLabel: "Thông tin",
-              icon: (
-                <Store
-                  className="w-3.5 h-3.5 md:w-4 md:h-4"
-                  aria-hidden="true"
-                />
-              ),
-            },
-            {
-              id: "branding",
-              label: "Thương hiệu",
-              shortLabel: "Thương hiệu",
-              icon: (
-                <Palette
-                  className="w-3.5 h-3.5 md:w-4 md:h-4"
-                  aria-hidden="true"
-                />
-              ),
-            },
-            {
-              id: "banking",
-              label: "Ngân hàng",
-              shortLabel: "Ngân hàng",
-              icon: (
-                <Landmark
-                  className="w-3.5 h-3.5 md:w-4 md:h-4"
-                  aria-hidden="true"
-                />
-              ),
-            },
-            {
-              id: "invoice",
-              label: "Hóa đơn",
-              shortLabel: "Hóa đơn",
-              icon: (
-                <FileText
-                  className="w-3.5 h-3.5 md:w-4 md:h-4"
-                  aria-hidden="true"
-                />
-              ),
-            },
-            {
-              id: "security",
-              label: "Bảo mật",
-              shortLabel: "Bảo mật",
-              icon: (
-                <Shield
-                  className="w-3.5 h-3.5 md:w-4 md:h-4"
-                  aria-hidden="true"
-                />
-              ),
-            },
-            ...(hasRole(["owner"])
-              ? [
+      {/* Tabs Navigation */}
+      <div>
+        {/* Mobile View: Dropdown */}
+        <div className="md:hidden mb-4">
+          <label htmlFor="tabs" className="sr-only">
+            Chọn mục cài đặt
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              {(() => {
+                const currentTab = [
+                  { id: "general", icon: <Store className="w-5 h-5 text-slate-500" /> },
+                  { id: "branding", icon: <Palette className="w-5 h-5 text-slate-500" /> },
+                  { id: "banking", icon: <Landmark className="w-5 h-5 text-slate-500" /> },
+                  { id: "invoice", icon: <FileText className="w-5 h-5 text-slate-500" /> },
+                  { id: "security", icon: <Shield className="w-5 h-5 text-slate-500" /> },
+                  { id: "staff", icon: <Users className="w-5 h-5 text-slate-500" /> },
+                ].find((t) => t.id === activeTab);
+                return currentTab?.icon;
+              })()}
+            </div>
+            <select
+              id="tabs"
+              name="tabs"
+              className="block w-full pl-10 pr-10 py-3 text-base border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm appearance-none"
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value as any)}
+            >
+              <option value="general">Thông tin chung</option>
+              <option value="branding">Thương hiệu</option>
+              <option value="banking">Ngân hàng</option>
+              <option value="invoice">Hóa đơn</option>
+              <option value="security">Bảo mật</option>
+              {hasRole(["owner"]) && <option value="staff">Nhân viên</option>}
+            </select>
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop View: Tabs */}
+        <div className="hidden md:block border-b border-slate-200 dark:border-slate-700">
+          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+            {[
+              {
+                id: "general",
+                label: "Thông tin chung",
+                icon: <Store className="w-4 h-4" />,
+              },
+              {
+                id: "branding",
+                label: "Thương hiệu",
+                icon: <Palette className="w-4 h-4" />,
+              },
+              {
+                id: "banking",
+                label: "Ngân hàng",
+                icon: <Landmark className="w-4 h-4" />,
+              },
+              {
+                id: "invoice",
+                label: "Hóa đơn",
+                icon: <FileText className="w-4 h-4" />,
+              },
+              {
+                id: "security",
+                label: "Bảo mật",
+                icon: <Shield className="w-4 h-4" />,
+              },
+              ...(hasRole(["owner"])
+                ? [
                   {
                     id: "staff",
                     label: "Nhân viên",
-                    shortLabel: "Nhân viên",
-                    icon: (
-                      <Users
-                        className="w-3.5 h-3.5 md:w-4 md:h-4"
-                        aria-hidden="true"
-                      />
-                    ),
+                    icon: <Users className="w-4 h-4" />,
                   },
                 ]
-              : []),
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`px-2.5 py-2 md:px-4 md:py-3 text-xs md:text-sm font-medium border-b-2 transition-colors inline-flex items-center gap-1.5 md:gap-2 whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "border-blue-600 text-blue-600 dark:text-blue-400"
-                  : "border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-              }`}
-            >
-              {tab.icon}
-              <span className="hidden sm:inline">{tab.label}</span>
-              <span className="inline sm:hidden">{tab.shortLabel}</span>
-            </button>
-          ))}
+                : []),
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                className={`
+                  whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors
+                  ${activeTab === tab.id
+                    ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                    : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300"
+                  }
+                `}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </nav>
         </div>
       </div>
 
@@ -832,11 +841,10 @@ export const SettingsManager = () => {
                 <div className="flex items-start gap-4">
                   <div className="flex-1">
                     <label
-                      className={`flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors ${
-                        isOwner
-                          ? "cursor-pointer"
-                          : "opacity-50 cursor-not-allowed"
-                      }`}
+                      className={`flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors ${isOwner
+                        ? "cursor-pointer"
+                        : "opacity-50 cursor-not-allowed"
+                        }`}
                     >
                       <Upload className="w-4 h-4 md:w-5 md:h-5 text-slate-500" />
                       <span className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
@@ -890,11 +898,10 @@ export const SettingsManager = () => {
                 <div className="flex items-start gap-4">
                   <div className="flex-1">
                     <label
-                      className={`flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors ${
-                        isOwner
-                          ? "cursor-pointer"
-                          : "opacity-50 cursor-not-allowed"
-                      }`}
+                      className={`flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors ${isOwner
+                        ? "cursor-pointer"
+                        : "opacity-50 cursor-not-allowed"
+                        }`}
                     >
                       <ImageIcon className="w-4 h-4 md:w-5 md:h-5 text-slate-500" />
                       <span className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
