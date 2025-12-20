@@ -298,6 +298,35 @@ export function ServiceManagerMobile({
     }, 2000);
   }, [isCreating, onCreateWorkOrder]);
 
+  // Filter work orders by date first
+  const dateFilteredWorkOrders = useMemo(() => {
+    const NOW = new Date();
+    const startOfToday = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
+
+    return workOrders.filter(w => {
+      if (!w.creationDate) return false;
+      const date = new Date(w.creationDate);
+
+      switch (dateFilter) {
+        case "today":
+          return date >= startOfToday;
+        case "week": {
+          const sevenDaysAgo = new Date(NOW);
+          sevenDaysAgo.setDate(NOW.getDate() - 7);
+          return date >= sevenDaysAgo;
+        }
+        case "month": {
+          const thirtyDaysAgo = new Date(NOW);
+          thirtyDaysAgo.setDate(NOW.getDate() - 30);
+          return date >= thirtyDaysAgo;
+        }
+        case "all":
+        default:
+          return true;
+      }
+    });
+  }, [workOrders, dateFilter]);
+
   // Optimized KPI Calculation - Single pass
   const kpis = useMemo(() => {
     let tiepNhan = 0;
@@ -307,7 +336,7 @@ export function ServiceManagerMobile({
     let doanhThu = 0;
     let loiNhuan = 0;
 
-    workOrders.forEach(w => {
+    dateFilteredWorkOrders.forEach(w => {
       // Count status
       switch (w.status) {
         case "Tiếp nhận": tiepNhan++; break;
@@ -317,27 +346,37 @@ export function ServiceManagerMobile({
       }
 
       // Calculate Revenue & Profit for paid orders
-      if (w.paymentStatus === "paid") {
-        const total = w.total || 0;
-        doanhThu += total;
+      if (w.paymentStatus === "paid" || (w.paymentStatus === "partial" && (w.totalPaid || 0) > 0)) {
+        // Fix: Use totalPaid for partial payments, total for fully paid
+        // Actually for revenue typically we want realized revenue (cash in)
+        // But the previous code used w.total. Let's stick to w.total for consistency with desktop 
+        // if desktop uses total. But wait, previous mobile code used w.total ONLY if paid.
+        // Let's stick to previous logic: only count if "paid".
+        // MODIFY: Also count if partial? The user screenshot shows "paid" icon.
 
-        // Calculate costs
-        const partsCost = w.partsUsed?.reduce(
-          (s, p) => s + (p.costPrice || 0) * (p.quantity || 1),
-          0
-        ) || 0;
+        // Reverting to previous logic strictly but ensuring we use the date filtered list
+        if (w.paymentStatus === "paid") {
+          const total = w.total || 0;
+          doanhThu += total;
 
-        const servicesCost = w.additionalServices?.reduce(
-          (s, svc) => s + (svc.costPrice || 0) * (svc.quantity || 1),
-          0
-        ) || 0;
+          // Calculate costs
+          const partsCost = w.partsUsed?.reduce(
+            (s, p) => s + (p.costPrice || 0) * (p.quantity || 1),
+            0
+          ) || 0;
 
-        loiNhuan += (total - partsCost - servicesCost);
+          const servicesCost = w.additionalServices?.reduce(
+            (s, svc) => s + (svc.costPrice || 0) * (svc.quantity || 1),
+            0
+          ) || 0;
+
+          loiNhuan += (total - partsCost - servicesCost);
+        }
       }
     });
 
     return { tiepNhan, dangSua, daHoanThanh, traMay, doanhThu, loiNhuan };
-  }, [workOrders]);
+  }, [dateFilteredWorkOrders]);
 
   // Get date label
   const getDateLabel = () => {
@@ -357,7 +396,7 @@ export function ServiceManagerMobile({
 
   // Filter work orders
   const filteredWorkOrders = useMemo(() => {
-    let filtered = workOrders;
+    let filtered = dateFilteredWorkOrders;
 
     // Status filter
     if (statusFilter !== "all") {
@@ -381,7 +420,7 @@ export function ServiceManagerMobile({
       const dateB = new Date(b.creationDate || 0).getTime();
       return dateB - dateA;
     });
-  }, [workOrders, statusFilter, searchQuery]);
+  }, [dateFilteredWorkOrders, statusFilter, searchQuery]);
 
   const canDeleteWorkOrder = canDo(profile?.role, "work_order.delete");
 

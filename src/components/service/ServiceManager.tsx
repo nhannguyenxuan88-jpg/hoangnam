@@ -1165,12 +1165,19 @@ export default function ServiceManager() {
       );
       const technicianName = technician?.name || "";
 
-      // If this is a NEW work order
+      let finalOrderId = "";
+      let isNew = false;
+      let finalOrderData: WorkOrder | null = null;
+
+      // 1. SAVE WORK ORDER (Blocking operation - must succeed first)
       if (!editingOrder?.id) {
+        // --- NEW ORDER ---
+        isNew = true;
         const orderId = `${storeSettings?.work_order_prefix || "SC"
           }-${Date.now()}`;
+        finalOrderId = orderId;
 
-        const responseData = await createWorkOrderAtomicAsync({
+        await createWorkOrderAtomicAsync({
           id: orderId,
           customerName: customer.name,
           customerPhone: customer.phone,
@@ -1198,7 +1205,7 @@ export default function ServiceManager() {
           creationDate: new Date().toISOString(),
         } as any);
 
-        const finalOrder: WorkOrder = {
+        finalOrderData = {
           id: orderId,
           customerName: customer.name,
           customerPhone: customer.phone,
@@ -1224,84 +1231,12 @@ export default function ServiceManager() {
           creationDate: new Date().toISOString(),
         };
 
-        // Update vehicle currentKm and maintenance records if km was entered
-        if (currentKm > 0 && customer?.id && vehicle?.id) {
-          await updateVehicleKmAndMaintenance(
-            customer,
-            vehicle.id,
-            currentKm,
-            parts,
-            additionalServices,
-            issueDescription
-          );
-        }
-
-        // Auto-create customer debt if status is "Trả máy" and there's remaining amount
-        if (status === "Trả máy" && remainingAmount > 0) {
-          await createCustomerDebtIfNeeded(
-            finalOrder,
-            remainingAmount,
-            total,
-            totalPaid
-          );
-        }
-
-        // 🔔 Tạo thông báo cho owner khi nhân viên tạo phiếu mới
-        const createdByName =
-          profile?.name || profile?.full_name || profile?.email || "Nhân viên";
-        await createWorkOrderNotification(
-          orderId,
-          customer.name,
-          vehicle?.model || "",
-          vehicle?.licensePlate || "",
-          total,
-          createdByName
-        );
-
-        // Cập nhật totalSpent và visitCount cho khách hàng
-        // Luôn cập nhật visitCount, chỉ cộng totalSpent nếu total > 0
-        if (customer.phone) {
-          try {
-            // Chờ một chút để đảm bảo khách hàng đã được tạo trong DB bởi RPC
-            await new Promise((resolve) => setTimeout(resolve, 500));
-
-            // Tìm khách hàng theo phone (luôn đáng tin cậy hơn ID local)
-            const { data: currentCustomer } = await supabase
-              .from("customers")
-              .select("id, totalSpent, visitCount")
-              .eq("phone", customer.phone)
-              .single();
-
-            if (currentCustomer) {
-              const currentTotal = currentCustomer?.totalSpent || 0;
-              const currentVisits = currentCustomer?.visitCount || 0;
-
-              await supabase
-                .from("customers")
-                .update({
-                  totalSpent: total > 0 ? currentTotal + total : currentTotal,
-                  visitCount: currentVisits + 1,
-                  lastVisit: new Date().toISOString(),
-                })
-                .eq("id", currentCustomer.id);
-
-              console.log(
-                `[WorkOrder] Updated customer ${customer.name}: totalSpent ${currentTotal} + ${total}, visits ${currentVisits} + 1`
-              );
-            } else {
-              console.warn(
-                `[WorkOrder] Customer not found in DB for update: ${customer.name} (${customer.phone})`
-              );
-            }
-          } catch (err) {
-            console.error("[WorkOrder] Error updating customer stats:", err);
-          }
-        }
-
         showToast.success("Tạo phiếu sửa chữa thành công!");
       } else {
-        // Update existing work order
-        const responseData = await updateWorkOrderAtomicAsync({
+        // --- UPDATE ORDER ---
+        finalOrderId = editingOrder.id;
+
+        await updateWorkOrderAtomicAsync({
           id: editingOrder.id,
           customerName: customer.name,
           customerPhone: customer.phone,
@@ -1328,7 +1263,7 @@ export default function ServiceManager() {
           remainingAmount: remainingAmount,
         } as any);
 
-        const finalOrder: WorkOrder = {
+        finalOrderData = {
           ...editingOrder,
           customerName: customer.name,
           customerPhone: customer.phone,
@@ -1351,58 +1286,112 @@ export default function ServiceManager() {
           remainingAmount: remainingAmount,
         };
 
-        // Update vehicle currentKm and maintenance records if km was entered
-        if (currentKm > 0 && customer?.id && vehicle?.id) {
-          await updateVehicleKmAndMaintenance(
-            customer,
-            vehicle.id,
-            currentKm,
-            parts,
-            additionalServices,
-            issueDescription
-          );
-        }
-
-        // Auto-create customer debt if status is "Trả máy" and there's remaining amount
-        if (status === "Trả máy" && remainingAmount > 0) {
-          await createCustomerDebtIfNeeded(
-            finalOrder,
-            remainingAmount,
-            total,
-            totalPaid
-          );
-        }
-
-        // Cập nhật totalSpent cho khách hàng khi cập nhật phiếu (nếu total thay đổi)
-        if (customer.id && editingOrder && editingOrder.total !== total) {
-          try {
-            const { data: currentCustomer } = await supabase
-              .from("customers")
-              .select("totalSpent")
-              .eq("id", customer.id)
-              .single();
-
-            const currentTotal = currentCustomer?.totalSpent || 0;
-            const oldTotal = editingOrder.total || 0;
-            const newTotalSpent = currentTotal - oldTotal + total;
-
-            await supabase
-              .from("customers")
-              .update({
-                totalSpent: Math.max(0, newTotalSpent),
-                lastVisit: new Date().toISOString(),
-              })
-              .eq("id", customer.id);
-
-            console.log(
-              `[WorkOrder] Updated customer ${customer.name}: totalSpent ${currentTotal} - ${oldTotal} + ${total} = ${newTotalSpent}`
-            );
-          } catch (err) {
-            console.error("[WorkOrder] Error updating customer stats:", err);
-          }
-        }
-
         showToast.success("Cập nhật phiếu sửa chữa thành công!");
+      }
+
+      // 2. PARALLEL BACKGROUND TASKS (Fire and forget from user perspective)
+      // We don't await this block to block the close modal action, 
+      // but we wrap in try-catch to ensure no unhandled promise rejections if we wanted to
+      // or just trust the individual error handling.
+      if (finalOrderData) {
+        const orderForAsync = finalOrderData; // Capture for closure
+
+        // Execute auxiliary tasks in parallel
+        Promise.all([
+          // Task A: Update Vehicle KM & Maintenance
+          (async () => {
+            if (currentKm > 0 && customer?.id && vehicle?.id) {
+              await updateVehicleKmAndMaintenance(
+                customer,
+                vehicle.id,
+                currentKm,
+                parts,
+                additionalServices,
+                issueDescription
+              );
+            }
+          })(),
+
+          // Task B: Create Debt if needed
+          (async () => {
+            if (status === "Trả máy" && remainingAmount > 0) {
+              await createCustomerDebtIfNeeded(
+                orderForAsync,
+                remainingAmount,
+                total,
+                totalPaid
+              );
+            }
+          })(),
+
+          // Task C: Create Notification (only for new orders)
+          (async () => {
+            if (isNew) {
+              const createdByName =
+                profile?.name || profile?.full_name || profile?.email || "Nhân viên";
+              await createWorkOrderNotification(
+                finalOrderId,
+                customer.name,
+                vehicle?.model || "",
+                vehicle?.licensePlate || "",
+                total,
+                createdByName
+              );
+            }
+          })(),
+
+          // Task D: Update Customer Stats (Total Spent)
+          (async () => {
+            if (customer.phone) {
+              try {
+                // Short delay to ensure RPC triggered DB updates/triggers have settled if any
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                const { data: currentCustomer } = await supabase
+                  .from("customers")
+                  .select("id, totalSpent, visitCount")
+                  .eq("phone", customer.phone)
+                  .single();
+
+                if (currentCustomer) {
+                  const currentTotal = currentCustomer?.totalSpent || 0;
+                  const currentVisits = currentCustomer?.visitCount || 0;
+
+                  let newTotalSpent = currentTotal;
+                  let newVisits = currentVisits;
+
+                  if (isNew) {
+                    // New order: add total and increment visit
+                    newTotalSpent = total > 0 ? currentTotal + total : currentTotal;
+                    newVisits = currentVisits + 1;
+                  } else if (editingOrder && editingOrder.total !== total) {
+                    // Update order: adjust total
+                    const oldTotal = editingOrder.total || 0;
+                    newTotalSpent = Math.max(0, currentTotal - oldTotal + total);
+                    // visit count doesn't change on update usually, or we assume correct
+                  }
+
+                  if (newTotalSpent !== currentTotal || newVisits !== currentVisits) {
+                    await supabase
+                      .from("customers")
+                      .update({
+                        totalSpent: newTotalSpent,
+                        visitCount: newVisits,
+                        lastVisit: new Date().toISOString(),
+                      })
+                      .eq("id", currentCustomer.id);
+
+                    console.log(`[WorkOrder] Updated stats for ${customer.name}`);
+                  }
+                }
+              } catch (err) {
+                console.error("[WorkOrder] Error updating customer stats:", err);
+              }
+            }
+          })()
+        ]).catch(err => {
+          console.error("❌ Error in background parallel tasks:", err);
+        });
       }
 
       setShowMobileModal(false);
