@@ -103,6 +103,7 @@ export interface CartItem {
   sellingPrice: number; // Final unit price after selecting retail/wholesale
   stockSnapshot: number; // Stock at time added for validation
   discount?: number; // Per-line discount (absolute)
+  isService?: boolean; // Mark as service item to skip stock validation
 }
 
 export interface Sale {

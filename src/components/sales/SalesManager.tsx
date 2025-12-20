@@ -1539,6 +1539,7 @@ const SalesManager: React.FC = () => {
         sellingPrice: service.price,
         stockSnapshot: 999, // Virtual stock for services
         discount: 0,
+        isService: true, // Mark as service to skip stock validation in RPC
       };
 
       // Call RPC to create sale atomically
