@@ -37,6 +37,7 @@ import {
   type MaintenanceWarning,
 } from "../../utils/maintenanceReminder";
 import { WORK_ORDER_STATUS, type WorkOrderStatus } from "../../constants";
+import { NumberInput } from "../common/NumberInput";
 
 interface WorkOrderMobileModalProps {
   isOpen: boolean;
@@ -371,6 +372,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     Array<{
       id: string;
       name: string;
+      quantity: number;
       costPrice: number;
       sellingPrice: number;
     }>
@@ -378,6 +380,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     workOrder?.additionalServices?.map((s) => ({
       id: s.id || `srv-${Date.now()}-${Math.random()}`,
       name: s.description || "",
+      quantity: s.quantity || 1,
       costPrice: s.costPrice || 0,
       sellingPrice: s.price || 0,
     })) || []
@@ -536,7 +539,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   }, [selectedParts]);
 
   const servicesTotal = useMemo(() => {
-    return additionalServices.reduce((sum, s) => sum + s.sellingPrice, 0);
+    return additionalServices.reduce((sum, s) => sum + s.sellingPrice * s.quantity, 0);
   }, [additionalServices]);
 
   const subtotal = partsTotal + servicesTotal + laborCost;
@@ -642,12 +645,13 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   };
 
   const handleAddService = () => {
-    if (!newServiceName || newServicePrice <= 0) return;
+    if (!newServiceName) return;
     setAdditionalServices([
       ...additionalServices,
       {
         id: `srv-${Date.now()}`,
         name: newServiceName,
+        quantity: newServiceQuantity,
         costPrice: newServiceCost,
         sellingPrice: newServicePrice,
       },
@@ -655,6 +659,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     setNewServiceName("");
     setNewServiceCost(0);
     setNewServicePrice(0);
+    setNewServiceQuantity(1);
     setShowAddService(false);
   };
 
@@ -780,7 +785,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     const transformedServices = additionalServices.map((s) => ({
       id: s.id,
       description: s.name,
-      quantity: 1,
+      quantity: s.quantity,
       price: s.sellingPrice, // Map sellingPrice to price
       costPrice: s.costPrice,
     }));
@@ -1724,9 +1729,11 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                           </button>
                         </div>
                         <div className="mt-3 pt-3 border-t border-slate-700/30 flex justify-between items-center">
-                          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Thành tiền</span>
+                          <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">
+                            SL: {service.quantity} x {formatCurrency(service.sellingPrice)}
+                          </span>
                           <span className="text-sm font-bold text-orange-400">
-                            {formatCurrency(service.sellingPrice)}
+                            {formatCurrency(service.sellingPrice * service.quantity)}
                           </span>
                         </div>
                       </div>
@@ -2454,18 +2461,14 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                         Đơn giá (Báo khách):
                       </label>
                       <div className="relative">
-                        <input
-                          type="text"
-                          value={formatNumberWithDots(newServicePrice)}
-                          onChange={(e) =>
-                            setNewServicePrice(
-                              parseFormattedNumber(e.target.value)
-                            )
-                          }
+                        <NumberInput
+                          value={newServicePrice}
+                          onChange={(val: number) => setNewServicePrice(val)}
+                          allowNegative={true}
                           placeholder="0"
-                          className="w-full px-3 py-3 pr-8 bg-gradient-to-br from-[#009ef7]/10 to-purple-600/10 border-2 border-[#009ef7] rounded-lg text-white text-sm font-semibold focus:border-[#0077c7] focus:outline-none transition-colors"
+                          className="w-full px-3 py-3 pr-8 bg-[#151521] border-2 border-[#009ef7] rounded-lg text-white text-sm font-semibold focus:border-[#0077c7] focus:outline-none transition-colors"
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#009ef7] text-xs font-bold">
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#009ef7] text-xs font-bold pointer-events-none">
                           đ
                         </span>
                       </div>
@@ -2490,7 +2493,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
               <div className="p-4 border-t border-slate-700">
                 <button
                   onClick={handleAddService}
-                  disabled={!newServiceName.trim() || newServicePrice < 0}
+                  disabled={!newServiceName.trim()}
                   className="w-full py-4 bg-gradient-to-r from-[#009ef7] to-purple-600 hover:from-[#0077c7] hover:to-purple-700 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-bold text-sm rounded-lg transition-all shadow-lg"
                 >
                   LƯU VÀO PHIẾU
