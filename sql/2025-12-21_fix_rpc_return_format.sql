@@ -404,8 +404,8 @@ BEGIN
 
       -- 3. Create inventory transaction (Stock out)
       INSERT INTO inventory_transactions(
-        id, type, partId, partName, quantity, date, unitPrice, totalPrice,
-        branchId, notes, workOrderId
+        id, type, "partId", "partName", quantity, date, "unitPrice", "totalPrice",
+        "branchId", notes, "workOrderId"
       )
       VALUES (
         gen_random_uuid()::text,

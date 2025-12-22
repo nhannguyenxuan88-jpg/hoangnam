@@ -170,15 +170,6 @@ const SettingsPage = () => (
   </Suspense>
 );
 
-function useFakeAuth() {
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    // Không yêu cầu phân quyền: luôn coi là đăng nhập thành công (offline/dev)
-    setReady(true);
-  }, []);
-  return { ready };
-}
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -340,9 +331,6 @@ const MainLayout: React.FC = () => {
 };
 
 export default function App() {
-  const { ready } = useFakeAuth();
-  if (!ready) return null;
-
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
