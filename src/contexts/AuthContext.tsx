@@ -67,12 +67,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useState<AuthenticatorAssuranceLevels | null>(null);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | undefined;
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        loadUserProfile(session.user.id);
+        // Set timeout to prevent infinite loading
+        timeoutId = setTimeout(() => {
+          console.warn('Profile loading timeout - forcing loading to false');
+          setLoading(false);
+        }, 10000); // 10 second timeout
+
+        loadUserProfile(session.user.id).finally(() => {
+          if (timeoutId) clearTimeout(timeoutId);
+        });
       } else {
         setLoading(false);
       }
@@ -97,7 +107,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(handleAuthEvent);
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
   const loadUserProfile = async (userId: string) => {
@@ -127,13 +140,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (error) throw error;
       if (!data) {
-        setProfile(null);
+        // Nếu không có profile, tạo một profile mặc định để tránh stuck
+        console.warn('No profile found for user, creating default profile');
+        const defaultProfile: UserProfile = {
+          id: userId,
+          email: user?.email || 'unknown',
+          role: 'staff', // default role
+          created_at: new Date().toISOString(),
+        };
+        setProfile(defaultProfile);
       } else {
         setProfile(data as any);
       }
     } catch (error) {
       console.error("Error loading user profile:", error);
-      setProfile(null);
+      // Tạo profile mặc định thay vì set null để tránh stuck
+      const defaultProfile: UserProfile = {
+        id: userId,
+        email: user?.email || 'unknown',
+        role: 'staff',
+        created_at: new Date().toISOString(),
+      };
+      setProfile(defaultProfile);
       setError("Không thể tải hồ sơ người dùng");
     } finally {
       setLoading(false);
