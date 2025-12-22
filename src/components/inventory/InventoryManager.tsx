@@ -1334,6 +1334,22 @@ const GoodsReceiptModal: React.FC<{
                               {part.category || "Chưa phân loại"}
                             </span>
                           </div>
+                          {/* Price Information */}
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <div className="flex items-center gap-1">
+                              <span className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">Nhập:</span>
+                              <span className="text-[10px] font-semibold text-orange-600 dark:text-orange-400">
+                                {formatCurrency(part.costPrice?.[currentBranchId] || 0)}
+                              </span>
+                            </div>
+                            <span className="text-slate-300 dark:text-slate-600">•</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">Bán:</span>
+                              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                {formatCurrency(part.retailPrice?.[currentBranchId] || 0)}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                         <svg
                           className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
