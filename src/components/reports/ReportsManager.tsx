@@ -243,6 +243,8 @@ const ReportsManager: React.FC = () => {
       return woDate >= start && woDate <= end && isPaid;
     });
 
+
+
     // Helper function to get cost price from map or fallback
     const getPartCost = (partId: string, sku: string, fallbackCost: number) => {
       return (
@@ -283,10 +285,20 @@ const ReportsManager: React.FC = () => {
         const cost = getPartCost(partId, sku, p.costPrice || p.costprice || 0);
         return c + cost * (p.quantity || 0);
       }, 0);
-      // Thêm giá vốn dịch vụ gia công bên ngoài
-      const services = wo.additionalServices || wo.additionalservices || [];
-      const servicesCost = services.reduce((c: number, s: any) => {
-        return c + (s.costPrice || s.costprice || 0) * (s.quantity || 0);
+      // ✅ FIX: Ưu tiên field có dữ liệu thực (length > 0), không chỉ truthy
+      // Vì empty array [] vẫn là truthy trong JS nên phải check length
+      const servicesFromCamelCase = wo.additionalServices;
+      const servicesFromLowercase = wo.additionalservices;
+      const servicesFromSnakeCase = wo.additional_services;
+      const services =
+        (Array.isArray(servicesFromCamelCase) && servicesFromCamelCase.length > 0) ? servicesFromCamelCase :
+          (Array.isArray(servicesFromLowercase) && servicesFromLowercase.length > 0) ? servicesFromLowercase :
+            (Array.isArray(servicesFromSnakeCase) && servicesFromSnakeCase.length > 0) ? servicesFromSnakeCase :
+              [];
+      const servicesCost = (Array.isArray(services) ? services : []).reduce((c: number, s: any) => {
+        // Hỗ trợ nhiều biến thể tên field từ database
+        const rawCost = s.costPrice ?? s.costprice ?? s.cost_price ?? s.giaNhap ?? s.gia_nhap ?? 0;
+        return c + (Number(rawCost) || 0) * (Number(s.quantity) || 0);
       }, 0);
       return sum + partsCost + servicesCost;
     }, 0);
@@ -370,31 +382,23 @@ const ReportsManager: React.FC = () => {
         const cost = getPartCost(partId, sku, p.costPrice || p.costprice || 0);
         return c + cost * (p.quantity || 0);
       }, 0);
-      // Thêm giá vốn dịch vụ gia công bên ngoài
-      const services = wo.additionalServices || wo.additionalservices || [];
-      const servicesCost = services.reduce((c: number, s: any) => {
-        // Thử nhiều tên field có thể: costPrice, costprice, giaNhap, cost, purchasePrice
-        const cost = s.costPrice || s.costprice || s.giaNhap || s.cost || s.purchasePrice || 0;
-        return c + cost * (s.quantity || 0);
+      // ✅ FIX: Ưu tiên field có dữ liệu thực (length > 0), không chỉ truthy
+      const servicesFromCamelCase = wo.additionalServices;
+      const servicesFromLowercase = wo.additionalservices;
+      const servicesFromSnakeCase = wo.additional_services;
+      const services =
+        (Array.isArray(servicesFromCamelCase) && servicesFromCamelCase.length > 0) ? servicesFromCamelCase :
+          (Array.isArray(servicesFromLowercase) && servicesFromLowercase.length > 0) ? servicesFromLowercase :
+            (Array.isArray(servicesFromSnakeCase) && servicesFromSnakeCase.length > 0) ? servicesFromSnakeCase :
+              [];
+      const servicesCost = (Array.isArray(services) ? services : []).reduce((c: number, s: any) => {
+        // Hỗ trợ nhiều biến thể tên field từ database
+        const rawCost = s.costPrice ?? s.costprice ?? s.cost_price ?? s.giaNhap ?? s.gia_nhap ?? 0;
+        return c + (Number(rawCost) || 0) * (Number(s.quantity) || 0);
       }, 0);
-      
-      // Debug log cho ngày 23/12/2025
-      if (dateKey === '2025-12-23' && (partsCost > 0 || servicesCost > 0)) {
-        console.log(`[Debug 23/12] WO:`, wo.id, {
-          partsCost,
-          servicesCost,
-          totalCost: partsCost + servicesCost,
-          services: services.map((s: any) => ({
-            name: s.description || s.name,
-            costPrice: s.costPrice,
-            costprice: s.costprice,
-            giaNhap: s.giaNhap,
-            finalCost: s.costPrice || s.costprice || s.giaNhap || s.cost || s.purchasePrice || 0,
-            quantity: s.quantity
-          }))
-        });
-      }
-      
+
+
+
       const woCost = partsCost + servicesCost;
       const woTotal = wo.totalPaid || wo.totalpaid || wo.total || 0;
       dayData.workOrders.push(wo);
@@ -1271,11 +1275,11 @@ const ReportsManager: React.FC = () => {
                         <td className={`px-2 py-2 text-right text-xs font-black ${revenueReport.totalRevenue === 0 ? 'text-slate-300 dark:text-slate-600' : 'text-blue-600 dark:text-blue-400'}`}>
                           {formatCurrency(revenueReport.totalRevenue)}
                         </td>
-                        {/* Vốn SC (3) = 0 */}
-                        <td className="px-2 py-2 text-right text-xs text-slate-300 dark:text-slate-600">
-                          {formatCurrency(0)}
+                        {/* Vốn SC (3) - Tổng giá vốn dịch vụ gia công */}
+                        <td className={`px-2 py-2 text-right text-xs ${revenueReport.dailyReport.reduce((sum, d) => sum + d.servicesCost, 0) === 0 ? 'text-slate-300 dark:text-slate-600' : 'text-slate-900 dark:text-white'}`}>
+                          {formatCurrency(revenueReport.dailyReport.reduce((sum, d) => sum + d.servicesCost, 0))}
                         </td>
-                        {/* Công SC (4) = 0 */}
+                        {/* Công SC (4) = 0 - hiện tại chưa có dữ liệu công SC riêng */}
                         <td className="px-2 py-2 text-right text-xs text-slate-300 dark:text-slate-600">
                           {formatCurrency(0)}
                         </td>

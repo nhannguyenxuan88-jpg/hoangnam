@@ -238,12 +238,6 @@ export function Nav() {
               icon={<Cart className="w-4 h-4" />}
               label="Bán hàng"
             />
-            <NavLink
-              to="/delivery"
-              colorKey="violet"
-              icon={<Truck className="w-4 h-4" />}
-              label="Giao hàng"
-            />
             {can.viewInventory && (
               <NavLink
                 to="/inventory"

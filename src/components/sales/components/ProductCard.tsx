@@ -32,10 +32,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div
             onClick={() => !isOutOfStock && onAddToCart(part)}
             className={`group relative bg-white dark:bg-slate-800 rounded-xl border-2 transition-all duration-200 overflow-hidden ${isOutOfStock
-                    ? "border-slate-200 dark:border-slate-700 opacity-60 cursor-not-allowed"
-                    : inCart
-                        ? "border-blue-400 dark:border-blue-500 shadow-lg shadow-blue-500/20"
-                        : "border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-xl hover:shadow-blue-500/10 cursor-pointer active:scale-98"
+                ? "border-slate-200 dark:border-slate-700 opacity-60 cursor-not-allowed"
+                : inCart
+                    ? "border-blue-400 dark:border-blue-500 shadow-lg shadow-blue-500/20"
+                    : "border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-xl hover:shadow-blue-500/10 cursor-pointer active:scale-98"
                 }`}
         >
             {/* In Cart Indicator */}
@@ -65,7 +65,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 </div>
             )}
 
-            <div className="p-4 space-y-3">
+            <div className="p-3 md:p-4 space-y-2 md:space-y-3">
                 {/* Product Icon */}
                 <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg">
                     <Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -100,10 +100,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                         </span>
                         <span
                             className={`text-sm font-medium ${isOutOfStock
-                                    ? "text-red-600 dark:text-red-400"
-                                    : isLowStock
-                                        ? "text-amber-600 dark:text-amber-400"
-                                        : "text-green-600 dark:text-green-400"
+                                ? "text-red-600 dark:text-red-400"
+                                : isLowStock
+                                    ? "text-amber-600 dark:text-amber-400"
+                                    : "text-green-600 dark:text-green-400"
                                 }`}
                         >
                             Tồn: {stock}

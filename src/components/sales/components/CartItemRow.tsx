@@ -87,10 +87,10 @@ export const CartItemRow: React.FC<CartItemRowProps> = ({
 
                 {/* Item Total */}
                 <div className="text-right">
-                    <span className="text-base font-black text-white">
+                    <span className="text-base font-black text-slate-900 dark:text-white">
                         {formatCurrency(itemTotal)}
                     </span>
-                    <span className="text-xs text-white/80 ml-1">đ</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 ml-1">đ</span>
                 </div>
             </div>
         </div>

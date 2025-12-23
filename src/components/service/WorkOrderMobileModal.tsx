@@ -1735,24 +1735,45 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                             <div className="text-sm font-bold text-white truncate">
                               {service.name}
                             </div>
-                            <div className="mt-2 flex items-center gap-2">
-                              <span className="text-[10px] text-slate-500">Giá:</span>
-                              <input
-                                type="text"
-                                value={formatNumberWithDots(service.sellingPrice)}
-                                onChange={(e) => {
-                                  const newPrice = parseFormattedNumber(e.target.value);
-                                  setAdditionalServices(
-                                    additionalServices.map((s) =>
-                                      s.id === service.id
-                                        ? { ...s, sellingPrice: newPrice }
-                                        : s
-                                    )
-                                  );
-                                }}
-                                inputMode="numeric"
-                                className="w-24 px-2 py-1 bg-slate-800 border border-slate-700 rounded-lg text-orange-400 text-xs font-bold focus:border-blue-500 focus:outline-none transition-all"
-                              />
+                            <div className="mt-2 flex flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-slate-500 w-8">Bán:</span>
+                                <input
+                                  type="text"
+                                  value={formatNumberWithDots(service.sellingPrice)}
+                                  onChange={(e) => {
+                                    const newPrice = parseFormattedNumber(e.target.value);
+                                    setAdditionalServices(
+                                      additionalServices.map((s) =>
+                                        s.id === service.id
+                                          ? { ...s, sellingPrice: newPrice }
+                                          : s
+                                      )
+                                    );
+                                  }}
+                                  inputMode="numeric"
+                                  className="w-24 px-2 py-1 bg-slate-800 border border-slate-700 rounded-lg text-orange-400 text-xs font-bold focus:border-blue-500 focus:outline-none transition-all"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-slate-500 w-8">Vốn:</span>
+                                <input
+                                  type="text"
+                                  value={formatNumberWithDots(service.costPrice || 0)}
+                                  onChange={(e) => {
+                                    const newCost = parseFormattedNumber(e.target.value);
+                                    setAdditionalServices(
+                                      additionalServices.map((s) =>
+                                        s.id === service.id
+                                          ? { ...s, costPrice: newCost }
+                                          : s
+                                      )
+                                    );
+                                  }}
+                                  inputMode="numeric"
+                                  className="w-24 px-2 py-1 bg-slate-800 border border-slate-700 rounded-lg text-slate-400 text-xs font-bold focus:border-blue-500 focus:outline-none transition-all"
+                                />
+                              </div>
                             </div>
                           </div>
                           <button
