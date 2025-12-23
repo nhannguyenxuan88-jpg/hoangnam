@@ -28,6 +28,12 @@ const SalesManager = lazyImport(() => import("./components/sales/SalesManager"))
 const InventoryManager = lazyImport(
   () => import("./components/inventory/InventoryManager")
 );
+
+// Delivery Manager - Standalone page for delivery orders
+const DeliveryManager = lazyImport(() => import("./components/sales/DeliveryManager").then(m => ({ default: m.DeliveryManager })));
+
+// Delivery Test Page (for testing only)
+const DeliveryTest = lazyImport(() => import("./pages/DeliveryTest").then(m => ({ default: m.DeliveryTest })));
 const ServiceManager = lazyImport(
   () => import("./components/service/ServiceManager")
 );
@@ -71,6 +77,11 @@ const MigrationTool = lazyImport(() => import("./components/admin/MigrationTool"
 const SettingsManager = lazyImport(() =>
   import("./components/settings/SettingsManager").then((m) => ({
     default: m.SettingsManager,
+  }))
+);
+const StaffDashboard = lazyImport(() => 
+  import("./components/dashboard/StaffDashboard").then((m) => ({
+    default: m.StaffDashboard,
   }))
 );
 
@@ -169,6 +180,11 @@ const SettingsPage = () => (
     <SettingsManager />
   </Suspense>
 );
+const StaffDashboardPage = () => (
+  <Suspense fallback={<PageLoader />}>
+    <StaffDashboard />
+  </Suspense>
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -206,7 +222,17 @@ const MainLayout: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/staff-dashboard"
+            element={
+              <ProtectedRoute requiredRoles={["staff"]}>
+                <StaffDashboardPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/sales" element={<Sales />} />
+          <Route path="/delivery" element={<DeliveryManager />} />
+          <Route path="/delivery-test" element={<DeliveryTest />} />
           <Route
             path="/audit-logs"
             element={
