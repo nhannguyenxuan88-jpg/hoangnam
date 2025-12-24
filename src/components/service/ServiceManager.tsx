@@ -60,6 +60,7 @@ import { supabase } from "../../supabaseClient";
 import { WorkOrderMobileModal } from "../service/WorkOrderMobileModal";
 import WorkOrderModal from "../service/components/WorkOrderModal";
 import { ServiceManagerMobile } from "../service/ServiceManagerMobile";
+import PrintOrderPreviewModal from "../service-new/modals/PrintOrderPreviewModal";
 import StatusBadge from "../service/components/StatusBadge";
 import { getQuickStatusFilters } from "../service/components/QuickStatusFilters";
 import { getStatusSnapshotCards } from "../service/components/StatusSnapshotCards";
