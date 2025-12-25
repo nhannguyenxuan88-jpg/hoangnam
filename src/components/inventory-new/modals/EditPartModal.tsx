@@ -1,336 +1,304 @@
-﻿import React, { useState, useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { formatCurrency, formatDate } from '../../../utils/format';
-import { showToast } from '../../../utils/toast';
-import { supabase } from '../../../supabaseClient';
-import type { InventoryTransaction } from '../../../types';
-// Inventory History Modal Component
-const InventoryHistoryModal: React.FC<{
-  isOpen: boolean;
+﻿import React, { useState, useEffect } from "react";
+import { useCategories, useCreateCategory } from "../../../hooks/useCategories";
+import { showToast } from "../../../utils/toast";
+import FormattedNumberInput from "../../common/FormattedNumberInput";
+import { validatePriceAndQty } from "../../../utils/validation";
+import type { Part } from "../../../types";
+
+interface EditPartModalProps {
+  part: Part;
   onClose: () => void;
-  transactions: InventoryTransaction[];
-}> = ({ isOpen, onClose, transactions }) => {
-  const queryClient = useQueryClient();
-  const [activeTimeFilter, setActiveTimeFilter] = useState("7days");
-  const [customStartDate, setCustomStartDate] = useState(
-    formatDate(new Date(), true)
-  );
-  const [customEndDate, setCustomEndDate] = useState(
-    formatDate(new Date(), true)
-  );
-  const [searchTerm, setSearchTerm] = useState("");
+  onSave: (part: Partial<Part> & { id: string }) => void;
+  currentBranchId: string;
+}
 
-  const filteredTransactions = useMemo(() => {
-    // CHá»ˆ Láº¤Y GIAO Dá»ŠCH NHáº¬P KHO
-    let filtered = transactions.filter((t) => t.type === "Nháº­p kho");
-    const now = new Date();
+const EditPartModal: React.FC<EditPartModalProps> = ({
+  part,
+  onClose,
+  onSave,
+  currentBranchId,
+}) => {
+  const [formData, setFormData] = useState({
+    name: part.name,
+    category: part.category || "",
+    retailPrice: part.retailPrice?.[currentBranchId] || 0,
+    wholesalePrice: part.wholesalePrice?.[currentBranchId] || 0,
+    costPrice: part.costPrice?.[currentBranchId] || 0,
+    stock: part.stock?.[currentBranchId] || 0,
+  });
+  const { data: categories = [] } = useCategories();
+  const createCategory = useCreateCategory();
+  const [showInlineCat, setShowInlineCat] = useState(false);
+  const [inlineCatName, setInlineCatName] = useState("");
 
-    // Apply time filter
-    switch (activeTimeFilter) {
-      case "7days":
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter((t) => new Date(t.date) >= sevenDaysAgo);
-        break;
-      case "30days":
-        const thirtyDaysAgo = new Date(
-          now.getTime() - 30 * 24 * 60 * 60 * 1000
-        );
-        filtered = filtered.filter((t) => new Date(t.date) >= thirtyDaysAgo);
-        break;
-      case "thisMonth":
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        filtered = filtered.filter((t) => new Date(t.date) >= startOfMonth);
-        break;
-      case "custom":
-        filtered = filtered.filter((t) => {
-          const date = new Date(t.date);
-          return (
-            date >= new Date(customStartDate) && date <= new Date(customEndDate)
-          );
-        });
-        break;
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.name.trim()) {
+      showToast.warning("Vui lòng nhập tên sản phẩm");
+      return;
     }
 
-    // Apply search filter
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (t) =>
-          t.partName.toLowerCase().includes(q) ||
-          (t.notes && t.notes.toLowerCase().includes(q))
-      );
-    }
-
-    return filtered.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-  }, [
-    transactions,
-    activeTimeFilter,
-    customStartDate,
-    customEndDate,
-    searchTerm,
-  ]);
-
-  const totalAmount = useMemo(() => {
-    return filteredTransactions.reduce((sum, t) => sum + t.totalPrice, 0);
-  }, [filteredTransactions]);
-
-  if (!isOpen) return null;
+    onSave({
+      id: part.id,
+      name: formData.name.trim(),
+      category: formData.category.trim() || undefined,
+      stock: {
+        ...(part.stock || {}),
+        [currentBranchId]: formData.stock,
+      },
+      costPrice: {
+        ...(part.costPrice || {}),
+        [currentBranchId]: formData.costPrice,
+      },
+      retailPrice: {
+        ...(part.retailPrice || {}),
+        [currentBranchId]: formData.retailPrice,
+      },
+      wholesalePrice: {
+        ...(part.wholesalePrice || {}),
+        [currentBranchId]: formData.wholesalePrice,
+      },
+    });
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-lg w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-4">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-slate-200 dark:border-slate-700">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-            Lá»‹ch sá»­ nháº­p kho
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800 z-10">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            Chỉnh sửa sản phẩm
           </h2>
           <button
             onClick={onClose}
-            className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-2xl"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
           >
-            Ã—
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-          {/* Time Filter Buttons */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {[
-              { key: "7days", label: "7 ngÃ y qua" },
-              { key: "30days", label: "30 ngÃ y qua" },
-              { key: "thisMonth", label: "ThÃ¡ng nÃ y" },
-              { key: "custom", label: "TÃ¹y chá»n" },
-            ].map((filter) => (
-              <button
-                key={filter.key}
-                onClick={() => setActiveTimeFilter(filter.key)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTimeFilter === filter.key
-                  ? "bg-blue-600 text-white"
-                  : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
-                  }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Custom Date Range */}
-          {activeTimeFilter === "custom" && (
-            <div className="flex gap-4 mb-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Tá»« ngÃ y
-                </label>
-                <input
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Äáº¿n ngÃ y
-                </label>
-                <input
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Search */}
-          <div className="flex gap-4">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Tên sản phẩm <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
-              placeholder="NhÃ  cung cáº¥p, SKU, tÃªn phá»¥ tÃ¹ng..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+              required
             />
           </div>
-        </div>
 
-        {/* Summary */}
-        <div className="px-6 py-4 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-slate-600 dark:text-slate-400">
-              Tá»•ng sá»‘ phiáº¿u:{" "}
-              <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                {filteredTransactions.length}
-              </span>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-slate-600 dark:text-slate-400">
-                Tá»•ng giÃ¡ trá»‹
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Danh mục
+            </label>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <select
+                  value={formData.category}
+                  onChange={(e) =>
+                    setFormData({ ...formData, category: e.target.value })
+                  }
+                  className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                >
+                  <option value="">-- Chọn hoặc tạo mới --</option>
+                  {categories.map((c: any) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowInlineCat(true)}
+                  className="px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600"
+                  title="Thêm danh mục mới"
+                >
+                  +
+                </button>
               </div>
-              <div className="text-lg font-bold text-blue-600">
-                {formatCurrency(totalAmount)}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="flex-1 overflow-y-auto">
-          <table className="w-full">
-            <thead className="bg-slate-100 dark:bg-slate-700 sticky top-0">
-              <tr>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  NgÃ y
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  NhÃ  cung cáº¥p
-                </th>
-                <th className="text-left px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Ná»™i dung
-                </th>
-                <th className="text-right px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Sá»‘ tiá»n
-                </th>
-                <th className="text-center px-6 py-3 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Thao tÃ¡c
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-              {filteredTransactions.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="px-6 py-8 text-center text-slate-500"
+              {showInlineCat && (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const trimmed = inlineCatName.trim();
+                    if (!trimmed)
+                      return showToast.warning("Vui lòng nhập tên danh mục");
+                    try {
+                      const res = await createCategory.mutateAsync({
+                        name: trimmed,
+                      });
+                      setFormData({ ...formData, category: res.name });
+                      setInlineCatName("");
+                      setShowInlineCat(false);
+                    } catch (err: any) {
+                      showToast.error(err?.message || "Lỗi tạo danh mục");
+                    }
+                  }}
+                  className="flex gap-2"
+                >
+                  <input
+                    autoFocus
+                    type="text"
+                    value={inlineCatName}
+                    onChange={(e) => setInlineCatName(e.target.value)}
+                    placeholder="Nhập tên danh mục mới"
+                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-slate-100"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
                   >
-                    KhÃ´ng cÃ³ dá»¯ liá»‡u
-                  </td>
-                </tr>
-              ) : (
-                filteredTransactions.map((transaction) => (
-                  <tr
-                    key={transaction.id}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                    Lưu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowInlineCat(false);
+                      setInlineCatName("");
+                    }}
+                    className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-slate-900 dark:text-slate-100">
-                        {formatDate(new Date(transaction.date), false)}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {new Date(transaction.date).toLocaleTimeString(
-                          "vi-VN",
-                          { hour: "2-digit", minute: "2-digit" }
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-slate-900 dark:text-slate-100">
-                        {transaction.notes && transaction.notes.includes("NCC:")
-                          ? transaction.notes.split("NCC:")[1]?.trim() ||
-                          "ChÆ°a rÃµ"
-                          : "ChÆ°a rÃµ"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {transaction.partName}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        SL: {transaction.quantity}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        {formatCurrency(transaction.totalPrice)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => {
-                            // TODO: Implement edit functionality
-                            showToast.info("TÃ­nh nÄƒng Ä‘ang phÃ¡t triá»ƒn");
-                          }}
-                          className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded transition-colors"
-                          title="Chá»‰nh sá»­a"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={async () => {
-                            const confirmed = window.confirm(
-                              `Báº¡n cÃ³ cháº¯c muá»‘n xÃ³a giao dá»‹ch nháº­p "${transaction.partName}"?`
-                            );
-                            if (confirmed) {
-                              try {
-                                const { error } = await supabase
-                                  .from("inventory_transactions")
-                                  .delete()
-                                  .eq("id", transaction.id);
-
-                                if (error) throw error;
-
-                                showToast.success("ÄÃ£ xÃ³a giao dá»‹ch");
-                                queryClient.invalidateQueries({
-                                  queryKey: ["inventoryTransactions"],
-                                });
-                              } catch (err: any) {
-                                showToast.error(
-                                  `Lá»—i xÃ³a: ${err.message || "KhÃ´ng rÃµ"}`
-                                );
-                              }
-                            }
-                          }}
-                          className="p-1.5 text-red-400 hover:bg-red-500/20 rounded transition-colors"
-                          title="XÃ³a"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                    Hủy
+                  </button>
+                </form>
               )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
-          <div className="text-sm text-slate-600 dark:text-slate-400">
-            Hiá»ƒn thá»‹ {filteredTransactions.length} káº¿t quáº£
+            </div>
           </div>
-        </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Giá nhập
+              </label>
+              <input
+                type="number"
+                value={formData.costPrice || 0}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    costPrice: Number(e.target.value),
+                  })
+                }
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                min="0"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Giá bán lẻ
+              </label>
+              <input
+                type="number"
+                value={formData.retailPrice}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    retailPrice: Number(e.target.value),
+                  })
+                }
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                min="0"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Giá bán sỉ
+              </label>
+              <input
+                type="number"
+                value={formData.wholesalePrice}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    wholesalePrice: Number(e.target.value),
+                  })
+                }
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                min="0"
+              />
+            </div>
+          </div>
+
+          {/* Stock adjustment */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Tồn kho hiện tại
+            </label>
+            <input
+              type="number"
+              value={formData.stock}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  stock: Number(e.target.value),
+                })
+              }
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+              min="0"
+            />
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Số lượng tồn kho tại chi nhánh hiện tại
+            </p>
+          </div>
+
+          {/* Info */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="text-sm text-blue-800 dark:text-blue-300">
+              <div className="font-medium mb-1">Lưu ý:</div>
+              <ul className="list-disc list-inside space-y-1">
+                <li>
+                  Bạn có thể chỉnh sửa trực tiếp giá nhập, giá bán và tồn kho
+                </li>
+                <li>
+                  Hoặc sử dụng "Tạo phiếu nhập" để ghi nhận lịch sử nhập kho chi
+                  tiết
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Lưu thay đổi
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
 };
 
-export default InventoryHistoryModal;
+export default EditPartModal;

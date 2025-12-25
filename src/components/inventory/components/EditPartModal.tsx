@@ -5,13 +5,6 @@ import FormattedNumberInput from "../../common/FormattedNumberInput";
 import { validatePriceAndQty } from "../../../utils/validation";
 import type { Part } from "../../../types";
 
-export interface EditPartModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  part: Part | null;
-  currentBranchId: string;
-  onSave: (updatedPart: Partial<Part>) => void;
-}
 interface EditPartModalProps {
   part: Part;
   onClose: () => void;
@@ -28,10 +21,10 @@ const EditPartModal: React.FC<EditPartModalProps> = ({
   const [formData, setFormData] = useState({
     name: part.name,
     category: part.category || "",
-    retailPrice: part.retailPrice[currentBranchId] || 0,
+    retailPrice: part.retailPrice?.[currentBranchId] || 0,
     wholesalePrice: part.wholesalePrice?.[currentBranchId] || 0,
     costPrice: part.costPrice?.[currentBranchId] || 0,
-    stock: part.stock[currentBranchId] || 0,
+    stock: part.stock?.[currentBranchId] || 0,
   });
   const { data: categories = [] } = useCategories();
   const createCategory = useCreateCategory();
@@ -51,19 +44,19 @@ const EditPartModal: React.FC<EditPartModalProps> = ({
       name: formData.name.trim(),
       category: formData.category.trim() || undefined,
       stock: {
-        ...part.stock,
+        ...(part.stock || {}),
         [currentBranchId]: formData.stock,
       },
       costPrice: {
-        ...part.costPrice,
+        ...(part.costPrice || {}),
         [currentBranchId]: formData.costPrice,
       },
       retailPrice: {
-        ...part.retailPrice,
+        ...(part.retailPrice || {}),
         [currentBranchId]: formData.retailPrice,
       },
       wholesalePrice: {
-        ...part.wholesalePrice,
+        ...(part.wholesalePrice || {}),
         [currentBranchId]: formData.wholesalePrice,
       },
     });
@@ -308,7 +301,4 @@ const EditPartModal: React.FC<EditPartModalProps> = ({
   );
 };
 
-export default InventoryManager;
-
 export default EditPartModal;
-
