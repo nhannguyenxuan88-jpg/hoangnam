@@ -30,96 +30,96 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
     installmentDetails
 }) => {
     return (
-        <div className="space-y-4">
-            {/* Payment Method Selection */}
-            <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+        <div className="space-y-3">
+            {/* Payment Method Selection - Compact Design */}
+            <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                     Phương thức thanh toán
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                     <button
                         onClick={() => onPaymentMethodChange("cash")}
-                        className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${paymentMethod === "cash"
-                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                            : "border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600"
+                        className={`flex flex-col items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl border transition-all ${paymentMethod === "cash"
+                            ? "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-sm"
+                            : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                             }`}
                     >
-                        <Banknote className="w-6 h-6" />
-                        <span className="font-medium text-xs md:text-sm">Tiền mặt</span>
+                        <Banknote className="w-5 h-5" />
+                        <span className="font-medium text-[11px]">Tiền mặt</span>
                     </button>
                     <button
                         onClick={() => onPaymentMethodChange("bank")}
-                        className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${paymentMethod === "bank"
-                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                            : "border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600"
+                        className={`flex flex-col items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl border transition-all ${paymentMethod === "bank"
+                            ? "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-sm"
+                            : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                             }`}
                     >
-                        <CreditCard className="w-6 h-6" />
-                        <span className="font-medium text-xs md:text-sm">Chuyển khoản</span>
+                        <CreditCard className="w-5 h-5" />
+                        <span className="font-medium text-[11px]">Chuyển khoản</span>
                     </button>
                     <button
                         onClick={() => onPaymentMethodChange("card")}
-                        className={`flex flex-col items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${paymentMethod === "card"
-                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                            : "border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600"
+                        className={`flex flex-col items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl border transition-all ${paymentMethod === "card"
+                            ? "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 shadow-sm"
+                            : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                             }`}
                     >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                         </svg>
-                        <span className="font-medium text-xs md:text-sm">Quẹt thẻ</span>
+                        <span className="font-medium text-[11px]">Quẹt thẻ</span>
                     </button>
                 </div>
             </div>
 
             {/* Payment Type Selection (if method selected) */}
             {paymentMethod && (
-                <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                         Hình thức thanh toán
                     </label>
                     <div className="grid grid-cols-4 gap-2">
                         <button
                             onClick={() => onPaymentTypeChange("full")}
-                            className={`flex flex-col items-center gap-1 px-2 py-2 rounded-lg border-2 transition-all text-xs ${paymentType === "full"
-                                ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400"
-                                : "border-slate-200 dark:border-slate-700 hover:border-green-300"
+                            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg border transition-all ${paymentType === "full"
+                                ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-emerald-400"
                                 }`}
                         >
-                            <Wallet className="w-5 h-5" />
-                            <span className="font-medium text-[10px] md:text-xs">Toàn bộ</span>
+                            <Wallet className="w-4 h-4" />
+                            <span className="font-medium text-[10px]">Toàn bộ</span>
                         </button>
                         <button
                             onClick={() => onPaymentTypeChange("partial")}
-                            className={`flex flex-col items-center gap-1 px-2 py-2 rounded-lg border-2 transition-all text-xs ${paymentType === "partial"
-                                ? "border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400"
-                                : "border-slate-200 dark:border-slate-700 hover:border-amber-300"
+                            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg border transition-all ${paymentType === "partial"
+                                ? "border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-amber-400"
                                 }`}
                         >
-                            <Banknote className="w-5 h-5" />
-                            <span className="font-medium text-[10px] md:text-xs text-center">Trả 1 phần</span>
+                            <Banknote className="w-4 h-4" />
+                            <span className="font-medium text-[10px]">Trả 1 phần</span>
                         </button>
                         <button
                             onClick={() => onPaymentTypeChange("installment")}
-                            className={`flex flex-col items-center gap-1 px-2 py-2 rounded-lg border-2 transition-all text-xs ${paymentType === "installment"
-                                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                                : "border-slate-200 dark:border-slate-700 hover:border-blue-300"
+                            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg border transition-all ${paymentType === "installment"
+                                ? "border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-blue-400"
                                 }`}
                         >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <span className="font-medium text-[10px] md:text-xs text-center">Trả góp</span>
+                            <span className="font-medium text-[10px]">Trả góp</span>
                         </button>
                         <button
                             onClick={() => onPaymentTypeChange("note")}
-                            className={`flex flex-col items-center gap-1 px-2 py-2 rounded-lg border-2 transition-all text-xs ${paymentType === "note"
-                                ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400"
-                                : "border-slate-200 dark:border-slate-700 hover:border-purple-300"
+                            className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg border transition-all ${paymentType === "note"
+                                ? "border-orange-500 bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                                : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-orange-400"
                                 }`}
                         >
-                            <FileText className="w-5 h-5" />
-                            <span className="font-medium text-[10px] md:text-xs">Ghi nợ</span>
+                            <FileText className="w-4 h-4" />
+                            <span className="font-medium text-[10px]">Ghi nợ</span>
                         </button>
                     </div>
                 </div>

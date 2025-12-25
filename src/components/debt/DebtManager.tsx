@@ -3161,6 +3161,43 @@ const DetailDebtModal: React.FC<{
 }> = ({ debt, activeTab, storeSettings, onClose }) => {
   const isCustomerDebt = "customerName" in debt;
 
+  // State for fetched receipt items
+  const [receiptItems, setReceiptItems] = React.useState<any[]>([]);
+  const [loadingItems, setLoadingItems] = React.useState(false);
+
+  // Parse receipt code from description (e.g., "Phiếu NH-20251223-135")
+  React.useEffect(() => {
+    const fetchReceiptItems = async () => {
+      // Extract receipt code pattern from description
+      const receiptCodeMatch = debt.description?.match(/NH-\d{8}-\d+/);
+      if (!receiptCodeMatch) return;
+
+      const receiptCode = receiptCodeMatch[0];
+      setLoadingItems(true);
+
+      try {
+        // Fetch items from inventory_transactions where notes contains the receipt code
+        const { data, error } = await supabase
+          .from("inventory_transactions")
+          .select("*")
+          .ilike("notes", `%${receiptCode}%`)
+          .eq("type", "Nhập kho")
+          .order("created_at", { ascending: true });
+
+        if (error) throw error;
+        setReceiptItems(data || []);
+      } catch (err) {
+        console.error("Error fetching receipt items:", err);
+      } finally {
+        setLoadingItems(false);
+      }
+    };
+
+    if (!isCustomerDebt) {
+      fetchReceiptItems();
+    }
+  }, [debt.description, isCustomerDebt]);
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 z-[100]">
       <div className="bg-white dark:bg-slate-800 rounded-t-xl md:rounded-xl shadow-2xl max-w-2xl w-full border-x border-t border-slate-200 dark:border-slate-700 max-h-[80vh] mb-20 md:mb-0 flex flex-col">
@@ -3243,6 +3280,55 @@ const DetailDebtModal: React.FC<{
               </p>
             </div>
           </div>
+
+          {/* Receipt Items List (for supplier debts) */}
+          {!isCustomerDebt && (
+            <div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2">
+                <span>📦 Danh sách hàng nhập</span>
+                {receiptItems.length > 0 && (
+                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-[10px] font-bold">
+                    {receiptItems.length} sản phẩm
+                  </span>
+                )}
+              </p>
+              {loadingItems ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-sm text-slate-500">Đang tải...</span>
+                </div>
+              ) : receiptItems.length > 0 ? (
+                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-100 dark:bg-slate-800">
+                      <tr>
+                        <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Sản phẩm</th>
+                        <th className="text-right py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">SL</th>
+                        <th className="text-right py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Giá nhập</th>
+                        <th className="text-right py-2 px-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Thành tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                      {receiptItems.map((item, index) => (
+                        <tr key={item.id || index} className="hover:bg-slate-100 dark:hover:bg-slate-800/50">
+                          <td className="py-2 px-3">
+                            <div className="font-medium text-slate-900 dark:text-white">{item.partName}</div>
+                          </td>
+                          <td className="py-2 px-3 text-right text-slate-700 dark:text-slate-300">{item.quantity}</td>
+                          <td className="py-2 px-3 text-right text-slate-700 dark:text-slate-300">{formatCurrency(item.unitPrice)}</td>
+                          <td className="py-2 px-3 text-right font-medium text-slate-900 dark:text-white">{formatCurrency(item.totalPrice)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-4 text-slate-400 text-sm bg-slate-50 dark:bg-slate-900/30 rounded-lg">
+                  Không tìm thấy chi tiết hàng nhập
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Financial Summary */}
           <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
