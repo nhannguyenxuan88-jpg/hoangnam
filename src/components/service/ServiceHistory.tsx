@@ -19,7 +19,7 @@ import type { WorkOrder } from "../../types";
 import { useNavigate } from "react-router-dom";
 import { WORK_ORDER_STATUS, PAYMENT_STATUS } from "../../constants";
 import { useWorkOrdersRepo } from "../../hooks/useWorkOrdersRepository";
-import PrintOrderPreviewModal from "../service-new/modals/PrintOrderPreviewModal";
+import PrintOrderPreviewModal from "./modals/PrintOrderPreviewModal";
 
 interface StoreSettings {
   store_name?: string;

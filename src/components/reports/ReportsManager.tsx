@@ -247,8 +247,10 @@ const ReportsManager: React.FC = () => {
 
     // Helper function to get cost price from map or fallback
     const getPartCost = (partId: string, sku: string, fallbackCost: number) => {
+      // Priority: Historical value (fallbackCost) > Current master value > 0
+      if (fallbackCost && fallbackCost > 0) return fallbackCost;
       return (
-        partsCostMap.get(partId) || partsCostMap.get(sku) || fallbackCost || 0
+        partsCostMap.get(partId) || partsCostMap.get(sku) || 0
       );
     };
 

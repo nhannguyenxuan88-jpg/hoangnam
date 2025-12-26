@@ -56,9 +56,9 @@ import { useDashboardData } from "./hooks/useDashboardData";
 
 const Dashboard: React.FC = () => {
   const { profile } = useAuth();
-  const [reportFilter, setReportFilter] = useState<
-    "today" | "week" | "month" | "year"
-  >("month");
+  const [reportFilter, setReportFilter] = useState<string>("month");
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedQuarter, setSelectedQuarter] = useState<number>(Math.ceil((new Date().getMonth() + 1) / 3));
   const [isLoading, setIsLoading] = useState(true);
   const [showBalance, setShowBalance] = useState(false);
   const [showRevenue, setShowRevenue] = useState(false);
@@ -190,17 +190,36 @@ const Dashboard: React.FC = () => {
           </div>
           <select
             value={reportFilter}
-            onChange={(e) =>
-              setReportFilter(
-                e.target.value as "today" | "week" | "month" | "year"
-              )
-            }
+            onChange={(e) => setReportFilter(e.target.value)}
             className="text-sm bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="month">Tháng này</option>
-            <option value="today">Hôm nay</option>
-            <option value="week">Tuần này</option>
-            <option value="year">Năm nay</option>
+            <optgroup label="Thời gian">
+              <option value="today">Hôm nay</option>
+              <option value="7days">7 ngày qua</option>
+              <option value="week">Tuần này</option>
+              <option value="month">Tháng này</option>
+              <option value="year">Năm nay</option>
+            </optgroup>
+            <optgroup label="Theo tháng">
+              <option value="month1">Tháng 1</option>
+              <option value="month2">Tháng 2</option>
+              <option value="month3">Tháng 3</option>
+              <option value="month4">Tháng 4</option>
+              <option value="month5">Tháng 5</option>
+              <option value="month6">Tháng 6</option>
+              <option value="month7">Tháng 7</option>
+              <option value="month8">Tháng 8</option>
+              <option value="month9">Tháng 9</option>
+              <option value="month10">Tháng 10</option>
+              <option value="month11">Tháng 11</option>
+              <option value="month12">Tháng 12</option>
+            </optgroup>
+            <optgroup label="Theo quý">
+              <option value="q1">Quý 1 (T1-T3)</option>
+              <option value="q2">Quý 2 (T4-T6)</option>
+              <option value="q3">Quý 3 (T7-T9)</option>
+              <option value="q4">Quý 4 (T10-T12)</option>
+            </optgroup>
           </select>
         </div>
 
@@ -384,15 +403,58 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Desktop View Helpers - Tiêu đề ngày tháng */}
-      <h2 className="hidden md:block text-2xl font-bold text-slate-800 dark:text-white">
-        Tổng quan hôm nay -{" "}
-        {new Date().toLocaleDateString("vi-VN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })}
-      </h2>
+      {/* Desktop View Helpers - Tiêu đề ngày tháng + Bộ lọc */}
+      <div className="hidden md:flex items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
+          Tổng quan{" "}
+          {reportFilter === "today" && "hôm nay"}
+          {reportFilter === "7days" && "7 ngày qua"}
+          {reportFilter === "week" && "tuần này"}
+          {reportFilter === "month" && "tháng này"}
+          {reportFilter === "year" && `năm ${new Date().getFullYear()}`}
+          {reportFilter.startsWith("month") && reportFilter.length > 5 && `tháng ${reportFilter.slice(5)}`}
+          {reportFilter.startsWith("q") && reportFilter.length === 2 && `quý ${reportFilter.slice(1)}`}
+          {" - "}
+          {new Date().toLocaleDateString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          })}
+        </h2>
+        <select
+          value={reportFilter}
+          onChange={(e) => setReportFilter(e.target.value)}
+          className="text-sm bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+        >
+          <optgroup label="Thời gian">
+            <option value="today">Hôm nay</option>
+            <option value="7days">7 ngày qua</option>
+            <option value="week">Tuần này</option>
+            <option value="month">Tháng này</option>
+            <option value="year">Năm nay</option>
+          </optgroup>
+          <optgroup label="Theo tháng">
+            <option value="month1">Tháng 1</option>
+            <option value="month2">Tháng 2</option>
+            <option value="month3">Tháng 3</option>
+            <option value="month4">Tháng 4</option>
+            <option value="month5">Tháng 5</option>
+            <option value="month6">Tháng 6</option>
+            <option value="month7">Tháng 7</option>
+            <option value="month8">Tháng 8</option>
+            <option value="month9">Tháng 9</option>
+            <option value="month10">Tháng 10</option>
+            <option value="month11">Tháng 11</option>
+            <option value="month12">Tháng 12</option>
+          </optgroup>
+          <optgroup label="Theo quý">
+            <option value="q1">Quý 1 (T1-T3)</option>
+            <option value="q2">Quý 2 (T4-T6)</option>
+            <option value="q3">Quý 3 (T7-T9)</option>
+            <option value="q4">Quý 4 (T10-T12)</option>
+          </optgroup>
+        </select>
+      </div>
 
       {/* Overview Cards (Desktop) */}
       <div className="hidden md:grid gap-4 md:grid-cols-2 lg:grid-cols-4">

@@ -48,7 +48,9 @@ const isExcludedExpenseCategory = (category: string | undefined | null) => {
 };
 
 export const useDashboardData = (
-    reportFilter: "today" | "week" | "month" | "year"
+    reportFilter: string,
+    selectedMonth?: number,
+    selectedQuarter?: number
 ) => {
     const { data: sales = [] } = useSalesRepo();
     const { data: workOrders = [] } = useWorkOrdersRepo();
@@ -74,7 +76,9 @@ export const useDashboardData = (
             sku: string,
             fallbackCost: number
         ) => {
-            return map.get(partId) || map.get(sku) || fallbackCost || 0;
+            // Priority: Historical value (fallbackCost) > Current master value > 0
+            if (fallbackCost && fallbackCost > 0) return fallbackCost;
+            return map.get(partId) || map.get(sku) || 0;
         };
 
         return { getPartCost };
@@ -199,32 +203,60 @@ export const useDashboardData = (
         let startDate: Date;
         let endDate: Date = now; // Ngày hiện tại
 
-        switch (reportFilter) {
-            case "today":
-                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                break;
-            case "week":
-                const dayOfWeek = now.getDay();
-                const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0
-                startDate = new Date(
-                    now.getFullYear(),
-                    now.getMonth(),
-                    now.getDate() - diff
-                );
-                endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                break;
-            case "month":
+        // Handle specific month filters (month1, month2, ... month12)
+        if (reportFilter.startsWith("month") && reportFilter.length > 5) {
+            const monthNum = parseInt(reportFilter.slice(5), 10);
+            if (monthNum >= 1 && monthNum <= 12) {
+                startDate = new Date(now.getFullYear(), monthNum - 1, 1);
+                endDate = new Date(now.getFullYear(), monthNum, 0); // Last day of month
+            } else {
                 startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                break;
-            case "year":
-                startDate = new Date(now.getFullYear(), 0, 1);
-                endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                break;
-            default:
+            }
+        }
+        // Handle quarter filters (q1, q2, q3, q4)
+        else if (reportFilter.startsWith("q") && reportFilter.length === 2) {
+            const quarterNum = parseInt(reportFilter.slice(1), 10);
+            if (quarterNum >= 1 && quarterNum <= 4) {
+                const startMonth = (quarterNum - 1) * 3;
+                startDate = new Date(now.getFullYear(), startMonth, 1);
+                endDate = new Date(now.getFullYear(), startMonth + 3, 0); // Last day of quarter
+            } else {
                 startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            }
+        }
+        // Handle standard filters
+        else {
+            switch (reportFilter) {
+                case "today":
+                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    break;
+                case "7days":
+                    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    break;
+                case "week":
+                    const dayOfWeek = now.getDay();
+                    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0
+                    startDate = new Date(
+                        now.getFullYear(),
+                        now.getMonth(),
+                        now.getDate() - diff
+                    );
+                    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    break;
+                case "month":
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    break;
+                case "year":
+                    startDate = new Date(now.getFullYear(), 0, 1);
+                    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    break;
+                default:
+                    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            }
         }
 
         // Sử dụng local date format YYYY-MM-DD thay vì ISO string (tránh lỗi timezone)

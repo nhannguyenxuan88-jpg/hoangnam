@@ -60,7 +60,7 @@ import { supabase } from "../../supabaseClient";
 import { WorkOrderMobileModal } from "../service/WorkOrderMobileModal";
 import WorkOrderModal from "../service/components/WorkOrderModal";
 import { ServiceManagerMobile } from "../service/ServiceManagerMobile";
-import PrintOrderPreviewModal from "../service-new/modals/PrintOrderPreviewModal";
+import PrintOrderPreviewModal from "../service/modals/PrintOrderPreviewModal";
 import StatusBadge from "../service/components/StatusBadge";
 import { getQuickStatusFilters } from "../service/components/QuickStatusFilters";
 import { getStatusSnapshotCards } from "../service/components/StatusSnapshotCards";
@@ -167,7 +167,9 @@ export default function ServiceManager() {
   }, []);
 
   // Use fetched data if available, otherwise use context
-  const parts = fetchedParts || contextParts;
+  // Prioritize contextParts to match Dashboard logic (cached costs)
+  // Fallback to fetchedParts if context is empty
+  const parts = contextParts.length > 0 ? contextParts : (fetchedParts || []);
   const displayCustomers =
     fetchedCustomers.length > 0 ? fetchedCustomers : customers;
   const displayEmployees = fetchedEmployees || employees;
@@ -474,6 +476,8 @@ export default function ServiceManager() {
   } = useServiceStats({
     workOrders: displayWorkOrders,
     dateFilter: dateFilter as "all" | "today" | "week" | "month",
+    parts: parts, // Pass parts for cost lookup
+    currentBranchId: currentBranchId,
   });
 
   // Filter input class (kept inline for now)
@@ -2491,7 +2495,26 @@ export default function ServiceManager() {
                   // Lợi nhuận = Tổng tiền - Giá vốn phụ tùng - Giá vốn dịch vụ gia công
                   const partsCostPrice =
                     order.partsUsed?.reduce(
-                      (sum, p) => sum + (p.costPrice || 0) * (p.quantity || 1),
+                      (sum, p) => {
+                        let cost = p.costPrice || 0;
+                        if (!cost && parts) {
+                          const originalPart = parts.find(
+                            (fp) => fp.id === p.partId || fp.sku === p.sku
+                          );
+                          if (originalPart) {
+                            // Handle legacy importPrice or current costPrice logic
+                            const op: any = originalPart;
+                            if (op.costPrice && typeof op.costPrice === 'object') {
+                              cost = op.costPrice[currentBranchId] || 0;
+                            } else if (typeof op.costPrice === 'number') {
+                              cost = op.costPrice;
+                            } else if (op.importPrice) {
+                              cost = op.importPrice;
+                            }
+                          }
+                        }
+                        return sum + cost * (p.quantity || 1);
+                      },
                       0
                     ) || 0;
                   const servicesCostPrice =

@@ -1,15 +1,12 @@
-/**
- * Custom hook for calculating service statistics
- * Extracted from ServiceManager.tsx for reusability and better separation of concerns
- */
-
 import { useMemo } from "react";
-import type { WorkOrder, WorkOrderPart } from "../../../types";
+import type { WorkOrder, WorkOrderPart, Part } from "../../../types";
 import type { ServiceStats } from "../types/service.types";
 
 interface UseServiceStatsOptions {
     workOrders: WorkOrder[];
     dateFilter: "all" | "today" | "week" | "month";
+    parts?: Part[]; // Optional parts list for cost lookup fallback
+    currentBranchId?: string;
 }
 
 interface UseServiceStatsReturn {
@@ -25,19 +22,43 @@ interface UseServiceStatsReturn {
 /**
  * Hook to calculate service statistics from work orders
  * 
- * @param options - Work orders and date filter settings
+ * @param options - Work orders, date filter settings, optional parts list, and branch ID
  * @returns Calculated statistics and derived metrics
- * 
- * @example
- * const { stats, profitMargin } = useServiceStats({
- *   workOrders: displayWorkOrders,
- *   dateFilter: "week"
- * });
  */
 export function useServiceStats({
     workOrders,
-    dateFilter
+    dateFilter,
+    parts = [],
+    currentBranchId = ""
 }: UseServiceStatsOptions): UseServiceStatsReturn {
+
+    // Create a map for fast part cost lookup
+    const partCostMap = useMemo(() => {
+        const map = new Map<string, number>();
+        parts.forEach((part) => {
+            // Priority: costPrice[branch] > costPrice (number) > importPrice > 0
+            let cost = 0;
+            const p = part as any;
+
+            if (p.costPrice && typeof p.costPrice === 'object' && currentBranchId) {
+                cost = p.costPrice[currentBranchId] || 0;
+            } else if (typeof p.costPrice === 'number') {
+                cost = p.costPrice;
+            } else if (p.importPrice && typeof p.importPrice === 'number') {
+                cost = p.importPrice; // Handle legacy importPrice field
+            }
+
+            if (part.id) map.set(part.id, cost);
+            if (part.sku) map.set(part.sku, cost);
+        });
+        return map;
+    }, [parts, currentBranchId]);
+
+    // Helper to get part cost with fallback
+    const getPartCost = (partId: string, sku: string, fallbackCost: number) => {
+        if (fallbackCost > 0) return fallbackCost;
+        return partCostMap.get(partId) || partCostMap.get(sku) || 0;
+    };
 
     // Filter orders by date
     const dateFilteredOrders = useMemo(() => {
@@ -95,10 +116,16 @@ export function useServiceStats({
         const filteredProfit = dateFilteredOrders
             .filter((o) => o.paymentStatus === "paid")
             .reduce((sum, o) => {
-                // Parts cost
+                // Parts cost with fallback lookup
                 const partsCost = o.partsUsed?.reduce(
-                    (s: number, p: WorkOrderPart) =>
-                        s + (p.costPrice || 0) * (p.quantity || 1),
+                    (s: number, p: WorkOrderPart) => {
+                        const cost = getPartCost(
+                            p.partId || (p as any).partid,
+                            p.sku || "",
+                            p.costPrice || 0
+                        );
+                        return s + cost * (p.quantity || 1);
+                    },
                     0
                 ) || 0;
 
@@ -120,7 +147,7 @@ export function useServiceStats({
             filteredRevenue,
             filteredProfit,
         };
-    }, [dateFilteredOrders]);
+    }, [dateFilteredOrders, partCostMap]);
 
     // Calculate derived metrics
     const totalOpenTickets = stats.pending + stats.inProgress + stats.done;
