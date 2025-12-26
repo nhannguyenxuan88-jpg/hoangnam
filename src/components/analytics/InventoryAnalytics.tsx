@@ -19,13 +19,22 @@ import { usePartsRepo } from "../../hooks/usePartsRepository";
 import { useInventoryTxRepo } from "../../hooks/useInventoryTransactionsRepository";
 import { formatCurrency } from "../../utils/format";
 
-const InventoryAnalytics: React.FC = () => {
-  const { currentBranchId } = useAppContext();
-  const { data: parts = [], isLoading: partsLoading } = usePartsRepo();
-  const { data: inventoryTransactions = [], isLoading: txLoading } =
-    useInventoryTxRepo();
+interface InventoryAnalyticsProps {
+  sales: any[];
+  workOrders: any[];
+  parts: any[];
+  inventoryTransactions: any[];
+  currentBranchId: string;
+}
 
-  const isLoading = partsLoading || txLoading;
+const InventoryAnalytics: React.FC<InventoryAnalyticsProps> = ({
+  sales,
+  workOrders,
+  parts,
+  inventoryTransactions,
+  currentBranchId
+}) => {
+  const isLoading = false; // Data comes from parent
 
   // Stock value by category
   const categoryData = useMemo(() => {
@@ -356,13 +365,12 @@ const InventoryAnalytics: React.FC = () => {
               return (
                 <div
                   key={item.id}
-                  className={`flex items-center justify-between p-2 rounded-lg ${
-                    level === "critical"
-                      ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
-                      : level === "warning"
+                  className={`flex items-center justify-between p-2 rounded-lg ${level === "critical"
+                    ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                    : level === "warning"
                       ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
                       : "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800"
-                  }`}
+                    }`}
                 >
                   <div>
                     <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -374,13 +382,12 @@ const InventoryAnalytics: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <div
-                      className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        level === "critical"
-                          ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-                          : level === "warning"
+                      className={`px-2 py-0.5 rounded-full text-xs font-semibold ${level === "critical"
+                        ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                        : level === "warning"
                           ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
                           : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
-                      }`}
+                        }`}
                     >
                       {stock} còn lại
                     </div>

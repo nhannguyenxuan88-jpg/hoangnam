@@ -24,25 +24,24 @@ import { formatCurrency } from "../../utils/format";
 
 type TimeRange = "7days" | "30days" | "90days" | "all";
 
-const FinancialAnalytics: React.FC = () => {
-  const { currentBranchId } = useAppContext();
+interface FinancialAnalyticsProps {
+  sales: any[];
+  workOrders: any[];
+  parts: any[];
+  customerDebts: any[];
+  supplierDebts: any[];
+  currentBranchId: string;
+}
 
-  // --- Hook Data ---
-  const { data: sales = [], isLoading: salesLoading } = useSalesRepo();
-  const { data: parts = [], isLoading: partsLoading } = usePartsRepo();
-  const { data: workOrders = [], isLoading: workOrdersLoading } =
-    useWorkOrdersRepo();
-  const { data: customerDebts = [], isLoading: customerDebtsLoading } =
-    useCustomerDebtsRepo();
-  const { data: supplierDebts = [], isLoading: supplierDebtsLoading } =
-    useSupplierDebtsRepo();
-
-  const isLoading =
-    salesLoading ||
-    partsLoading ||
-    workOrdersLoading ||
-    customerDebtsLoading ||
-    supplierDebtsLoading;
+const FinancialAnalytics: React.FC<FinancialAnalyticsProps> = ({
+  sales,
+  workOrders,
+  parts,
+  customerDebts,
+  supplierDebts,
+  currentBranchId
+}) => {
+  const isLoading = false; // Data comes from parent
   const [timeRange, setTimeRange] = useState<TimeRange>("30days");
 
   // Filter by time range
@@ -70,10 +69,10 @@ const FinancialAnalytics: React.FC = () => {
         const woDate = new Date(wo.creationDate);
         // Tính đơn đã trả máy HOẶC đã thanh toán (paid/partial) trong khoảng thời gian
         // Không tính đơn đã hoàn tiền (refunded)
-        const isCompleted = wo.status === "Trả máy" || 
-                           wo.paymentStatus === "paid" || 
-                           wo.paymentStatus === "partial" ||
-                           (wo.totalPaid && wo.totalPaid > 0);
+        const isCompleted = wo.status === "Trả máy" ||
+          wo.paymentStatus === "paid" ||
+          wo.paymentStatus === "partial" ||
+          (wo.totalPaid && wo.totalPaid > 0);
         return woDate >= cutoffDate && isCompleted && !wo.refunded;
       })
       .reduce((sum, wo) => sum + (wo.totalPaid || wo.total || 0), 0);
@@ -103,10 +102,10 @@ const FinancialAnalytics: React.FC = () => {
     return workOrders
       .filter((wo) => {
         const woDate = new Date(wo.creationDate);
-        const isCompleted = wo.status === "Trả máy" || 
-                           wo.paymentStatus === "paid" || 
-                           wo.paymentStatus === "partial" ||
-                           (wo.totalPaid && wo.totalPaid > 0);
+        const isCompleted = wo.status === "Trả máy" ||
+          wo.paymentStatus === "paid" ||
+          wo.paymentStatus === "partial" ||
+          (wo.totalPaid && wo.totalPaid > 0);
         return woDate >= cutoffDate && isCompleted && !wo.refunded;
       })
       .reduce((sum, wo) => {
@@ -144,7 +143,7 @@ const FinancialAnalytics: React.FC = () => {
         const date = sale.date.slice(0, 10);
         const existing = financialMap.get(date) || { income: 0, expense: 0 };
         existing.income += sale.total;
-        
+
         // Calculate cost of goods sold for this sale
         const saleCost = sale.items.reduce((itemSum, item) => {
           const part = parts.find((p) => p.id === item.partId);
@@ -152,7 +151,7 @@ const FinancialAnalytics: React.FC = () => {
           return itemSum + costPrice * item.quantity;
         }, 0);
         existing.expense += saleCost;
-        
+
         financialMap.set(date, existing);
       });
 
@@ -160,17 +159,17 @@ const FinancialAnalytics: React.FC = () => {
     workOrders
       .filter((wo) => {
         const woDate = new Date(wo.creationDate);
-        const isCompleted = wo.status === "Trả máy" || 
-                           wo.paymentStatus === "paid" || 
-                           wo.paymentStatus === "partial" ||
-                           (wo.totalPaid && wo.totalPaid > 0);
+        const isCompleted = wo.status === "Trả máy" ||
+          wo.paymentStatus === "paid" ||
+          wo.paymentStatus === "partial" ||
+          (wo.totalPaid && wo.totalPaid > 0);
         return woDate >= cutoffDate && isCompleted && !wo.refunded;
       })
       .forEach((wo) => {
         const date = wo.creationDate.slice(0, 10);
         const existing = financialMap.get(date) || { income: 0, expense: 0 };
         existing.income += wo.totalPaid || wo.total || 0;
-        
+
         // Calculate COGS for work order
         const partsCost = (wo.partsUsed || []).reduce((partSum, woPart) => {
           const part = parts.find((p) => p.id === woPart.partId);
@@ -182,7 +181,7 @@ const FinancialAnalytics: React.FC = () => {
           0
         );
         existing.expense += partsCost + servicesCost;
-        
+
         financialMap.set(date, existing);
       });
 
@@ -266,11 +265,10 @@ const FinancialAnalytics: React.FC = () => {
           <button
             key={option.value}
             onClick={() => setTimeRange(option.value)}
-            className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-colors ${
-              timeRange === option.value
-                ? "bg-blue-600 text-white"
-                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-            }`}
+            className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-colors ${timeRange === option.value
+              ? "bg-blue-600 text-white"
+              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+              }`}
           >
             {option.label}
           </button>
@@ -304,36 +302,32 @@ const FinancialAnalytics: React.FC = () => {
         </div>
 
         <div
-          className={`bg-gradient-to-br p-4 rounded-lg border ${
-            netProfit >= 0
-              ? "from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700"
-              : "from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-700"
-          }`}
+          className={`bg-gradient-to-br p-4 rounded-lg border ${netProfit >= 0
+            ? "from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-700"
+            : "from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-700"
+            }`}
         >
           <div
-            className={`text-xs font-medium mb-1 ${
-              netProfit >= 0
-                ? "text-blue-600 dark:text-blue-400"
-                : "text-red-600 dark:text-red-400"
-            }`}
+            className={`text-xs font-medium mb-1 ${netProfit >= 0
+              ? "text-blue-600 dark:text-blue-400"
+              : "text-red-600 dark:text-red-400"
+              }`}
           >
             Lợi nhuận
           </div>
           <div
-            className={`text-2xl font-bold ${
-              netProfit >= 0
-                ? "text-blue-900 dark:text-blue-100"
-                : "text-red-900 dark:text-red-100"
-            }`}
+            className={`text-2xl font-bold ${netProfit >= 0
+              ? "text-blue-900 dark:text-blue-100"
+              : "text-red-900 dark:text-red-100"
+              }`}
           >
             {formatCurrency(netProfit)}
           </div>
           <div
-            className={`text-[10px] mt-0.5 ${
-              netProfit >= 0
-                ? "text-blue-600 dark:text-blue-400"
-                : "text-red-600 dark:text-red-400"
-            }`}
+            className={`text-[10px] mt-0.5 ${netProfit >= 0
+              ? "text-blue-600 dark:text-blue-400"
+              : "text-red-600 dark:text-red-400"
+              }`}
           >
             Biên lợi nhuận: {profitMargin.toFixed(1)}%
           </div>

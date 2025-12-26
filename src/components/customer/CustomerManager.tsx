@@ -601,7 +601,7 @@ const CustomerManager: React.FC = () => {
         s.customer?.id === customer.id || s.customer?.phone === customer.phone
     );
     const customerWorkOrders = allWorkOrders.filter(
-      (wo) => wo.customerPhone === customer.phone
+      (wo) => wo.customerPhone === customer.phone && wo.status !== "Đã hủy"
     );
 
     const totalFromSales = customerSales.reduce(

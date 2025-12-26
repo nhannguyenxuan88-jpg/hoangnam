@@ -18,16 +18,21 @@ import { formatCurrency } from "../../utils/format";
 
 type TimeRange = "7days" | "30days" | "90days" | "all";
 
-import { useSalesRepo } from "../../hooks/useSalesRepository";
-import { usePartsRepo } from "../../hooks/usePartsRepository";
+interface SalesAnalyticsProps {
+  sales: any[];
+  workOrders: any[];
+  parts: any[];
+  currentBranchId: string;
+}
 
-const SalesAnalytics: React.FC = () => {
-  const { currentBranchId } = useAppContext();
-  const { data: sales = [], isLoading: salesLoading } = useSalesRepo();
-  const { data: parts = [], isLoading: partsLoading } = usePartsRepo();
+const SalesAnalytics: React.FC<SalesAnalyticsProps> = ({
+  sales,
+  workOrders,
+  parts,
+  currentBranchId
+}) => {
   const [timeRange, setTimeRange] = useState<TimeRange>("30days");
-
-  const isLoading = salesLoading || partsLoading;
+  const isLoading = false; // Data comes from parent
 
   // Filter sales by time range
   const filteredSales = useMemo(() => {
@@ -176,11 +181,10 @@ const SalesAnalytics: React.FC = () => {
           <button
             key={option.value}
             onClick={() => setTimeRange(option.value)}
-            className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-colors ${
-              timeRange === option.value
-                ? "bg-blue-600 text-white"
-                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-            }`}
+            className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-colors ${timeRange === option.value
+              ? "bg-blue-600 text-white"
+              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+              }`}
           >
             {option.label}
           </button>
