@@ -324,15 +324,28 @@ const InventoryHistorySection: React.FC<{
           .ilike("description", `%${receiptCode}%`);
 
         if (debtError) console.warn(`Could not delete debt for ${receiptCode}:`, debtError);
+
+        // ✅ FIX: Delete associated cash transactions (Sổ quỹ)
+        const { error: cashError } = await supabase
+          .from("cash_transactions")
+          .delete()
+          .ilike("description", `%Phiếu nhập ${receiptCode}%`);
+
+        if (cashError) {
+          console.warn(`Could not delete cash transaction for ${receiptCode}:`, cashError);
+        } else {
+          console.log(`✅ Đã xóa giao dịch sổ quỹ cho phiếu ${receiptCode}`);
+        }
       }
 
-      showToast.success(`Đã xóa ${selectedReceipts.size} phiếu nhập kho, hoàn trả tồn kho và xóa công nợ liên quan`);
+      showToast.success(`Đã xóa ${selectedReceipts.size} phiếu nhập kho, hoàn trả tồn kho và xóa giao dịch tài chính liên quan`);
       setSelectedReceipts(new Set());
 
       // Refetch data
       queryClient.invalidateQueries({ queryKey: ["inventory_transactions"] });
       queryClient.invalidateQueries({ queryKey: ["inventoryTransactions"] });
       queryClient.invalidateQueries({ queryKey: ["supplierDebts"] });
+      queryClient.invalidateQueries({ queryKey: ["cashTransactions"] }); // ✅ Refresh Cash Book
       queryClient.invalidateQueries({ queryKey: ["partsRepo"] });
       queryClient.invalidateQueries({ queryKey: ["partsRepoPaged"] });
       queryClient.invalidateQueries({ queryKey: ["allPartsForTotals"] });
