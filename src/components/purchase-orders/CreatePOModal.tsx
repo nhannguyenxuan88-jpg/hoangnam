@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useSuppliers } from "../../hooks/useSuppliers";
 import { useParts } from "../../hooks/useSupabase";
-import { useCreatePurchaseOrder } from "../../hooks/usePurchaseOrders";
+import { useCreatePurchaseOrder, useUpdatePurchaseOrderFull } from "../../hooks/usePurchaseOrders";
 import { useAppContext } from "../../contexts/AppContext";
 import { useCategories } from "../../hooks/useCategories";
 import { useCreatePartRepo } from "../../hooks/usePartsRepository";
@@ -24,12 +24,13 @@ import FormattedNumberInput from "../common/FormattedNumberInput";
 import SupplierModal from "../inventory/components/SupplierModal";
 import { useStoreSettings } from "../../hooks/useStoreSettings";
 import html2canvas from "html2canvas";
-import type { CreatePurchaseOrderInput, Part } from "../../types";
+import type { CreatePurchaseOrderInput, Part, PurchaseOrder } from "../../types";
 
 interface CreatePOModalProps {
   isOpen: boolean;
   onClose: () => void;
   prefilledPartIds?: string[];
+  existingPO?: PurchaseOrder;
 }
 
 interface POItem {
@@ -42,6 +43,7 @@ export const CreatePOModal: React.FC<CreatePOModalProps> = ({
   isOpen,
   onClose,
   prefilledPartIds = [],
+  existingPO,
 }) => {
   const { currentBranchId } = useAppContext();
   const branchId = currentBranchId || "";
@@ -49,21 +51,30 @@ export const CreatePOModal: React.FC<CreatePOModalProps> = ({
   const { data: allParts = [] } = useParts();
   const { data: categories = [] } = useCategories();
   const createPOMutation = useCreatePurchaseOrder();
+  const updatePOFullMutation = useUpdatePurchaseOrderFull(); // ✅ New hook
   const createPartMutation = useCreatePartRepo();
   const { data: storeSettings } = useStoreSettings();
 
-  const [supplierId, setSupplierId] = useState("");
+  const [supplierId, setSupplierId] = useState(existingPO?.supplier_id || "");
   const [expectedDate, setExpectedDate] = useState(() => {
+    if (existingPO?.expected_date) return existingPO.expected_date.split("T")[0];
     const date = new Date();
     date.setDate(date.getDate() + 7); // Default to 7 days from now
     return date.toISOString().split("T")[0];
   });
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState(existingPO?.notes || "");
   const [showCreateProduct, setShowCreateProduct] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [items, setItems] = useState<POItem[]>(() => {
-    return prefilledPartIds.map((id) => {
+    if (existingPO && existingPO.items) {
+      return existingPO.items.map((item: any) => ({
+        part_id: item.part_id,
+        quantity_ordered: item.quantity_ordered,
+        unit_price: item.unit_price,
+      }));
+    }
+    return prefilledPartIds.map((id: string) => {
       const part = allParts.find((p) => p.id === id);
       const costPrice = part?.costPrice
         ? typeof part.costPrice === "object"
@@ -80,21 +91,34 @@ export const CreatePOModal: React.FC<CreatePOModalProps> = ({
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [showLowStockOnly, setShowLowStockOnly] = useState(true);
+  const [showLowStockOnly, setShowLowStockOnly] = useState(!existingPO); // If editing, show all by default
   const [selectedPartIds, setSelectedPartIds] = useState<Set<string>>(
-    new Set(prefilledPartIds)
+    new Set(existingPO ? existingPO.items?.map((i: any) => i.part_id) : prefilledPartIds)
   );
   const [showMobileCart, setShowMobileCart] = useState(false);
 
+  const [newlyCreatedParts, setNewlyCreatedParts] = useState<Part[]>([]);
+
+  // Merge allParts with newlyCreatedParts to ensure immediate UI update
+  const effectiveAllParts = useMemo(() => {
+    const combined = [...allParts];
+    newlyCreatedParts.forEach(np => {
+      if (!combined.find(p => p.id === np.id)) {
+        combined.push(np);
+      }
+    });
+    return combined;
+  }, [allParts, newlyCreatedParts]);
+
   const partsMap = useMemo(() => {
     const map = new Map();
-    allParts.forEach((p) => map.set(p.id, p));
+    effectiveAllParts.forEach((p) => map.set(p.id, p));
     return map;
-  }, [allParts]);
+  }, [effectiveAllParts]);
 
   // Filter parts: Low stock (< 2) + search + category
   const filteredParts = useMemo(() => {
-    let filtered = allParts;
+    let filtered = effectiveAllParts;
 
     // Filter by low stock - Only apply if NO search term
     // If searching, we want to find ANY product matching the name/sku
@@ -131,7 +155,7 @@ export const CreatePOModal: React.FC<CreatePOModalProps> = ({
         typeof b.stock === "object" ? b.stock[branchId] || 0 : b.stock || 0;
       return stockA - stockB;
     });
-  }, [allParts, showLowStockOnly, categoryFilter, searchTerm, branchId]);
+  }, [effectiveAllParts, showLowStockOnly, categoryFilter, searchTerm, branchId]);
 
   const togglePartSelection = (partId: string) => {
     const newSelected = new Set(selectedPartIds);
@@ -253,19 +277,32 @@ export const CreatePOModal: React.FC<CreatePOModalProps> = ({
     };
 
     try {
-      await createPOMutation.mutateAsync(input);
-      showToast.success("Đã tạo đơn đặt hàng");
+      if (existingPO) {
+        // Update existing PO
+        await updatePOFullMutation.mutateAsync({
+          id: existingPO.id,
+          input
+        });
+        showToast.success("Đã cập nhật đơn đặt hàng");
+      } else {
+        // Create new PO
+        await createPOMutation.mutateAsync(input);
+        showToast.success("Đã tạo đơn đặt hàng");
+      }
+
       onClose();
       // Reset form
-      setSupplierId("");
-      const resetDate = new Date();
-      resetDate.setDate(resetDate.getDate() + 7);
-      setExpectedDate(resetDate.toISOString().split("T")[0]);
-      setNotes("");
-      setItems([]);
+      if (!existingPO) {
+        setSupplierId("");
+        const resetDate = new Date();
+        resetDate.setDate(resetDate.getDate() + 7);
+        setExpectedDate(resetDate.toISOString().split("T")[0]);
+        setNotes("");
+        setItems([]);
+      }
     } catch (error) {
-      console.error("Error creating PO:", error);
-      showToast.error("Lỗi khi tạo đơn đặt hàng");
+      console.error("Error creating/updating PO:", error);
+      showToast.error("Lỗi khi lưu đơn đặt hàng");
     }
   };
 
@@ -880,6 +917,8 @@ export const CreatePOModal: React.FC<CreatePOModalProps> = ({
               onClose={() => setShowCreateProduct(false)}
               onCreated={(newPart) => {
                 setShowCreateProduct(false);
+                setNewlyCreatedParts((prev) => [...prev, newPart]); // Add to local state
+
                 // Auto-select the newly created product
                 const costPrice =
                   typeof newPart.costPrice === "object"

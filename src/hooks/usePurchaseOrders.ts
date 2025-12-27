@@ -222,6 +222,67 @@ export function useCreatePurchaseOrder() {
 // =====================================================
 // Update Purchase Order
 // =====================================================
+// =====================================================
+// Update Purchase Order (Full: Header + Items)
+// =====================================================
+export function useUpdatePurchaseOrderFull() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      input,
+    }: {
+      id: string;
+      input: CreatePurchaseOrderInput;
+    }) => {
+      // 1. Update PO Header
+      const { error: poError } = await supabase
+        .from("purchase_orders")
+        .update({
+          supplier_id: input.supplier_id,
+          expected_date: input.expected_date,
+          notes: input.notes,
+        })
+        .eq("id", id);
+
+      if (poError) throw poError;
+
+      // 2. Delete existing items
+      const { error: deleteError } = await supabase
+        .from("purchase_order_items")
+        .delete()
+        .eq("po_id", id);
+
+      if (deleteError) throw deleteError;
+
+      // 3. Insert new items
+      const itemsToInsert = input.items.map((item) => ({
+        po_id: id,
+        part_id: item.part_id,
+        quantity_ordered: item.quantity_ordered,
+        unit_price: item.unit_price,
+        notes: item.notes,
+      }));
+
+      const { error: insertError } = await supabase
+        .from("purchase_order_items")
+        .insert(itemsToInsert);
+
+      if (insertError) throw insertError;
+
+      return { id, ...input };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PURCHASE_ORDERS_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [PURCHASE_ORDER_ITEMS_QUERY_KEY] });
+    },
+  });
+}
+
+// =====================================================
+// Update Purchase Order (Header only)
+// =====================================================
 export function useUpdatePurchaseOrder() {
   const queryClient = useQueryClient();
 

@@ -23,6 +23,7 @@ import type { PurchaseOrder } from "../../types";
 interface PurchaseOrdersListProps {
   onCreateNew: () => void;
   onViewDetail: (po: PurchaseOrder) => void;
+  onEdit: (po: PurchaseOrder) => void;
 }
 
 const STATUS_CONFIG: Record<
@@ -58,6 +59,7 @@ const STATUS_CONFIG: Record<
 export const PurchaseOrdersList: React.FC<PurchaseOrdersListProps> = ({
   onCreateNew,
   onViewDetail,
+  onEdit,
 }) => {
   const { currentBranchId } = useAppContext();
   const branchId = currentBranchId || "";
@@ -248,6 +250,34 @@ export const PurchaseOrdersList: React.FC<PurchaseOrdersListProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {/* Edit Button */}
+                      {po.status !== "received" && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(po);
+                          }}
+                          className="p-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-amber-100 hover:text-amber-600 dark:hover:bg-amber-900/30 dark:hover:text-amber-400 transition-colors"
+                          title="Chỉnh sửa"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="w-5 h-5"
+                          >
+                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                            <path d="m15 5 4 4" />
+                          </svg>
+                        </button>
+                      )}
+
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

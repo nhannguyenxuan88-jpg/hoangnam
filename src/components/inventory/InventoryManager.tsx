@@ -150,6 +150,7 @@ const InventoryManagerNew: React.FC = () => {
   const [showGoodsReceipt, setShowGoodsReceipt] = useState(false);
   const [showCreatePO, setShowCreatePO] = useState(false);
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
+  const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null); // ✅ New state for editing PO
 
   // Debug log for showCreatePO state changes
   useEffect(() => {
@@ -2126,6 +2127,7 @@ const InventoryManagerNew: React.FC = () => {
                   setShowCreatePO(true);
                 }}
                 onViewDetail={(po) => setSelectedPO(po)}
+                onEdit={(po) => setEditingPO(po)}
               />
             )}
           </div>
@@ -2598,21 +2600,25 @@ const InventoryManagerNew: React.FC = () => {
       </div>
 
       {/* Create Purchase Order Modal */}
-      {showCreatePO && (
+      {(showCreatePO || editingPO) && (
         <>
           {console.log(
             "About to render CreatePOModal, showCreatePO:",
             showCreatePO,
+            "editingPO:",
+            editingPO,
             "selectedItems:",
             selectedItems
           )}
           <CreatePOModal
-            isOpen={showCreatePO}
+            isOpen={!!(showCreatePO || editingPO)}
             onClose={() => {
               setShowCreatePO(false);
+              setEditingPO(null); // Reset editingPO
               setSelectedItems([]);
             }}
             prefilledPartIds={selectedItems}
+            existingPO={editingPO || undefined}
           />
         </>
       )}
