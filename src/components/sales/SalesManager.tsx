@@ -248,15 +248,17 @@ const SalesManager: React.FC = () => {
     ) => {
         try {
             const saleData = {
+                id: crypto.randomUUID(), // Required by createSaleAtomic
                 items: [
                     {
-                        partId: service.id,
+                        partId: `quick_service_${service.id}`, // Prefix for RPC to skip stock validation
                         partName: service.name,
-                        sku: service.id,
+                        sku: `quick_service_${service.id}`,
                         quantity,
                         sellingPrice: service.price,
                         stockSnapshot: 999, // Quick service không cần validate stock
                         discount: 0,
+                        isService: true, // Flag for RPC to skip stock operations
                     },
                 ],
                 customer: {
@@ -277,7 +279,7 @@ const SalesManager: React.FC = () => {
             showToast.success("Tạo đơn dịch vụ nhanh thành công!");
 
             // Refresh data
-            queryClient.invalidateQueries({ queryKey: ["sales"] });
+            queryClient.invalidateQueries({ queryKey: ["salesRepoPaged"] });
         } catch (error) {
             console.error("Error creating quick service sale:", error);
             showToast.error("Không thể tạo đơn dịch vụ. Vui lòng thử lại.");
