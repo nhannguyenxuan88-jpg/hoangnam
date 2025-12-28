@@ -55,9 +55,10 @@ import {
   useCreateInventoryTxRepo,
   useCreateReceiptAtomicRepo,
 } from "../../hooks/useInventoryTransactionsRepository";
+import { useWorkOrdersRepo } from "../../hooks/useWorkOrdersRepository";
 import { useCategories, useCreateCategory } from "../../hooks/useCategories";
 import { useSuppliers } from "../../hooks/useSuppliers";
-import type { Part, InventoryTransaction } from "../../types";
+import type { Part, InventoryTransaction, WorkOrder } from "../../types";
 import { fetchPartBySku, createPart } from "../../lib/repository/partsRepository";
 import { useSupplierDebtsRepo } from "../../hooks/useDebtsRepository";
 import { createCashTransaction } from "../../lib/repository/cashTransactionsRepository";
@@ -175,6 +176,13 @@ const InventoryManagerNew: React.FC = () => {
   const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [editingReceipt, setEditingReceipt] = useState<any | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [showAddProductToReceiptModal, setShowAddProductToReceiptModal] =
+    useState(false);
+  const [showImportInventoryModal, setShowImportInventoryModal] =
+    useState(false);
+  const [showEditPartModal, setShowEditPartModal] = useState(false);
+  const [reservedInfoPartId, setReservedInfoPartId] = useState<string | null>(null);
   const [showExternalImport, setShowExternalImport] = useState(false);
   const [showBatchPrintModal, setShowBatchPrintModal] = useState(false);
   const [mobileMenuOpenIndex, setMobileMenuOpenIndex] = useState<number | null>(
@@ -240,6 +248,10 @@ const InventoryManagerNew: React.FC = () => {
     search,
     category: categoryFilter === "all" ? undefined : categoryFilter,
   });
+
+  // Fetch work orders for "Reserved" stock details
+  const { data: workOrders = [] } = useWorkOrdersRepo();
+
   const repoParts = pagedResult?.data || [];
   const totalParts = pagedResult?.meta?.total || 0;
   const totalPages = Math.max(1, Math.ceil(totalParts / pageSize));
@@ -1947,7 +1959,14 @@ const InventoryManagerNew: React.FC = () => {
                                   {available.toLocaleString()}
                                 </span>
                                 {reserved > 0 && (
-                                  <span className="text-[10px] text-amber-600 dark:text-amber-400">
+                                  <span
+                                    className="text-[10px] text-amber-600 dark:text-amber-400 cursor-pointer hover:underline hover:text-amber-700"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setReservedInfoPartId(part.id);
+                                    }}
+                                    title="Nhấn để xem chi tiết phiếu đang giữ hàng"
+                                  >
                                     (Đặt trước: {reserved})
                                   </span>
                                 )}
@@ -2195,6 +2214,141 @@ const InventoryManagerNew: React.FC = () => {
           currentBranchId={currentBranchId}
           onClose={() => setShowBatchPrintModal(false)}
         />
+      )}
+
+      {/* Edit Part Modal */}
+      {reservedInfoPartId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50">
+              <h3 className="font-semibold text-slate-800 dark:text-slate-200">
+                Chi tiết hàng đang đặt trước
+              </h3>
+              <button
+                onClick={() => setReservedInfoPartId(null)}
+                className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <div className="h-5 w-5 flex items-center justify-center text-slate-500">✕</div>
+              </button>
+            </div>
+            <div className="p-0 max-h-[60vh] overflow-y-auto">
+              {(() => {
+                const part = allPartsData?.find(p => p.id === reservedInfoPartId);
+
+                // Debug logging
+                console.log("Checking reserved for part:", part?.name, reservedInfoPartId);
+                console.log("Total work orders:", workOrders.length);
+
+                const reservingOrders = workOrders.filter((wo: WorkOrder) => {
+                  if (!wo.partsUsed) return false;
+
+                  // Check if part exists in Work Order
+                  const hasPart = wo.partsUsed.some(p => p.partId === reservedInfoPartId);
+
+                  // Logic reserved: 
+                  // - Include: Tiếp nhận, Đang sửa, Đã sửa xong, Trả máy (if unpaid/partially paid - though usually 'Trả máy' implies stock is gone? 
+                  // Actually, 'Reserved' usually means 'Allocated but not yet DEDUCTED from main stock' OR 'Deducted but tracked'?
+                  // In this system's logic: 
+                  // Stock = Actual on shelf. 
+                  // Reserved = In Active WO. 
+                  // If WO is 'Completed' (Trả máy), stock should have been deducted and Reserved cleared?
+                  // If Reserved > 0, it means the system thinks there are active WOs.
+                  // So we should look for ANY WO that contains the part and is NOT 'Đã hủy'.
+                  // Let's broaden to show ALL non-cancelled WOs with this part, 
+                  // so the user can see what's causing the count, even if it's a 'completed' one that failed to clear reserved.
+
+                  const isNotCancelled = wo.status !== "Đã hủy";
+
+                  return hasPart && isNotCancelled;
+                });
+
+                console.log("Filtered reserving orders:", reservingOrders.length);
+
+                if (!part) return <div className="p-6 text-center text-slate-500">Không tìm thấy thông tin sản phẩm</div>;
+
+                if (reservingOrders.length === 0) {
+                  return (
+                    <div className="p-8 text-center flex flex-col items-center gap-3">
+                      <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                        <span className="text-2xl">✓</span>
+                      </div>
+                      <p className="text-slate-600 dark:text-slate-400">
+                        Không có phiếu sửa chữa nào đang giữ hàng này.
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        (Có thể do phiếu đã hoàn thành hoặc dữ liệu chưa cập nhật)
+                      </p>
+                      {/* Debug Info */}
+                      <div className="mt-4 p-2 bg-slate-100 dark:bg-slate-900 rounded text-[10px] text-slate-400 font-mono text-left w-full overflow-hidden">
+                        DEBUG: PartID: {reservedInfoPartId}<br />
+                        Total WOs: {workOrders.length}<br />
+                        First WO Status: {workOrders[0]?.status}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                    <div className="bg-blue-50/50 dark:bg-blue-900/10 p-3 border-b border-blue-100 dark:border-blue-900/30">
+                      <p className="text-sm text-slate-700 dark:text-slate-300">
+                        Sản phẩm: <span className="font-semibold text-blue-600 dark:text-blue-400">{part.name}</span>
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Tổng đang giữ: <span className="font-medium text-amber-600">{reservingOrders.reduce((sum, wo) => sum + (wo.partsUsed?.find(p => p.partId === reservedInfoPartId)?.quantity || 0), 0)}</span>
+                      </p>
+                    </div>
+                    {reservingOrders.map((wo: WorkOrder) => {
+                      const item = wo.partsUsed?.find(p => p.partId === reservedInfoPartId);
+                      return (
+                        <div key={wo.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                          <div className="flex justify-between items-start mb-1">
+                            <div>
+                              <div className="font-medium text-slate-900 dark:text-slate-100">
+                                {wo.customerName}
+                              </div>
+                              <div className="text-xs text-slate-500 flex gap-2">
+                                <span>{wo.vehicleModel || "Xe lai vãng"}</span>
+                                {wo.licensePlate && <span>• {wo.licensePlate}</span>}
+                              </div>
+                            </div>
+                            <div className={`px-2 py-0.5 rounded text-[10px] font-medium border
+                               ${wo.status === 'Tiếp nhận' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                                wo.status === 'Đang sửa' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                  wo.status === 'Đã sửa xong' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                                    'bg-slate-100 text-slate-600 border-slate-200'}`}
+                            >
+                              {wo.status}
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center mt-2 text-sm">
+                            <span className="text-slate-500 dark:text-slate-400 text-xs">
+                              LH: {wo.customerPhone || "---"}
+                            </span>
+                            <span className="font-medium text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                              SL: {item?.quantity || 0}
+                            </span>
+                          </div>
+                          <div className="mt-1 text-[10px] text-slate-400">
+                            Ngày tạo: {new Date(wo.creationDate).toLocaleString('vi-VN')}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+            <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end">
+              <button
+                onClick={() => setReservedInfoPartId(null)}
+                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Edit Part Modal */}

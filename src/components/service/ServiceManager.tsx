@@ -220,6 +220,12 @@ export default function ServiceManager() {
 
   // Sync dateFilter with dateRangeDays for API query
   useEffect(() => {
+    // If searching, ignore date filter (search all history)
+    if (debouncedSearchQuery) {
+      setDateRangeDays(0);
+      return;
+    }
+
     if (dateFilter === "all") {
       setDateRangeDays(0); // 0 = load all data (no date filter)
     } else if (dateFilter === "today") {
@@ -229,15 +235,20 @@ export default function ServiceManager() {
     } else if (dateFilter === "month") {
       setDateRangeDays(30);
     }
-  }, [dateFilter]);
+  }, [dateFilter, debouncedSearchQuery]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [searchQuery, activeTab, dateFilter, technicianFilter, paymentFilter]);
 
   useEffect(() => {
-    setFetchLimit(100);
-  }, [dateRangeDays, currentBranchId]);
+    // Increase limit when searching to find older records
+    if (debouncedSearchQuery) {
+      setFetchLimit(1000);
+    } else {
+      setFetchLimit(100);
+    }
+  }, [dateRangeDays, currentBranchId, debouncedSearchQuery]);
 
   // Track mobile state for responsive layout
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -355,17 +366,21 @@ export default function ServiceManager() {
   const filteredOrders = useMemo(() => {
     let filtered = displayWorkOrders.filter((o) => !o.refunded);
 
-    if (activeTab === "delivered") {
-      filtered = filtered.filter((o) => o.status === "Trả máy");
-    } else {
-      filtered = filtered.filter((o) => o.status !== "Trả máy");
+    // Apply status filter based on active tab ONLY if not searching
+    // If searching, we want to look through ALL history (Global Search)
+    if (!debouncedSearchQuery) {
+      if (activeTab === "delivered") {
+        filtered = filtered.filter((o) => o.status === "Trả máy");
+      } else {
+        filtered = filtered.filter((o) => o.status !== "Trả máy");
 
-      if (activeTab === "pending")
-        filtered = filtered.filter((o) => o.status === "Tiếp nhận");
-      else if (activeTab === "inProgress")
-        filtered = filtered.filter((o) => o.status === "Đang sửa");
-      else if (activeTab === "done")
-        filtered = filtered.filter((o) => o.status === "Đã sửa xong");
+        if (activeTab === "pending")
+          filtered = filtered.filter((o) => o.status === "Tiếp nhận");
+        else if (activeTab === "inProgress")
+          filtered = filtered.filter((o) => o.status === "Đang sửa");
+        else if (activeTab === "done")
+          filtered = filtered.filter((o) => o.status === "Đã sửa xong");
+      }
     }
 
     // Search filter (using debounced value)
@@ -379,7 +394,7 @@ export default function ServiceManager() {
     }
 
     // Date filter
-    if (dateFilter !== "all") {
+    if (dateFilter !== "all" && !debouncedSearchQuery) {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -2480,6 +2495,9 @@ export default function ServiceManager() {
                       0
                     ) || 0;
 
+                  const parts = order.partsUsed || [];
+                  const services = order.additionalServices || [];
+
                   // Phí dịch vụ = laborCost
                   const laborCost = order.laborCost || 0;
                   const totalAmount = order.total || 0;
@@ -2499,7 +2517,7 @@ export default function ServiceManager() {
                         let cost = p.costPrice || 0;
                         if (!cost && parts) {
                           const originalPart = parts.find(
-                            (fp) => fp.id === p.partId || fp.sku === p.sku
+                            (fp: any) => fp.id === p.partId || fp.sku === p.sku
                           );
                           if (originalPart) {
                             // Handle legacy importPrice or current costPrice logic
@@ -2530,8 +2548,6 @@ export default function ServiceManager() {
                     order.paymentStatus === "paid"
                       ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300"
                       : "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300";
-                  const parts = order.partsUsed || [];
-                  const services = order.additionalServices || [];
 
                   const partsSummary = parts
                     .slice(0, 2)

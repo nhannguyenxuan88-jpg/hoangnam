@@ -40,6 +40,7 @@ import {
 } from "../../utils/maintenanceReminder";
 import { WORK_ORDER_STATUS, type WorkOrderStatus } from "../../constants";
 import { NumberInput } from "../common/NumberInput";
+import { showToast } from "../../utils/toast";
 
 interface WorkOrderMobileModalProps {
   isOpen: boolean;
@@ -2351,6 +2352,11 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                           // Auto-add first matching part when Enter is pressed
                           const firstMatch = filteredParts[0];
                           if (firstMatch) {
+                            const stock = firstMatch.stock?.[currentBranchId] || 0;
+                            if (stock <= 0) {
+                              showToast.error("Sản phẩm đã hết hàng!");
+                              return;
+                            }
                             handleAddPart(firstMatch);
                           }
                         }
@@ -2384,6 +2390,11 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                         p.barcode?.toLowerCase() === barcode.toLowerCase()
                     );
                     if (exactMatch) {
+                      const stock = exactMatch.stock?.[currentBranchId] || 0;
+                      if (stock <= 0) {
+                        showToast.error("Sản phẩm đã hết hàng!");
+                        return;
+                      }
                       handleAddPart(exactMatch);
                     }
                   }}
@@ -2414,7 +2425,13 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                     return (
                       <div
                         key={part.id}
-                        onClick={() => handleAddPart(part)}
+                        onClick={() => {
+                          if (stock <= 0) {
+                            showToast.error("Sản phẩm đã hết hàng!");
+                            return;
+                          }
+                          handleAddPart(part);
+                        }}
                         className="p-2.5 bg-white dark:bg-[#1e1e2d] rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-[#2b2b40] active:bg-blue-600/20 transition-colors"
                       >
                         <div className="flex items-start justify-between">
