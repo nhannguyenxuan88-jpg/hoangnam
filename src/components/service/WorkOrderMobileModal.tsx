@@ -2338,25 +2338,39 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
               {/* Search Input - Always visible at top */}
               <div className="flex-shrink-0 p-3 bg-slate-50 dark:bg-[#151521]">
                 {/* Part Search Input */}
-                <div className="flex gap-2 mb-3">
+                <div className="flex gap-2 mb-2">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <input
                       type="text"
                       value={partSearchTerm}
                       onChange={(e) => setPartSearchTerm(e.target.value)}
-                      placeholder="Tìm tên hoặc mã phụ tùng..."
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && partSearchTerm.trim()) {
+                          e.preventDefault();
+                          // Auto-add first matching part when Enter is pressed
+                          const firstMatch = filteredParts[0];
+                          if (firstMatch) {
+                            handleAddPart(firstMatch);
+                          }
+                        }
+                      }}
+                      placeholder="Quét hoặc nhập mã phụ tùng..."
                       className="w-full pl-10 pr-4 py-3 bg-white dark:bg-[#2b2b40] border border-slate-200 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white text-sm focus:border-blue-500 transition-all"
                       autoFocus
                     />
                   </div>
                   <button
                     onClick={() => setIsScanning(true)}
-                    className="p-3 bg-blue-600 rounded-xl text-white flex items-center justify-center"
+                    className="p-3 bg-blue-600 hover:bg-blue-700 rounded-xl text-white flex items-center justify-center transition-colors"
+                    title="Quét bằng camera"
                   >
                     <ScanBarcode className="w-5 h-5" />
                   </button>
                 </div>
+                <p className="text-xs text-slate-400 dark:text-slate-500">
+                  Nhấn Enter để thêm nhanh phụ tùng đầu tiên • Dùng camera để quét mã vạch
+                </p>
 
                 {/* Barcode Scanner Overlay */}
                 <BarcodeScanner
