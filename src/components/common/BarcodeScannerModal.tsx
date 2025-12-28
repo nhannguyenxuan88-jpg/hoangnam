@@ -102,36 +102,22 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       const scanner = new Html5Qrcode("barcode-scanner-container");
       scannerRef.current = scanner;
 
-      // Optimized config for iOS - higher fps, larger qrbox, experimental features
-      const config = {
-        fps: 15, // Increased from 10 for faster scanning on iOS
-        qrbox: { width: 300, height: 180 }, // Larger scanning area
+      // iOS-optimized config with focusMode: continuous for better autofocus
+      const config: any = {
+        fps: 20, // Higher fps for faster detection
+        qrbox: { width: 300, height: 180 },
         aspectRatio: 1.5,
         disableFlip: false,
-        // Experimental features help with iOS Safari
         experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true, // Use native BarcodeDetector API if available
+          useBarCodeDetectorIfSupported: true,
         },
-        // Support common barcode formats for better detection
-        formatsToSupport: [
-          0,  // QR_CODE
-          1,  // AZTEC
-          2,  // CODABAR
-          3,  // CODE_39
-          4,  // CODE_93
-          5,  // CODE_128
-          6,  // DATA_MATRIX
-          7,  // MAXICODE
-          8,  // ITF
-          9,  // EAN_13
-          10, // EAN_8
-          11, // PDF_417
-          12, // RSS_14
-          13, // RSS_EXPANDED
-          14, // UPC_A
-          15, // UPC_E
-          16, // UPC_EAN_EXTENSION
-        ],
+        // iOS Safari needs focusMode: continuous for autofocus
+        videoConstraints: {
+          facingMode: facingMode,
+          focusMode: "continuous", // Critical for iOS - enables continuous autofocus
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
       };
 
       await scanner.start(
@@ -142,6 +128,20 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
           // Ignore scan errors (no code found)
         }
       );
+
+      // Apply zoom after camera starts (iOS fix for iPhone 11+)
+      try {
+        const capabilities = (scanner as any).getRunningTrackCameraCapabilities?.();
+        if (capabilities?.zoomFeature?.isSupported()) {
+          const zoomRange = capabilities.zoomFeature.value();
+          // Apply slight zoom for better barcode detection
+          const optimalZoom = Math.min(zoomRange.max, Math.max(zoomRange.min, 1.5));
+          await capabilities.zoomFeature.apply(optimalZoom);
+        }
+      } catch (e) {
+        // Zoom not supported, continue without
+        console.log("Zoom not supported on this device");
+      }
 
       setIsScanning(true);
     } catch (err: any) {
