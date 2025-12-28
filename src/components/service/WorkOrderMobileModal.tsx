@@ -28,7 +28,7 @@ import {
   Package,
   ScanBarcode,
 } from "lucide-react";
-import { BarcodeScanner } from "../common/BarcodeScanner";
+import BarcodeScannerModal from "../common/BarcodeScannerModal";
 import { formatCurrency, formatWorkOrderId } from "../../utils/format";
 import { getCategoryColor } from "../../utils/categoryColors";
 import type { WorkOrder, Part, Customer, Vehicle, Employee } from "../../types";
@@ -2373,15 +2373,21 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                 </p>
 
                 {/* Barcode Scanner Overlay */}
-                <BarcodeScanner
-                  isScanning={isScanning}
+                <BarcodeScannerModal
+                  isOpen={isScanning}
                   onClose={() => setIsScanning(false)}
-                  onResult={(result) => {
-                    setIsScanning(false);
-                    setPartSearchTerm(result);
-                    // Optional: Auto-add if exact SKU match found?
-                    // For now just fill search term
+                  onScan={(barcode: string) => {
+                    setPartSearchTerm(barcode);
+                    // Auto-add first matching part if exact SKU found
+                    const exactMatch = filteredParts.find(
+                      (p) => p.sku?.toLowerCase() === barcode.toLowerCase() ||
+                        p.barcode?.toLowerCase() === barcode.toLowerCase()
+                    );
+                    if (exactMatch) {
+                      handleAddPart(exactMatch);
+                    }
                   }}
+                  title="Quét mã phụ tùng"
                 />
               </div>
 
