@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../../contexts/AuthContext";
 import type { WorkOrder, Part, WorkOrderPart, Vehicle } from "../../../types";
-import { formatCurrency, formatWorkOrderId } from "../../../utils/format";
+import { formatCurrency, formatWorkOrderId, normalizeSearchText } from "../../../utils/format";
 import { NumberInput } from "../../common/NumberInput";
 import { getCategoryColor } from "../../../utils/categoryColors";
 import {
@@ -17,6 +17,7 @@ import {
   validatePhoneNumber,
   validateDepositAmount,
 } from "../../../utils/validation";
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
 
 export interface StoreSettings {
   store_name?: string;
@@ -376,6 +377,12 @@ const WorkOrderModal: React.FC<{
       licensePlate: "",
     });
     const [customerSearch, setCustomerSearch] = useState("");
+
+    // Server-side search state
+    const [serverCustomers, setServerCustomers] = useState<any[]>([]);
+    const debouncedCustomerSearch = useDebouncedValue(customerSearch, 500);
+    const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+
     const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
     const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
     const [newVehicle, setNewVehicle] = useState({
@@ -481,24 +488,61 @@ const WorkOrderModal: React.FC<{
       setEditCustomerPhone("");
     }, [order]);
 
+    // Search customers from Supabase when search term changes
+    useEffect(() => {
+      const searchCustomers = async () => {
+        if (!debouncedCustomerSearch.trim()) {
+          setServerCustomers([]);
+          return;
+        }
+
+        setIsSearchingCustomer(true);
+        try {
+          const searchTerm = debouncedCustomerSearch.trim();
+          // Use a simple OR query on name and phone
+          const { data, error } = await supabase
+            .from("customers")
+            .select("*")
+            .or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
+            .limit(20);
+
+          if (!error && data) {
+            setServerCustomers(data);
+          }
+        } catch (err) {
+          console.error("Error searching customers:", err);
+        } finally {
+          setIsSearchingCustomer(false);
+        }
+      };
+
+      searchCustomers();
+    }, [debouncedCustomerSearch]);
+
     // Filter customers based on search - show all if search is empty
+    // COMBINE local customers and server results
     const filteredCustomers = useMemo(() => {
+      // Merge local customers and server customers, removing duplicates by ID
+      const allCandidates = [...customers, ...serverCustomers];
+      const uniqueCandidates = Array.from(new Map(allCandidates.map(c => [c.id, c])).values());
+
       if (!customerSearch.trim()) {
         // Show all customers when no search term
-        return customers.slice(0, 10); // Limit to first 10 for performance
+        return uniqueCandidates.slice(0, 10); // Limit to first 10 for performance
       }
 
-      const q = customerSearch.toLowerCase();
-      return customers.filter(
+      const q = normalizeSearchText(customerSearch);
+      return uniqueCandidates.filter(
         (c) =>
-          c.name.toLowerCase().includes(q) ||
+          normalizeSearchText(c.name).includes(q) ||
           c.phone?.toLowerCase().includes(q) ||
           (c.vehicles &&
             c.vehicles.some((v: any) =>
-              v.licensePlate?.toLowerCase().includes(q)
+              normalizeSearchText(v.licensePlate).includes(q) ||
+              v.licensePlate?.toLowerCase().includes(q.toLowerCase())
             ))
       );
-    }, [customers, customerSearch]);
+    }, [customers, serverCustomers, customerSearch]);
 
     // Close dropdown when clicking outside
     useEffect(() => {

@@ -29,7 +29,7 @@ import {
   ScanBarcode,
 } from "lucide-react";
 import BarcodeScannerModal from "../common/BarcodeScannerModal";
-import { formatCurrency, formatWorkOrderId } from "../../utils/format";
+import { formatCurrency, formatWorkOrderId, normalizeSearchText } from "../../utils/format";
 import { getCategoryColor } from "../../utils/categoryColors";
 import type { WorkOrder, Part, Customer, Vehicle, Employee } from "../../types";
 import {
@@ -41,6 +41,8 @@ import {
 import { WORK_ORDER_STATUS, type WorkOrderStatus } from "../../constants";
 import { NumberInput } from "../common/NumberInput";
 import { showToast } from "../../utils/toast";
+import { supabase } from "../../supabaseClient";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
 interface WorkOrderMobileModalProps {
   isOpen: boolean;
@@ -404,6 +406,10 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     !initialCustomer
   );
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  // Server-side search state
+  const [serverCustomers, setServerCustomers] = useState<Customer[]>([]);
+  const debouncedCustomerSearch = useDebouncedValue(customerSearchTerm, 500);
+  const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
   const [showPartSearch, setShowPartSearch] = useState(false);
   const [partSearchTerm, setPartSearchTerm] = useState("");
   const [isScanning, setIsScanning] = useState(false);
@@ -451,32 +457,57 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     return cleaned ? Number(cleaned) : 0;
   };
 
-  // Filtered customers
+  // Search customers from Supabase when search term changes
+  useEffect(() => {
+    const searchCustomers = async () => {
+      if (!debouncedCustomerSearch || !debouncedCustomerSearch.trim()) {
+        setServerCustomers([]);
+        return;
+      }
+
+      setIsSearchingCustomer(true);
+      try {
+        const searchTerm = debouncedCustomerSearch.trim();
+        // Use a simple OR query on name and phone
+        const { data, error } = await supabase
+          .from("customers")
+          .select("*")
+          .or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
+          .limit(20);
+
+        if (!error && data) {
+          setServerCustomers(data as Customer[]);
+        }
+      } catch (err) {
+        console.error("Error searching customers:", err);
+      } finally {
+        setIsSearchingCustomer(false);
+      }
+    };
+
+    searchCustomers();
+  }, [debouncedCustomerSearch]);
+
+  // Filtered customers (combining local and server results)
   const filteredCustomers = useMemo(() => {
-    console.log(
-      "[WorkOrderMobileModal] Total customers:",
-      customers?.length,
-      customers
-    );
-    if (!customerSearchTerm) return customers;
-    const term = customerSearchTerm.toLowerCase();
-    const filtered = customers.filter(
+    // Merge local customers and server customers, removing duplicates by ID
+    const allCandidates = [...customers, ...serverCustomers];
+    const uniqueCandidates = Array.from(new Map(allCandidates.map(c => [c.id, c])).values());
+
+    if (!customerSearchTerm) return uniqueCandidates;
+    const term = normalizeSearchText(customerSearchTerm);
+    const filtered = uniqueCandidates.filter(
       (c) =>
-        c.name.toLowerCase().includes(term) ||
+        normalizeSearchText(c.name).includes(term) ||
         c.phone?.toLowerCase().includes(term) ||
         (c.vehicles &&
           c.vehicles.some((v: any) =>
-            v.licensePlate?.toLowerCase().includes(term)
+            normalizeSearchText(v.licensePlate).includes(term) ||
+            v.licensePlate?.toLowerCase().includes(term.toLowerCase())
           ))
     );
-    console.log(
-      "[WorkOrderMobileModal] Filtered customers:",
-      filtered.length,
-      "Search term:",
-      customerSearchTerm
-    );
     return filtered;
-  }, [customers, customerSearchTerm]);
+  }, [customers, serverCustomers, customerSearchTerm]);
 
   // Filtered parts
   const filteredParts = useMemo(() => {

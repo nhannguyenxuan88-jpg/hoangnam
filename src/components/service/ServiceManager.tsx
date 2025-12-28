@@ -157,7 +157,7 @@ export default function ServiceManager() {
         .from("customers")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(100); // Limit to 100 most recent customers for better mobile performance
+        .limit(2000); // Increased limit to find older customers
 
       if (!error && data) {
         setFetchedCustomers(data);

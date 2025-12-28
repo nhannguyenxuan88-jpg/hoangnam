@@ -199,3 +199,27 @@ export const formatAnyId = (id?: string | null, storePrefix?: string) => {
 
   return id;
 };
+
+/**
+ * Normalizes text for search purposes (removes accents, lowercase, trim)
+ * Useful for Vietnamese search
+ * 
+ * @param str - The string to normalize
+ * @returns Normalized string
+ * 
+ * @example
+ * ```typescript
+ * normalizeSearchText("Hồng Lợi") // "hong loi"
+ * normalizeSearchText("hồng lợi") // "hong loi"
+ * ```
+ */
+export const normalizeSearchText = (str: string | null | undefined): string => {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim();
+};
