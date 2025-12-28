@@ -3559,21 +3559,107 @@ export default function ServiceManager() {
                         >
                           Dịch vụ bổ sung:
                         </p>
-                        <ul
+                        <table
                           style={{
-                            margin: "0",
-                            paddingLeft: "5mm",
-                            color: "#000",
+                            width: "100%",
+                            borderCollapse: "collapse",
+                            border: "1px solid #ddd",
                           }}
                         >
-                          {printOrder.additionalServices.map((service, idx) => (
-                            <li key={idx} style={{ marginBottom: "1mm" }}>
-                              {service.description} -{" "}
-                              {formatCurrency(service.price)} x{" "}
-                              {service.quantity}
-                            </li>
-                          ))}
-                        </ul>
+                          <thead>
+                            <tr style={{ backgroundColor: "#f5f5f5" }}>
+                              <th
+                                style={{
+                                  border: "1px solid #ddd",
+                                  padding: "2mm",
+                                  textAlign: "left",
+                                  fontSize: "10pt",
+                                }}
+                              >
+                                Tên dịch vụ
+                              </th>
+                              <th
+                                style={{
+                                  border: "1px solid #ddd",
+                                  padding: "2mm",
+                                  textAlign: "center",
+                                  fontSize: "10pt",
+                                  width: "15%",
+                                }}
+                              >
+                                SL
+                              </th>
+                              <th
+                                style={{
+                                  border: "1px solid #ddd",
+                                  padding: "2mm",
+                                  textAlign: "right",
+                                  fontSize: "10pt",
+                                  width: "25%",
+                                }}
+                              >
+                                Đơn giá
+                              </th>
+                              <th
+                                style={{
+                                  border: "1px solid #ddd",
+                                  padding: "2mm",
+                                  textAlign: "right",
+                                  fontSize: "10pt",
+                                  width: "25%",
+                                }}
+                              >
+                                Thành tiền
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {printOrder.additionalServices.map((service, idx) => (
+                              <tr key={idx}>
+                                <td
+                                  style={{
+                                    border: "1px solid #ddd",
+                                    padding: "2mm",
+                                    fontSize: "10pt",
+                                  }}
+                                >
+                                  {service.description}
+                                </td>
+                                <td
+                                  style={{
+                                    border: "1px solid #ddd",
+                                    padding: "2mm",
+                                    textAlign: "center",
+                                    fontSize: "10pt",
+                                  }}
+                                >
+                                  {service.quantity || 1}
+                                </td>
+                                <td
+                                  style={{
+                                    border: "1px solid #ddd",
+                                    padding: "2mm",
+                                    textAlign: "right",
+                                    fontSize: "10pt",
+                                  }}
+                                >
+                                  {formatCurrency(service.price || 0)}
+                                </td>
+                                <td
+                                  style={{
+                                    border: "1px solid #ddd",
+                                    padding: "2mm",
+                                    textAlign: "right",
+                                    fontSize: "10pt",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  {formatCurrency((service.price || 0) * (service.quantity || 1))}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     )}
 
@@ -3596,78 +3682,53 @@ export default function ServiceManager() {
                       }}
                     >
                       <tbody>
-                        <tr>
-                          <td
-                            style={{
-                              fontWeight: "bold",
-                              paddingBottom: "2mm",
-                              fontSize: "10pt",
-                            }}
-                          >
-                            Tiền phụ tùng:
-                          </td>
-                          <td
-                            style={{
-                              textAlign: "right",
-                              paddingBottom: "2mm",
-                              fontSize: "10pt",
-                            }}
-                          >
-                            {formatCurrency(
-                              printOrder.partsUsed?.reduce(
-                                (sum: number, p: WorkOrderPart) =>
-                                  sum + p.price * p.quantity,
-                                0
-                              ) || 0
-                            )}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style={{
-                              fontWeight: "bold",
-                              paddingBottom: "2mm",
-                              fontSize: "10pt",
-                            }}
-                          >
-                            Phí dịch vụ:
-                          </td>
-                          <td
-                            style={{
-                              textAlign: "right",
-                              paddingBottom: "2mm",
-                              fontSize: "10pt",
-                            }}
-                          >
-                            {formatCurrency(printOrder.laborCost || 0)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td
-                            style={{
-                              fontWeight: "bold",
-                              paddingBottom: "2mm",
-                              fontSize: "10pt",
-                            }}
-                          >
-                            Giá công/Đặt hàng:
-                          </td>
-                          <td
-                            style={{
-                              textAlign: "right",
-                              paddingBottom: "2mm",
-                              fontSize: "10pt",
-                            }}
-                          >
-                            {formatCurrency(
-                              printOrder.additionalServices?.reduce(
-                                (sum: number, s: any) =>
-                                  sum + (s.price || 0) * (s.quantity || 1),
-                                0
-                              ) || 0
-                            )}
-                          </td>
-                        </tr>
+                        {/* Tiền phụ tùng - chỉ hiển thị khi != 0 */}
+                        {(() => {
+                          const partsTotal = printOrder.partsUsed?.reduce(
+                            (sum: number, p: WorkOrderPart) => sum + p.price * p.quantity,
+                            0
+                          ) || 0;
+                          return partsTotal !== 0 && (
+                            <tr>
+                              <td style={{ fontWeight: "bold", paddingBottom: "2mm", fontSize: "10pt" }}>
+                                Tiền phụ tùng:
+                              </td>
+                              <td style={{ textAlign: "right", paddingBottom: "2mm", fontSize: "10pt" }}>
+                                {formatCurrency(partsTotal)}
+                              </td>
+                            </tr>
+                          );
+                        })()}
+
+                        {/* Phí dịch vụ (laborCost) - chỉ hiển thị khi != 0 */}
+                        {(printOrder.laborCost ?? 0) !== 0 && (
+                          <tr>
+                            <td style={{ fontWeight: "bold", paddingBottom: "2mm", fontSize: "10pt" }}>
+                              Phí dịch vụ:
+                            </td>
+                            <td style={{ textAlign: "right", paddingBottom: "2mm", fontSize: "10pt" }}>
+                              {formatCurrency(printOrder.laborCost || 0)}
+                            </td>
+                          </tr>
+                        )}
+
+                        {/* Giá công/Đặt hàng - chỉ hiển thị khi != 0 */}
+                        {(() => {
+                          const additionalTotal = printOrder.additionalServices?.reduce(
+                            (sum: number, s: any) => sum + (s.price || 0) * (s.quantity || 1),
+                            0
+                          ) || 0;
+                          return additionalTotal !== 0 && (
+                            <tr>
+                              <td style={{ fontWeight: "bold", paddingBottom: "2mm", fontSize: "10pt" }}>
+                                Giá công/Đặt hàng:
+                              </td>
+                              <td style={{ textAlign: "right", paddingBottom: "2mm", fontSize: "10pt" }}>
+                                {formatCurrency(additionalTotal)}
+                              </td>
+                            </tr>
+                          );
+                        })()}
                         {printOrder.discount != null &&
                           printOrder.discount > 0 && (
                             <tr>
@@ -4374,18 +4435,90 @@ export default function ServiceManager() {
                 >
                   Dịch vụ bổ sung:
                 </p>
-                <ul style={{ margin: "0", paddingLeft: "5mm" }}>
-                  {printOrder.additionalServices.map((service, idx) => (
-                    <li key={idx} style={{ marginBottom: "1mm" }}>
-                      {service.description} - {formatCurrency(service.price)} x{" "}
-                      {service.quantity}
-                    </li>
-                  ))}
-                </ul>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    border: "1px solid #ddd",
+                  }}
+                >
+                  <thead>
+                    <tr style={{ backgroundColor: "#f5f5f5" }}>
+                      <th
+                        style={{
+                          border: "1px solid #ddd",
+                          padding: "2mm",
+                          textAlign: "left",
+                          fontSize: "10pt",
+                        }}
+                      >
+                        Tên dịch vụ
+                      </th>
+                      <th
+                        style={{
+                          border: "1px solid #ddd",
+                          padding: "2mm",
+                          textAlign: "center",
+                          fontSize: "10pt",
+                          width: "15%",
+                        }}
+                      >
+                        SL
+                      </th>
+                      <th
+                        style={{
+                          border: "1px solid #ddd",
+                          padding: "2mm",
+                          textAlign: "right",
+                          fontSize: "10pt",
+                          width: "25%",
+                        }}
+                      >
+                        Thành tiền
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {printOrder.additionalServices.map((service, idx) => (
+                      <tr key={idx}>
+                        <td
+                          style={{
+                            border: "1px solid #ddd",
+                            padding: "2mm",
+                            fontSize: "10pt",
+                          }}
+                        >
+                          {service.description}
+                        </td>
+                        <td
+                          style={{
+                            border: "1px solid #ddd",
+                            padding: "2mm",
+                            textAlign: "center",
+                            fontSize: "10pt",
+                          }}
+                        >
+                          {service.quantity || 1}
+                        </td>
+                        <td
+                          style={{
+                            border: "1px solid #ddd",
+                            padding: "2mm",
+                            textAlign: "right",
+                            fontSize: "10pt",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          {formatCurrency((service.price || 0) * (service.quantity || 1))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
 
-          {/* Cost Summary */}
+          {/* Cost Summary - Only show items > 0 */}
           <div
             style={{
               border: "1px solid #ddd",
@@ -4397,58 +4530,54 @@ export default function ServiceManager() {
           >
             <table style={{ width: "100%", borderSpacing: "0" }}>
               <tbody>
-                <tr>
-                  <td
-                    style={{
-                      fontWeight: "bold",
-                      paddingBottom: "2mm",
-                      fontSize: "10pt",
-                    }}
-                  >
-                    Tiền phụ tùng:
-                  </td>
-                  <td
-                    style={{
-                      textAlign: "right",
-                      paddingBottom: "2mm",
-                      fontSize: "10pt",
-                    }}
-                  >
-                    {formatCurrency(
-                      printOrder.partsUsed?.reduce(
-                        (sum: number, p: WorkOrderPart) =>
-                          sum + p.price * p.quantity,
-                        0
-                      ) || 0
-                    )}
-                  </td>
-                </tr>
-                <tr>
-                  <td
-                    style={{
-                      fontWeight: "bold",
-                      paddingBottom: "2mm",
-                      fontSize: "10pt",
-                    }}
-                  >
-                    Giá công/Đặt hàng:
-                  </td>
-                  <td
-                    style={{
-                      textAlign: "right",
-                      paddingBottom: "2mm",
-                      fontSize: "10pt",
-                    }}
-                  >
-                    {formatCurrency(
-                      printOrder.additionalServices?.reduce(
-                        (sum: number, s: any) =>
-                          sum + (s.price || 0) * (s.quantity || 1),
-                        0
-                      ) || 0
-                    )}
-                  </td>
-                </tr>
+                {/* Tiền phụ tùng - chỉ hiển thị khi > 0 */}
+                {(() => {
+                  const partsTotal = printOrder.partsUsed?.reduce(
+                    (sum: number, p: WorkOrderPart) => sum + p.price * p.quantity,
+                    0
+                  ) || 0;
+                  return partsTotal > 0 && (
+                    <tr>
+                      <td style={{ fontWeight: "bold", paddingBottom: "2mm", fontSize: "10pt" }}>
+                        Tiền phụ tùng:
+                      </td>
+                      <td style={{ textAlign: "right", paddingBottom: "2mm", fontSize: "10pt" }}>
+                        {formatCurrency(partsTotal)}
+                      </td>
+                    </tr>
+                  );
+                })()}
+
+                {/* Phí dịch vụ (laborCost) - chỉ hiển thị khi > 0 */}
+                {(printOrder.laborCost ?? 0) > 0 && (
+                  <tr>
+                    <td style={{ fontWeight: "bold", paddingBottom: "2mm", fontSize: "10pt" }}>
+                      Phí dịch vụ:
+                    </td>
+                    <td style={{ textAlign: "right", paddingBottom: "2mm", fontSize: "10pt" }}>
+                      {formatCurrency(printOrder.laborCost || 0)}
+                    </td>
+                  </tr>
+                )}
+
+                {/* Giá công/Đặt hàng - chỉ hiển thị khi > 0 */}
+                {(() => {
+                  const additionalTotal = printOrder.additionalServices?.reduce(
+                    (sum: number, s: any) => sum + (s.price || 0) * (s.quantity || 1),
+                    0
+                  ) || 0;
+                  return additionalTotal > 0 && (
+                    <tr>
+                      <td style={{ fontWeight: "bold", paddingBottom: "2mm", fontSize: "10pt" }}>
+                        Giá công/Đặt hàng:
+                      </td>
+                      <td style={{ textAlign: "right", paddingBottom: "2mm", fontSize: "10pt" }}>
+                        {formatCurrency(additionalTotal)}
+                      </td>
+                    </tr>
+                  );
+                })()}
+
                 {/* Dịch vụ bổ sung aggregated above as Giá công/Đặt hàng */}
                 {printOrder.discount != null && printOrder.discount > 0 && (
                   <tr>

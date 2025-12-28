@@ -398,28 +398,41 @@ const PrintOrderPreviewModal: React.FC<PrintOrderPreviewModalProps> = ({
                                     >
                                         Dịch vụ bổ sung:
                                     </p>
-                                    {printOrder.additionalServices.map(
-                                        (service: any, idx: number) => (
-                                            <div
-                                                key={idx}
-                                                style={{
-                                                    display: "flex",
-                                                    justifyContent: "space-between",
-                                                }}
-                                            >
-                                                <span>{service.description}</span>
-                                                <span style={{ fontWeight: "bold" }}>
-                                                    {formatCurrency(
-                                                        service.price * (service.quantity || 1)
-                                                    )}
-                                                </span>
-                                            </div>
-                                        )
-                                    )}
+                                    <table
+                                        style={{
+                                            width: "100%",
+                                            borderCollapse: "collapse",
+                                            border: "1px solid #ddd",
+                                            fontSize: "9pt",
+                                        }}
+                                    >
+                                        <thead>
+                                            <tr style={{ backgroundColor: "#f5f5f5" }}>
+                                                <th style={{ border: "1px solid #ddd", padding: "1.5mm", textAlign: "left" }}>Tên dịch vụ</th>
+                                                <th style={{ border: "1px solid #ddd", padding: "1.5mm", textAlign: "center", width: "12%" }}>SL</th>
+                                                <th style={{ border: "1px solid #ddd", padding: "1.5mm", textAlign: "right", width: "28%" }}>Thành tiền</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {printOrder.additionalServices.map((service: any, idx: number) => (
+                                                <tr key={idx}>
+                                                    <td style={{ border: "1px solid #ddd", padding: "1.5mm" }}>
+                                                        {service.description}
+                                                    </td>
+                                                    <td style={{ border: "1px solid #ddd", padding: "1.5mm", textAlign: "center" }}>
+                                                        {service.quantity || 1}
+                                                    </td>
+                                                    <td style={{ border: "1px solid #ddd", padding: "1.5mm", textAlign: "right", fontWeight: "bold" }}>
+                                                        {formatCurrency(service.price * (service.quantity || 1))}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             )}
 
-                        {/* Cost Summary */}
+                        {/* Cost Summary - Only show items != 0 */}
                         <div
                             style={{
                                 border: "1px solid #ddd",
@@ -429,36 +442,47 @@ const PrintOrderPreviewModal: React.FC<PrintOrderPreviewModalProps> = ({
                                 fontSize: "9pt",
                             }}
                         >
-                            <div
-                                style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    marginBottom: "1mm",
-                                }}
-                            >
-                                <span>Tiền phụ tùng:</span>
-                                <span>
-                                    {formatCurrency(
-                                        printOrder.partsUsed?.reduce(
-                                            (sum: number, p: WorkOrderPart) =>
-                                                sum + p.price * p.quantity,
-                                            0
-                                        ) || 0
-                                    )}
-                                </span>
-                            </div>
-                            <div
-                                style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    marginBottom: "1mm",
-                                }}
-                            >
-                                <span>Phí dịch vụ:</span>
-                                <span>{formatCurrency(printOrder.laborCost || 0)}</span>
-                            </div>
-                            {printOrder.additionalServices &&
-                                printOrder.additionalServices.length > 0 && (
+                            {/* Tiền phụ tùng - chỉ hiển thị khi != 0 */}
+                            {(() => {
+                                const partsTotal = printOrder.partsUsed?.reduce(
+                                    (sum: number, p: WorkOrderPart) => sum + p.price * p.quantity,
+                                    0
+                                ) || 0;
+                                return partsTotal !== 0 && (
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            marginBottom: "1mm",
+                                        }}
+                                    >
+                                        <span>Tiền phụ tùng:</span>
+                                        <span>{formatCurrency(partsTotal)}</span>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Phí dịch vụ (laborCost) - chỉ hiển thị khi != 0 */}
+                            {(printOrder.laborCost ?? 0) !== 0 && (
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        marginBottom: "1mm",
+                                    }}
+                                >
+                                    <span>Phí dịch vụ:</span>
+                                    <span>{formatCurrency(printOrder.laborCost || 0)}</span>
+                                </div>
+                            )}
+
+                            {/* Giá công/Đặt hàng - chỉ hiển thị khi có dịch vụ bổ sung và tổng != 0 */}
+                            {(() => {
+                                const additionalTotal = printOrder.additionalServices?.reduce(
+                                    (sum: number, s: any) => sum + (s.price || 0) * (s.quantity || 1),
+                                    0
+                                ) || 0;
+                                return additionalTotal !== 0 && (
                                     <div
                                         style={{
                                             display: "flex",
@@ -467,17 +491,10 @@ const PrintOrderPreviewModal: React.FC<PrintOrderPreviewModalProps> = ({
                                         }}
                                     >
                                         <span>Giá công/Đặt hàng:</span>
-                                        <span>
-                                            {formatCurrency(
-                                                printOrder.additionalServices.reduce(
-                                                    (sum: number, s: any) =>
-                                                        sum + (s.price || 0) * (s.quantity || 1),
-                                                    0
-                                                )
-                                            )}
-                                        </span>
+                                        <span>{formatCurrency(additionalTotal)}</span>
                                     </div>
-                                )}
+                                );
+                            })()}
                             {printOrder.discount != null && printOrder.discount > 0 && (
                                 <div
                                     style={{
