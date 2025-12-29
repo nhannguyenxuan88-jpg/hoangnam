@@ -752,13 +752,14 @@ export const SettingsManager = () => {
 
               <div>
                 <label className="block text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 md:mb-2">
-                  Email
+                  Facebook
                 </label>
                 <input
-                  type="email"
+                  type="text"
                   value={settings.email || ""}
                   onChange={(e) => updateField("email", e.target.value)}
                   disabled={!isOwner}
+                  placeholder="Link Facebook hoặc Tên Fanpage"
                   className="w-full px-3 py-2 md:px-4 md:py-2.5 text-sm md:text-base border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white disabled:opacity-50"
                 />
               </div>

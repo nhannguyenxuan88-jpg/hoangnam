@@ -40,6 +40,7 @@ import { usePartsRepo } from "../../hooks/usePartsRepository";
 import { useWorkOrdersRepo } from "../../hooks/useWorkOrdersRepository";
 import { useCustomerDebtsRepo, useSupplierDebtsRepo } from "../../hooks/useDebtsRepository";
 import { useInventoryTxRepo } from "../../hooks/useInventoryTransactionsRepository";
+import { useCashTxRepo } from "../../hooks/useCashTransactionsRepository";
 
 type TabType = "inventory" | "sales" | "financial" | "services" | "customers";
 
@@ -167,12 +168,63 @@ const AnalyticsDashboard: React.FC = () => {
   const { data: supplierDebts = [], isLoading: supplierDebtsLoading } = useSupplierDebtsRepo();
   const { data: inventoryTransactions = [], isLoading: txLoading } = useInventoryTxRepo();
 
+  // Fetch ALL cash transactions for the branch from the earliest relevant date (start of last year)
+  // We need "Last Year" data for YoY comparison
+  const lastYearStart = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 1, 0, 1); // Jan 1st last year
+    return d.toISOString();
+  }, []);
+
+  const { data: cashTransactions = [], isLoading: cashTxLoading } = useCashTxRepo({
+    branchId: currentBranchId,
+    startDate: lastYearStart,
+    // No endDate implies "to now"
+  });
+
   const isLoading = salesLoading || partsLoading || workOrdersLoading ||
-    customerDebtsLoading || supplierDebtsLoading || txLoading;
+    customerDebtsLoading || supplierDebtsLoading || txLoading || cashTxLoading;
 
   // Get date range from filter
   const currentDateRange = useMemo(() => getDateRange(dateFilter), [dateFilter]);
   const previousDateRange = useMemo(() => getPreviousPeriodRange(dateFilter), [dateFilter]);
+
+  // === EXCLUDED CATEGORIES CONFIG (Mirrored from ReportsManager) ===
+  const excludedIncomeCategories = useMemo(() => [
+    "service",
+    "dịch vụ",
+    "sale_income",
+    "bán hàng",
+    "service_income",
+    "service_deposit",
+  ], []);
+
+  const excludedExpenseCategories = useMemo(() => [
+    "supplier_payment",
+    "nhập kho",
+    "nhập hàng",
+    "goods_receipt",
+    "import",
+    "outsourcing",
+    "service_cost",
+    "refund",
+  ], []);
+
+  const isExcludedIncomeCategory = (category: string | undefined | null) => {
+    if (!category) return false;
+    const lowerCat = category.toLowerCase().trim();
+    return excludedIncomeCategories.some(
+      (exc) => exc.toLowerCase() === lowerCat
+    );
+  };
+
+  const isExcludedExpenseCategory = (category: string | undefined | null) => {
+    if (!category) return false;
+    const lowerCat = category.toLowerCase().trim();
+    return excludedExpenseCategories.some(
+      (exc) => exc.toLowerCase() === lowerCat
+    );
+  };
 
   // === STATS CALCULATION (filtered by date range) ===
   const { currentStats, previousStats } = useMemo(() => {
@@ -196,7 +248,7 @@ const AnalyticsDashboard: React.FC = () => {
           return c + (unitCost * (item.quantity || 0));
         }, 0);
       }, 0);
-      const salesProfit = salesRevenue - salesCost;
+      const salesGrossProfit = salesRevenue - salesCost;
 
       // 2. WORKORDERS/SERVICES REVENUE (Dịch vụ sửa chữa)
       const periodWO = workOrders.filter((wo) => {
@@ -214,11 +266,27 @@ const AnalyticsDashboard: React.FC = () => {
           c + ((svc.costPrice || 0) * (svc.quantity || 0)), 0);
         return sum + partsCost + svcCost;
       }, 0);
-      const woProfit = woRevenue - woCost;
+      const woGrossProfit = woRevenue - woCost;
+
+      // 3. CASH TRANSACTIONS (Revenue & Expenses)
+      const periodCashTx = cashTransactions.filter((tx: any) => {
+        const d = new Date(tx.date);
+        return d >= startDate && d <= endDate;
+      });
+
+      // Extra Income (Thu khác, Thu nợ...) excluding Service/Sale income
+      const cashIncome = periodCashTx
+        .filter((tx: any) => tx.type === "income" && !isExcludedIncomeCategory(tx.category))
+        .reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0);
+
+      // Expenses (Chi phí vận hành...) excluding COGS/Import
+      const cashExpense = periodCashTx
+        .filter((tx: any) => tx.type === "expense" && (tx.amount || 0) > 0 && !isExcludedExpenseCategory(tx.category))
+        .reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0);
 
       return {
-        revenue: salesRevenue + woRevenue,
-        profit: salesProfit + woProfit,
+        revenue: salesRevenue + woRevenue + cashIncome,
+        profit: (salesGrossProfit + woGrossProfit + cashIncome) - cashExpense, // Net Profit
       };
     };
 
@@ -226,7 +294,7 @@ const AnalyticsDashboard: React.FC = () => {
       currentStats: calculateStats(currentDateRange.startDate, currentDateRange.endDate),
       previousStats: calculateStats(previousDateRange.startDate, previousDateRange.endDate),
     };
-  }, [sales, workOrders, parts, currentBranchId, currentDateRange, previousDateRange]);
+  }, [sales, workOrders, parts, cashTransactions, currentBranchId, currentDateRange, previousDateRange]);
 
   // === 6-MONTH TREND DATA FOR SPARKLINE ===
   const monthlyTrendData = useMemo(() => {
@@ -243,7 +311,7 @@ const AnalyticsDashboard: React.FC = () => {
       const targetMonth = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthEnd = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0, 23, 59, 59);
 
-      // Sales in this month
+      // Sales
       const monthSales = sales.filter((s) => {
         const d = new Date(s.date);
         return d >= targetMonth && d <= monthEnd;
@@ -256,7 +324,7 @@ const AnalyticsDashboard: React.FC = () => {
         }, 0);
       }, 0);
 
-      // Work orders in this month
+      // Work orders
       const monthWO = workOrders.filter((wo) => {
         const d = new Date(wo.creationDate);
         return d >= targetMonth && d <= monthEnd &&
@@ -272,14 +340,31 @@ const AnalyticsDashboard: React.FC = () => {
         return sum + partsCost + svcCost;
       }, 0);
 
+      // Cash Transactions
+      const monthCashTx = cashTransactions.filter((tx: any) => {
+        const d = new Date(tx.date);
+        return d >= targetMonth && d <= monthEnd;
+      });
+
+      const cashIncome = monthCashTx
+        .filter((tx: any) => tx.type === "income" && !isExcludedIncomeCategory(tx.category))
+        .reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0);
+
+      const cashExpense = monthCashTx
+        .filter((tx: any) => tx.type === "expense" && (tx.amount || 0) > 0 && !isExcludedExpenseCategory(tx.category))
+        .reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0);
+
+      const totalRevenue = salesRevenue + woRevenue + cashIncome;
+      const totalProfit = (salesRevenue - salesCost) + (woRevenue - woCost) + cashIncome - cashExpense;
+
       result.push({
         month: targetMonth.toLocaleDateString('vi-VN', { month: 'short' }),
-        revenue: Math.round((salesRevenue + woRevenue) / 1000000), // In millions
-        profit: Math.round((salesRevenue - salesCost + woRevenue - woCost) / 1000000),
+        revenue: Math.round(totalRevenue / 1000000), // In millions
+        profit: Math.round(totalProfit / 1000000),
       });
     }
     return result;
-  }, [sales, workOrders, parts, currentBranchId]);
+  }, [sales, workOrders, parts, cashTransactions, currentBranchId]);
 
   // === PERFORMANCE COMPARISON ===
 
@@ -305,7 +390,14 @@ const AnalyticsDashboard: React.FC = () => {
         })
         .reduce((sum, wo) => sum + (wo.totalPaid || wo.total || 0), 0);
 
-      return salesRev + woRev;
+      const cashRev = cashTransactions
+        .filter((tx: any) => {
+          const d = new Date(tx.date);
+          return d >= startDate && d <= endDate && tx.type === "income" && !isExcludedIncomeCategory(tx.category);
+        })
+        .reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0);
+
+      return salesRev + woRev + cashRev;
     };
 
     const thisMonth = calculateRevenue(thisMonthStart, thisMonthEnd);
@@ -313,7 +405,7 @@ const AnalyticsDashboard: React.FC = () => {
     const change = lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth * 100) : 0;
 
     return { thisMonth, lastMonth, change };
-  }, [sales, workOrders]);
+  }, [sales, workOrders, cashTransactions]);
 
   // Year over Year comparison
   const yearOverYear = useMemo(() => {
@@ -337,7 +429,14 @@ const AnalyticsDashboard: React.FC = () => {
         })
         .reduce((sum, wo) => sum + (wo.totalPaid || wo.total || 0), 0);
 
-      return salesRev + woRev;
+      const cashRev = cashTransactions
+        .filter((tx: any) => {
+          const d = new Date(tx.date);
+          return d >= startDate && d <= endDate && tx.type === "income" && !isExcludedIncomeCategory(tx.category);
+        })
+        .reduce((sum: number, tx: any) => sum + (tx.amount || 0), 0);
+
+      return salesRev + woRev + cashRev;
     };
 
     const thisYear = calculateRevenue(thisYearStart, thisYearEnd);
@@ -345,7 +444,7 @@ const AnalyticsDashboard: React.FC = () => {
     const change = lastYear > 0 ? ((thisYear - lastYear) / lastYear * 100) : 0;
 
     return { thisYear, lastYear, change };
-  }, [sales, workOrders]);
+  }, [sales, workOrders, cashTransactions]);
 
   // Simple forecast based on trend
   const forecast = useMemo(() => {
