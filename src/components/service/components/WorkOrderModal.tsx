@@ -382,6 +382,9 @@ const WorkOrderModal: React.FC<{
     const [serverCustomers, setServerCustomers] = useState<any[]>([]);
     const debouncedCustomerSearch = useDebouncedValue(customerSearch, 500);
     const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+    const [customerPage, setCustomerPage] = useState(0);
+    const [hasMoreCustomers, setHasMoreCustomers] = useState(true);
+    const CUSTOMER_PAGE_SIZE = 20;
 
     const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
     const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
@@ -490,34 +493,75 @@ const WorkOrderModal: React.FC<{
 
     // Search customers from Supabase when search term changes
     useEffect(() => {
-      const searchCustomers = async () => {
-        if (!debouncedCustomerSearch.trim()) {
-          setServerCustomers([]);
-          return;
-        }
+      // Reset page when search term changes
+      setCustomerPage(0);
+      setHasMoreCustomers(true);
+      // Logic handled in fetchCustomers
+    }, [debouncedCustomerSearch]);
 
-        setIsSearchingCustomer(true);
-        try {
-          const searchTerm = debouncedCustomerSearch.trim();
-          // Use a simple OR query on name and phone
-          const { data, error } = await supabase
-            .from("customers")
-            .select("*")
-            .or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
-            .limit(20);
+    // Combined fetch function
+    const fetchCustomers = async (page: number, searchTerm: string, isLoadMore = false) => {
+      if (!searchTerm.trim()) {
+        if (!isLoadMore) setServerCustomers([]);
+        return;
+      }
 
-          if (!error && data) {
+      setIsSearchingCustomer(true);
+      try {
+        const from = page * CUSTOMER_PAGE_SIZE;
+        const to = from + CUSTOMER_PAGE_SIZE - 1;
+
+        // Use a simple OR query on name and phone
+        const { data, error, count } = await supabase
+          .from("customers")
+          .select("*", { count: "exact", head: false })
+          .or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
+          .range(from, to);
+
+        if (!error && data) {
+          if (isLoadMore) {
+            setServerCustomers((prev) => {
+              // Deduplicate just in case
+              const newIds = new Set(data.map(c => c.id));
+              const filteredPrev = prev.filter(c => !newIds.has(c.id));
+              return [...filteredPrev, ...data];
+            });
+          } else {
             setServerCustomers(data);
           }
-        } catch (err) {
-          console.error("Error searching customers:", err);
-        } finally {
-          setIsSearchingCustomer(false);
-        }
-      };
 
-      searchCustomers();
+          // Check if we reached the end
+          if (data.length < CUSTOMER_PAGE_SIZE || (count !== null && from + data.length >= count)) {
+            setHasMoreCustomers(false);
+          } else {
+            setHasMoreCustomers(true);
+          }
+        }
+      } catch (err) {
+        console.error("Error searching customers:", err);
+      } finally {
+        setIsSearchingCustomer(false);
+      }
+    };
+
+    // Effect to trigger search when debounced term changes
+    useEffect(() => {
+      // Only fetch if has search term
+      if (debouncedCustomerSearch.trim()) {
+        fetchCustomers(0, debouncedCustomerSearch.trim(), false);
+      } else {
+        setServerCustomers([]);
+      }
     }, [debouncedCustomerSearch]);
+
+    // Handler for Load More button
+    const handleLoadMoreCustomers = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const nextPage = customerPage + 1;
+      setCustomerPage(nextPage);
+      fetchCustomers(nextPage, debouncedCustomerSearch.trim(), true);
+    };
 
     // Filter customers based on search - show all if search is empty
     // COMBINE local customers and server results
@@ -2411,93 +2455,106 @@ const WorkOrderModal: React.FC<{
                       {showCustomerDropdown && (
                         <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                           {filteredCustomers.length > 0 ? (
-                            filteredCustomers.map((customer) => (
-                              <button
-                                key={customer.id}
-                                type="button"
-                                onClick={() => {
-                                  // Find primary vehicle or first vehicle
-                                  const primaryVehicle =
-                                    customer.vehicles?.find(
-                                      (v: Vehicle) => v.isPrimary
-                                    ) || customer.vehicles?.[0];
+                            <>
+                              {filteredCustomers.map((customer) => (
+                                <button
+                                  key={customer.id}
+                                  type="button"
+                                  onClick={() => {
+                                    // Find primary vehicle or first vehicle
+                                    const primaryVehicle =
+                                      customer.vehicles?.find(
+                                        (v: Vehicle) => v.isPrimary
+                                      ) || customer.vehicles?.[0];
 
-                                  setFormData({
-                                    ...formData,
-                                    customerName: customer.name,
-                                    customerPhone: customer.phone,
-                                    vehicleId: primaryVehicle?.id,
-                                    vehicleModel:
-                                      primaryVehicle?.model ||
-                                      customer.vehicleModel ||
-                                      "",
-                                    licensePlate:
-                                      primaryVehicle?.licensePlate ||
-                                      customer.licensePlate ||
-                                      "",
-                                  });
-                                  setCustomerSearch(customer.name);
-                                  setShowCustomerDropdown(false);
-                                }}
-                                className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-600 border-b border-slate-200 dark:border-slate-600 last:border-0"
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-slate-900 dark:text-slate-100 text-sm truncate">
-                                      {customer.name}
+                                    setFormData({
+                                      ...formData,
+                                      customerName: customer.name,
+                                      customerPhone: customer.phone,
+                                      vehicleId: primaryVehicle?.id,
+                                      vehicleModel:
+                                        primaryVehicle?.model ||
+                                        customer.vehicleModel ||
+                                        "",
+                                      licensePlate:
+                                        primaryVehicle?.licensePlate ||
+                                        customer.licensePlate ||
+                                        "",
+                                    });
+                                    setCustomerSearch(customer.name);
+                                    setShowCustomerDropdown(false);
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-600 border-b border-slate-200 dark:border-slate-600 last:border-0"
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium text-slate-900 dark:text-slate-100 text-sm truncate">
+                                        {customer.name}
+                                      </div>
+                                      <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                                        🔹 {customer.phone}
+                                      </div>
+                                      {(customer.vehicleModel ||
+                                        customer.licensePlate ||
+                                        customer.vehicles?.length > 0) && (
+                                          <div className="text-xs text-blue-600 dark:text-blue-400 mt-0.5 flex items-center gap-1">
+                                            <svg
+                                              className="w-3 h-3"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              viewBox="0 0 24 24"
+                                            >
+                                              <circle cx="6" cy="17" r="2" />
+                                              <circle cx="18" cy="17" r="2" />
+                                              <path d="M4 17h2l4-6h2l2 3h4" />
+                                            </svg>
+                                            {(() => {
+                                              const primaryVehicle =
+                                                customer.vehicles?.find(
+                                                  (v: any) => v.isPrimary
+                                                ) || customer.vehicles?.[0];
+                                              const model =
+                                                primaryVehicle?.model ||
+                                                customer.vehicleModel;
+                                              const plate =
+                                                primaryVehicle?.licensePlate ||
+                                                customer.licensePlate;
+                                              return (
+                                                <>
+                                                  {model && <span>{model}</span>}
+                                                  {plate && (
+                                                    <span className="font-mono font-semibold text-yellow-600 dark:text-yellow-400">
+                                                      {model && " - "}
+                                                      {plate}
+                                                    </span>
+                                                  )}
+                                                  {customer.vehicles?.length > 1 && (
+                                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 ml-1">
+                                                      (+{customer.vehicles.length - 1}
+                                                      )
+                                                    </span>
+                                                  )}
+                                                </>
+                                              );
+                                            })()}
+                                          </div>
+                                        )}
                                     </div>
-                                    <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                                      🔹 {customer.phone}
-                                    </div>
-                                    {(customer.vehicleModel ||
-                                      customer.licensePlate ||
-                                      customer.vehicles?.length > 0) && (
-                                        <div className="text-xs text-blue-600 dark:text-blue-400 mt-0.5 flex items-center gap-1">
-                                          <svg
-                                            className="w-3 h-3"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                          >
-                                            <circle cx="6" cy="17" r="2" />
-                                            <circle cx="18" cy="17" r="2" />
-                                            <path d="M4 17h2l4-6h2l2 3h4" />
-                                          </svg>
-                                          {(() => {
-                                            const primaryVehicle =
-                                              customer.vehicles?.find(
-                                                (v: any) => v.isPrimary
-                                              ) || customer.vehicles?.[0];
-                                            const model =
-                                              primaryVehicle?.model ||
-                                              customer.vehicleModel;
-                                            const plate =
-                                              primaryVehicle?.licensePlate ||
-                                              customer.licensePlate;
-                                            return (
-                                              <>
-                                                {model && <span>{model}</span>}
-                                                {plate && (
-                                                  <span className="font-mono font-semibold text-yellow-600 dark:text-yellow-400">
-                                                    {model && " - "}
-                                                    {plate}
-                                                  </span>
-                                                )}
-                                                {customer.vehicles?.length > 1 && (
-                                                  <span className="text-[10px] text-slate-500 dark:text-slate-400 ml-1">
-                                                    (+{customer.vehicles.length - 1}
-                                                    )
-                                                  </span>
-                                                )}
-                                              </>
-                                            );
-                                          })()}
-                                        </div>
-                                      )}
                                   </div>
-                                </div>
-                              </button>
-                            ))
+                                </button>
+                              ))}
+                              {hasMoreCustomers && customerSearch.trim() && (
+                                <button
+                                  type="button"
+                                  onClick={handleLoadMoreCustomers}
+                                  className="w-full text-center px-3 py-3 text-blue-600 dark:text-blue-400 text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 border-t border-slate-200 dark:border-slate-600"
+                                >
+                                  {isSearchingCustomer
+                                    ? "Đang tải..."
+                                    : "⬇️ Tải thêm khách hàng..."}
+                                </button>
+                              )}
+                            </>
                           ) : (
                             <div className="px-3 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
                               {customers.length === 0
@@ -3083,49 +3140,56 @@ const WorkOrderModal: React.FC<{
                         Không tìm thấy phụ tùng
                       </div>
                     ) : (
-                      filteredParts.slice(0, 10).map((part) => {
-                        const stock = part.stock?.[currentBranchId] || 0;
-                        return (
-                          <button
-                            key={part.id}
-                            onClick={() => {
-                              if (stock <= 0) {
-                                showToast.error("Sản phẩm đã hết hàng!");
-                                return;
-                              }
-                              handleAddPart(part);
-                            }}
-                            className="w-full px-4 py-2.5 text-left hover:bg-slate-100 dark:hover:bg-slate-600 flex items-center justify-between border-b border-slate-100 dark:border-slate-600 last:border-b-0"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                                {part.name}
-                              </div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] text-blue-600 dark:text-blue-400 font-mono">
-                                  {part.sku}
-                                </span>
-                                <span className="text-[10px] text-orange-600 dark:text-orange-400 font-medium">
-                                  Tồn: {stock}
-                                </span>
-                                {part.category && (
-                                  <span
-                                    className={`inline-flex items-center px-1.5 py-0 rounded-full text-[9px] font-medium ${getCategoryColor(part.category).bg
-                                      } ${getCategoryColor(part.category).text}`}
-                                  >
-                                    {part.category}
+                      <>
+                        {filteredParts.slice(0, 50).map((part) => {
+                          const stock = part.stock?.[currentBranchId] || 0;
+                          return (
+                            <button
+                              key={part.id}
+                              onClick={() => {
+                                if (stock <= 0) {
+                                  showToast.error("Sản phẩm đã hết hàng!");
+                                  return;
+                                }
+                                handleAddPart(part);
+                              }}
+                              className="w-full px-4 py-2.5 text-left hover:bg-slate-100 dark:hover:bg-slate-600 flex items-center justify-between border-b border-slate-100 dark:border-slate-600 last:border-b-0"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                  {part.name}
+                                </div>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[10px] text-blue-600 dark:text-blue-400 font-mono">
+                                    {part.sku}
                                   </span>
+                                  <span className="text-[10px] text-orange-600 dark:text-orange-400 font-medium">
+                                    Tồn: {stock}
+                                  </span>
+                                  {part.category && (
+                                    <span
+                                      className={`inline-flex items-center px-1.5 py-0 rounded-full text-[9px] font-medium ${getCategoryColor(part.category).bg
+                                        } ${getCategoryColor(part.category).text}`}
+                                    >
+                                      {part.category}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                                {formatCurrency(
+                                  part.retailPrice[currentBranchId] || 0
                                 )}
                               </div>
-                            </div>
-                            <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                              {formatCurrency(
-                                part.retailPrice[currentBranchId] || 0
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })
+                            </button>
+                          );
+                        })}
+                        {filteredParts.length > 50 && (
+                          <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800 text-center text-xs text-slate-500 italic border-t border-slate-100 dark:border-slate-600">
+                            Đang hiển thị 50/{filteredParts.length} kết quả. Vui lòng tìm kiếm chi tiết hơn.
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

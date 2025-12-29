@@ -23,6 +23,7 @@ import {
   MoreHorizontal,
   ShoppingCart,
   ScanLine,
+
 } from "lucide-react";
 import { useAppContext } from "../../contexts/AppContext";
 import { safeAudit } from "../../lib/repository/auditLogsRepository";
@@ -55,7 +56,7 @@ import {
   useCreateInventoryTxRepo,
   useCreateReceiptAtomicRepo,
 } from "../../hooks/useInventoryTransactionsRepository";
-import { useWorkOrdersRepo } from "../../hooks/useWorkOrdersRepository";
+import { useWorkOrdersRepo, useUpdateWorkOrderRepo, useUpdateWorkOrderAtomicRepo } from "../../hooks/useWorkOrdersRepository";
 import { useCategories, useCreateCategory } from "../../hooks/useCategories";
 import { useSuppliers } from "../../hooks/useSuppliers";
 import type { Part, InventoryTransaction, WorkOrder } from "../../types";
@@ -195,6 +196,10 @@ const InventoryManagerNew: React.FC = () => {
     right: 0,
   });
 
+
+
+
+
   // Generate a color from category string for placeholder avatar
   const getAvatarColor = (name: string) => {
     if (!name) return "#94a3b8"; // slate-400
@@ -263,7 +268,7 @@ const InventoryManagerNew: React.FC = () => {
     queryFn: async () => {
       let query = supabase
         .from("parts")
-        .select("id, name, sku, category, stock, costPrice, retailPrice")
+        .select("id, name, sku, category, stock, reserved, costPrice, retailPrice")
         .order("name");
 
       if (categoryFilter && categoryFilter !== "all") {
@@ -1259,6 +1264,7 @@ const InventoryManagerNew: React.FC = () => {
               </svg>
               In mã vạch
             </button>
+
             {canDo(profile?.role, "inventory.import") && (
               <button
                 onClick={() => setShowGoodsReceipt(true)}
@@ -2246,25 +2252,29 @@ const InventoryManagerNew: React.FC = () => {
                   const hasPart = wo.partsUsed.some(p => p.partId === reservedInfoPartId);
 
                   // Logic reserved: 
-                  // - Include: Tiếp nhận, Đang sửa, Đã sửa xong, Trả máy (if unpaid/partially paid - though usually 'Trả máy' implies stock is gone? 
-                  // Actually, 'Reserved' usually means 'Allocated but not yet DEDUCTED from main stock' OR 'Deducted but tracked'?
-                  // In this system's logic: 
-                  // Stock = Actual on shelf. 
-                  // Reserved = In Active WO. 
-                  // If WO is 'Completed' (Trả máy), stock should have been deducted and Reserved cleared?
-                  // If Reserved > 0, it means the system thinks there are active WOs.
-                  // So we should look for ANY WO that contains the part and is NOT 'Đã hủy'.
-                  // Let's broaden to show ALL non-cancelled WOs with this part, 
-                  // so the user can see what's causing the count, even if it's a 'completed' one that failed to clear reserved.
-
+                  // Chỉ những phiếu CHƯA THANH TOÁN (unpaid/partial) và KHÔNG HỦY mới giữ hàng (Reserved).
+                  // Nếu đã thanh toán (paid), hàng đã bị trừ kho (Deducted) nên không còn là Reserved nữa.
                   const isNotCancelled = wo.status !== "Đã hủy";
+                  const isNotPaid = wo.paymentStatus !== "paid";
 
-                  return hasPart && isNotCancelled;
+                  return hasPart && isNotCancelled && isNotPaid;
                 });
 
                 console.log("Filtered reserving orders:", reservingOrders.length);
 
                 if (!part) return <div className="p-6 text-center text-slate-500">Không tìm thấy thông tin sản phẩm</div>;
+
+                const { mutate: updateWorkOrderAtomic } = useUpdateWorkOrderAtomicRepo();
+
+                const handleQuickPay = (orderId: string) => {
+                  if (window.confirm("Xác nhận đánh dấu phiếu này là ĐÃ THANH TOÁN? Việc này sẽ giải phóng tồn kho đang giữ.")) {
+                    updateWorkOrderAtomic({
+                      id: orderId,
+                      paymentStatus: "paid",
+                      totalPaid: reservingOrders.find(wo => wo.id === orderId)?.total || 0,
+                    } as any);
+                  }
+                };
 
                 if (reservingOrders.length === 0) {
                   return (
@@ -2273,16 +2283,15 @@ const InventoryManagerNew: React.FC = () => {
                         <span className="text-2xl">✓</span>
                       </div>
                       <p className="text-slate-600 dark:text-slate-400">
-                        Không có phiếu sửa chữa nào đang giữ hàng này.
+                        Không tìm thấy phiếu nào đang giữ hàng này.
                       </p>
                       <p className="text-xs text-slate-500">
-                        (Có thể do phiếu đã hoàn thành hoặc dữ liệu chưa cập nhật)
+                        (Có thể số liệu "Đặt trước" trong kho đang bị lệch so với thực tế)
                       </p>
                       {/* Debug Info */}
                       <div className="mt-4 p-2 bg-slate-100 dark:bg-slate-900 rounded text-[10px] text-slate-400 font-mono text-left w-full overflow-hidden">
-                        DEBUG: PartID: {reservedInfoPartId}<br />
-                        Total WOs: {workOrders.length}<br />
-                        First WO Status: {workOrders[0]?.status}
+                        Part Reserved Qty: {part.reserved?.[currentBranchId] || 0} <br />
+                        Nghi vấn: Số liệu bị lệch. Hãy thử tạo phiếu mới rồi xóa để reset.
                       </div>
                     </div>
                   );
@@ -2312,13 +2321,30 @@ const InventoryManagerNew: React.FC = () => {
                                 {wo.licensePlate && <span>• {wo.licensePlate}</span>}
                               </div>
                             </div>
-                            <div className={`px-2 py-0.5 rounded text-[10px] font-medium border
-                               ${wo.status === 'Tiếp nhận' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                                wo.status === 'Đang sửa' ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                                  wo.status === 'Đã sửa xong' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                                    'bg-slate-100 text-slate-600 border-slate-200'}`}
-                            >
-                              {wo.status}
+                            <div className="flex flex-col items-end gap-1">
+                              <div className={`px-2 py-0.5 rounded text-[10px] font-medium border
+                                 ${wo.status === 'Tiếp nhận' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                                  wo.status === 'Đang sửa' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                    wo.status === 'Đã sửa xong' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                                      'bg-slate-100 text-slate-600 border-slate-200'}`}
+                              >
+                                {wo.status}
+                              </div>
+                              <div className={`text-[10px] font-bold ${wo.paymentStatus === 'paid' ? 'text-emerald-500' :
+                                wo.paymentStatus === 'partial' ? 'text-amber-500' : 'text-red-500'
+                                }`}>
+                                {wo.paymentStatus === 'paid' ? 'Đã TT' : wo.paymentStatus === 'partial' ? 'TT 1 phần' : 'Chưa TT'}
+                              </div>
+                              {/* Quick Pay Button - Atomic Fix */}
+                              {wo.paymentStatus !== 'paid' && (
+                                <button
+                                  onClick={() => handleQuickPay(wo.id)}
+                                  className="mt-1 px-2 py-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 rounded text-[10px] font-medium transition-colors flex items-center gap-1"
+                                  title="Đánh dấu đã thanh toán để trừ tồn kho"
+                                >
+                                  <span>✓ Đã TT & Trừ kho</span>
+                                </button>
+                              )}
                             </div>
                           </div>
                           <div className="flex justify-between items-center mt-2 text-sm">

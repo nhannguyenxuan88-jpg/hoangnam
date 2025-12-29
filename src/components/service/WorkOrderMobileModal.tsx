@@ -410,6 +410,9 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   const [serverCustomers, setServerCustomers] = useState<Customer[]>([]);
   const debouncedCustomerSearch = useDebouncedValue(customerSearchTerm, 500);
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
+  const [customerPage, setCustomerPage] = useState(0);
+  const [hasMoreCustomers, setHasMoreCustomers] = useState(true);
+  const CUSTOMER_PAGE_SIZE = 20;
   const [showPartSearch, setShowPartSearch] = useState(false);
   const [partSearchTerm, setPartSearchTerm] = useState("");
   const [isScanning, setIsScanning] = useState(false);
@@ -457,36 +460,73 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     return cleaned ? Number(cleaned) : 0;
   };
 
-  // Search customers from Supabase when search term changes
-  useEffect(() => {
-    const searchCustomers = async () => {
-      if (!debouncedCustomerSearch || !debouncedCustomerSearch.trim()) {
-        setServerCustomers([]);
-        return;
-      }
+  // Combined fetch function
+  const fetchCustomers = async (page: number, searchTerm: string, isLoadMore = false) => {
+    if (!searchTerm || !searchTerm.trim()) {
+      if (!isLoadMore) setServerCustomers([]);
+      return;
+    }
 
-      setIsSearchingCustomer(true);
-      try {
-        const searchTerm = debouncedCustomerSearch.trim();
-        // Use a simple OR query on name and phone
-        const { data, error } = await supabase
-          .from("customers")
-          .select("*")
-          .or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
-          .limit(20);
+    setIsSearchingCustomer(true);
+    try {
+      const from = page * CUSTOMER_PAGE_SIZE;
+      const to = from + CUSTOMER_PAGE_SIZE - 1;
 
-        if (!error && data) {
+      // Use a simple OR query on name and phone
+      const { data, error, count } = await supabase
+        .from("customers")
+        .select("*", { count: "exact", head: false })
+        .or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`)
+        .range(from, to);
+
+      if (!error && data) {
+        if (isLoadMore) {
+          setServerCustomers((prev) => {
+            // Deduplicate just in case
+            const newIds = new Set(data.map(c => c.id));
+            const filteredPrev = prev.filter(c => !newIds.has(c.id));
+            return [...filteredPrev, ...data as Customer[]];
+          });
+        } else {
           setServerCustomers(data as Customer[]);
         }
-      } catch (err) {
-        console.error("Error searching customers:", err);
-      } finally {
-        setIsSearchingCustomer(false);
-      }
-    };
 
-    searchCustomers();
+        // Check if we reached the end
+        if (data.length < CUSTOMER_PAGE_SIZE || (count !== null && from + data.length >= count)) {
+          setHasMoreCustomers(false);
+        } else {
+          setHasMoreCustomers(true);
+        }
+      }
+    } catch (err) {
+      console.error("Error searching customers:", err);
+    } finally {
+      setIsSearchingCustomer(false);
+    }
+  };
+
+  // Effect to trigger search when debounced term changes
+  useEffect(() => {
+    // Reset page when search term changes
+    setCustomerPage(0);
+    setHasMoreCustomers(true);
+
+    // Only fetch if has search term
+    if (debouncedCustomerSearch && debouncedCustomerSearch.trim()) {
+      fetchCustomers(0, debouncedCustomerSearch.trim(), false);
+    } else {
+      setServerCustomers([]);
+    }
   }, [debouncedCustomerSearch]);
+
+  // Handler for Load More button
+  const handleLoadMoreCustomers = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const nextPage = customerPage + 1;
+    setCustomerPage(nextPage);
+    fetchCustomers(nextPage, debouncedCustomerSearch.trim(), true);
+  };
 
   // Filtered customers (combining local and server results)
   const filteredCustomers = useMemo(() => {
@@ -1350,7 +1390,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
 
                 {/* Customer List */}
                 <div className="max-h-60 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar">
-                  {filteredCustomers.slice(0, 5).map((customer) => {
+                  {filteredCustomers.map((customer) => {
                     const primaryVehicle =
                       customer.vehicles?.find((v: any) => v.isPrimary) ||
                       customer.vehicles?.[0];
@@ -1395,6 +1435,19 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                       </div>
                     );
                   })}
+
+                  {/* Load More Button */}
+                  {hasMoreCustomers && customerSearchTerm && (
+                    <button
+                      type="button"
+                      onClick={handleLoadMoreCustomers}
+                      className="w-full py-3 text-blue-500 font-medium text-xs bg-blue-500/10 rounded-xl active:scale-[0.98] transition-transform"
+                    >
+                      {isSearchingCustomer
+                        ? "Đang tải..."
+                        : "⬇️ Tải thêm khách hàng..."}
+                    </button>
+                  )}
 
                   {/* Show add new customer when no results or always at bottom */}
                   {customerSearchTerm && filteredCustomers.length === 0 && (
@@ -2446,11 +2499,11 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                       {filteredParts.length}
                     </span>{" "}
                     phụ tùng
-                    {filteredParts.length > 20 && " (hiển thị 20 đầu tiên)"}
+                    {filteredParts.length > 50 && " (hiển thị 50 đầu tiên)"}
                   </div>
                 )}
                 <div className="space-y-2">
-                  {filteredParts.slice(0, 20).map((part) => {
+                  {filteredParts.slice(0, 50).map((part) => {
                     const stock = part.stock?.[currentBranchId] || 0;
                     const price = part.retailPrice?.[currentBranchId] || 0;
                     return (
@@ -2489,6 +2542,11 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                       </div>
                     );
                   })}
+                  {filteredParts.length > 50 && (
+                    <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800 text-center text-xs text-slate-500 italic border-t border-slate-100 dark:border-slate-600 rounded-b-lg">
+                      Đang hiển thị 50/{filteredParts.length} kết quả. Vui lòng tìm kiếm chi tiết hơn.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
