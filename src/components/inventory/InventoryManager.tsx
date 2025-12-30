@@ -146,6 +146,7 @@ const InventoryManagerNew: React.FC = () => {
   // Supabase repository mutation for inventory transactions
   const { mutateAsync: createInventoryTxAsync } = useCreateInventoryTxRepo();
   const createReceiptAtomicMutation = useCreateReceiptAtomicRepo();
+  const { mutate: updateWorkOrderAtomic } = useUpdateWorkOrderAtomicRepo();
   const { data: invTx = [] } = useInventoryTxRepo({
     branchId: currentBranchId,
   });
@@ -2264,7 +2265,7 @@ const InventoryManagerNew: React.FC = () => {
 
                 if (!part) return <div className="p-6 text-center text-slate-500">Không tìm thấy thông tin sản phẩm</div>;
 
-                const { mutate: updateWorkOrderAtomic } = useUpdateWorkOrderAtomicRepo();
+                // const { mutate: updateWorkOrderAtomic } = useUpdateWorkOrderAtomicRepo(); // Moved to top level
 
                 const handleQuickPay = (orderId: string) => {
                   if (window.confirm("Xác nhận đánh dấu phiếu này là ĐÃ THANH TOÁN? Việc này sẽ giải phóng tồn kho đang giữ.")) {
