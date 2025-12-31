@@ -162,14 +162,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const fetchPaymentSources = async () => {
       try {
-        const { data, error } = await supabase
-          .from("payment_sources")
-          .select("*");
-        if (!error && data) {
-          setPaymentSources(data);
+        const [paymentSourcesRes, payrollRes] = await Promise.all([
+          supabase.from("payment_sources").select("*"),
+          supabase.from("payroll_records").select("*"),
+        ]);
+
+        if (!paymentSourcesRes.error && paymentSourcesRes.data) {
+          setPaymentSources(paymentSourcesRes.data);
+        }
+
+        if (!payrollRes.error && payrollRes.data) {
+          // Map DB columns back to camelCase for application use
+          const mappedPayroll = payrollRes.data.map((r) => ({
+            id: r.id,
+            employeeId: r.employee_id,
+            employeeName: r.employee_name,
+            month: r.month,
+            baseSalary: r.base_salary,
+            allowances: r.allowances,
+            bonus: r.bonus,
+            deduction: r.deduction,
+            workDays: r.work_days,
+            standardWorkDays: r.standard_work_days,
+            socialInsurance: r.social_insurance,
+            healthInsurance: r.health_insurance,
+            unemploymentInsurance: r.unemployment_insurance,
+            personalIncomeTax: r.personal_income_tax,
+            netSalary: r.net_salary,
+            paymentStatus: r.payment_status,
+            paymentDate: r.payment_date,
+            paymentMethod: r.payment_method,
+            notes: r.notes,
+            branchId: r.branch_id,
+            created_at: r.created_at,
+          }));
+          setPayrollRecords(mappedPayroll);
         }
       } catch (err) {
-        console.error("Failed to fetch payment sources:", err);
+        console.error("Failed to fetch initial data from Supabase:", err);
       }
     };
     fetchPaymentSources();
