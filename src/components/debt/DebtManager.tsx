@@ -432,8 +432,8 @@ const DebtManager: React.FC = () => {
 
     // 🔹 Filter out debts linked to fully paid work orders or sales
     const activeDbDebts = dbDebts.filter((debt: any) => {
-      // If debt has remainingAmount = 0, it's already marked as paid in DB
-      if (debt.remainingAmount === 0) return false;
+      // If debt has remainingAmount <= 0, it's already marked as paid (or overpaid)
+      if ((debt.remainingAmount || 0) <= 0) return false;
 
       // If debt is linked to a work order, check if work order is fully paid
       if (debt.workOrderId) {
@@ -468,7 +468,16 @@ const DebtManager: React.FC = () => {
   ]);
 
   const branchSupplierDebts = useMemo(() => {
-    return supplierDebts.filter((debt) => debt.branchId === currentBranchId);
+    // FORCE SHADOW: Ensure we are using the filter.
+    // Filter: must belong to current branch AND have strictly positive remaining amount.
+    return supplierDebts
+      .filter((debt) => debt.branchId === currentBranchId)
+      .filter((debt) => {
+        const val = Number(debt.remainingAmount);
+        // Treat NaN, 0, or negative as paid
+        if (isNaN(val) || val <= 0) return false;
+        return true;
+      });
   }, [supplierDebts, currentBranchId]);
 
   // Filter debts based on search and sort: unpaid debts first, then by date
