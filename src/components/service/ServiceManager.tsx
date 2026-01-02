@@ -3203,10 +3203,38 @@ export default function ServiceManager() {
               <div className="flex-1 overflow-y-auto p-6 bg-slate-100 dark:bg-slate-900">
                 <div
                   ref={invoicePreviewRef}
-                  className="bg-white shadow-lg mx-auto"
+                  className="bg-white shadow-lg mx-auto relative"
                   style={{ width: "148mm", minHeight: "210mm", color: "#000" }}
                 >
-                  <div style={{ padding: "10mm" }}>
+                  {/* Watermark Logo for Print - DESKTOP VERSION */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      transform: "translate(-50%, -50%)",
+                      width: "70%",
+                      height: "70%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      pointerEvents: "none",
+                      zIndex: 0,
+                    }}
+                  >
+                    <img
+                      src={storeSettings?.logo_url || "/logo-smartcare.png"}
+                      alt="watermark"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                        opacity: 0.15,
+                        filter: "grayscale(100%)",
+                      }}
+                    />
+                  </div>
+                  <div style={{ padding: "10mm", position: "relative", zIndex: 1 }}>
                     {/* Store Info Header - Compact Layout */}
                     <div
                       style={{
@@ -4076,6 +4104,7 @@ export default function ServiceManager() {
             id="work-order-receipt"
             className="hidden print:block"
             style={{
+              position: "relative",
               width: "148mm",
               margin: "0 auto",
               padding: "10mm",
@@ -4085,6 +4114,34 @@ export default function ServiceManager() {
               backgroundColor: "#fff",
             }}
           >
+            {/* Watermark Logo for Print Output */}
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: "70%",
+                height: "70%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                pointerEvents: "none",
+                zIndex: 0,
+              }}
+            >
+              <img
+                src={storeSettings?.logo_url || "/logo-smartcare.png"}
+                alt=""
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  opacity: 0.03,
+                  filter: "grayscale(100%)",
+                }}
+              />
+            </div>
             {/* Header with Logo, Store Info and Bank Info */}
             <div
               style={{
@@ -4094,6 +4151,8 @@ export default function ServiceManager() {
                 borderBottom: "2px solid #3b82f6",
                 paddingBottom: "3mm",
                 marginBottom: "4mm",
+                position: "relative",
+                zIndex: 1,
               }}
             >
               {/* Left: Logo (if available) */}

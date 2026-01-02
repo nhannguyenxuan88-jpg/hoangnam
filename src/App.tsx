@@ -218,7 +218,20 @@ const MainLayout: React.FC = () => {
   const isSalesPage = location.pathname === "/sales";
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors pb-20 md:pb-0">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors pb-20 md:pb-0 relative overflow-hidden">
+      {/* Subtle background watermark logo - centered */}
+      <div
+        className="fixed inset-0 flex items-center justify-center pointer-events-none z-0"
+      >
+        <img
+          src="/logo-smartcare.png"
+          alt=""
+          className="w-[60vw] h-[60vh] max-w-[500px] max-h-[500px] object-contain opacity-[0.05] dark:opacity-[0.04]"
+          style={{
+            filter: 'grayscale(100%)',
+          }}
+        />
+      </div>
       <TetTheme />
       <Nav />
       <main
