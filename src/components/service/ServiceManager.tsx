@@ -3213,8 +3213,7 @@ export default function ServiceManager() {
                       top: "50%",
                       left: "50%",
                       transform: "translate(-50%, -50%)",
-                      width: "70%",
-                      height: "70%",
+                      width: "60%",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -3227,9 +3226,9 @@ export default function ServiceManager() {
                       alt="watermark"
                       style={{
                         width: "100%",
-                        height: "100%",
+                        height: "auto",
                         objectFit: "contain",
-                        opacity: 0.15,
+                        opacity: 0.1,
                         filter: "grayscale(100%)",
                       }}
                     />
@@ -4121,8 +4120,7 @@ export default function ServiceManager() {
                 top: "50%",
                 left: "50%",
                 transform: "translate(-50%, -50%)",
-                width: "70%",
-                height: "70%",
+                width: "60%",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -4135,7 +4133,7 @@ export default function ServiceManager() {
                 alt=""
                 style={{
                   width: "100%",
-                  height: "100%",
+                  height: "auto",
                   objectFit: "contain",
                   opacity: 0.03,
                   filter: "grayscale(100%)",

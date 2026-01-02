@@ -152,8 +152,7 @@ const PrintOrderPreviewModal: React.FC<PrintOrderPreviewModalProps> = ({
                                 top: "50%",
                                 left: "50%",
                                 transform: "translate(-50%, -50%)",
-                                width: "70%",
-                                height: "70%",
+                                width: "60%",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -166,9 +165,9 @@ const PrintOrderPreviewModal: React.FC<PrintOrderPreviewModalProps> = ({
                                 alt="watermark"
                                 style={{
                                     width: "100%",
-                                    height: "100%",
+                                    height: "auto",
                                     objectFit: "contain",
-                                    opacity: 0.15,
+                                    opacity: 0.1,
                                     filter: "grayscale(100%)",
                                 }}
                             />
