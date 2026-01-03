@@ -222,6 +222,36 @@ export default function ServiceManager() {
     }
   }, [fetchedWorkOrders, setWorkOrders]);
 
+  // 🔹 REALTIME SUBSCRIPTION - Auto refresh when work orders change
+  useEffect(() => {
+    console.log("[ServiceManager] Setting up realtime subscription...");
+    
+    const channel = supabase
+      .channel("work_orders_realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // Listen to INSERT, UPDATE, DELETE
+          schema: "public",
+          table: "work_orders",
+        },
+        (payload) => {
+          console.log("[Realtime] Work order changed:", payload);
+          // Refetch work orders to get latest data
+          refetchWorkOrders();
+        }
+      )
+      .subscribe((status) => {
+        console.log("[Realtime] Subscription status:", status);
+      });
+
+    // Cleanup on unmount
+    return () => {
+      console.log("[ServiceManager] Cleaning up realtime subscription");
+      supabase.removeChannel(channel);
+    };
+  }, [refetchWorkOrders]);
+
   const [showModal, setShowModal] = useState(false);
   const [showMobileModal, setShowMobileModal] = useState(false);
   const [mobileModalViewMode, setMobileModalViewMode] = useState(false); // true = xem chi tiết, false = chỉnh sửa

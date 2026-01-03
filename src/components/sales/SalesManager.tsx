@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
 import { InstallmentSetupModal } from "./modals/InstallmentSetupModal";
@@ -117,6 +117,38 @@ const SalesManager: React.FC = () => {
     const { data: employees = [] } = useEmployeesRepo();
     const history = useSalesHistory();
     const print = usePrintReceipt();
+
+    // 🔹 REALTIME SUBSCRIPTION - Auto refresh when sales change
+    useEffect(() => {
+        console.log("[SalesManager] Setting up realtime subscription for sales...");
+        
+        const channel = supabase
+            .channel("sales_realtime")
+            .on(
+                "postgres_changes",
+                {
+                    event: "*", // Listen to INSERT, UPDATE, DELETE
+                    schema: "public",
+                    table: "sales",
+                },
+                (payload) => {
+                    console.log("[Realtime] Sale changed:", payload);
+                    // Invalidate all sales queries to refetch data
+                    queryClient.invalidateQueries({ queryKey: ["salesRepo"] });
+                    queryClient.invalidateQueries({ queryKey: ["salesRepoPaged"] });
+                    queryClient.invalidateQueries({ queryKey: ["salesRepoKeyset"] });
+                }
+            )
+            .subscribe((status) => {
+                console.log("[Realtime] Sales subscription status:", status);
+            });
+
+        // Cleanup on unmount
+        return () => {
+            console.log("[SalesManager] Cleaning up realtime subscription");
+            supabase.removeChannel(channel);
+        };
+    }, [queryClient]);
 
     // Delivery wrappers
     const handleUpdateDeliveryStatus = async (saleId: string, status: string, shipperId?: string) => {
