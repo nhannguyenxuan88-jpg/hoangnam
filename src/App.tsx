@@ -381,37 +381,6 @@ const MainLayout: React.FC = () => {
               </ProtectedRoute>
             }
           />
-          {/* Public Shop Pages - No authentication required */}
-          <Route
-            path="/san-pham"
-            element={
-              <ShopLayout>
-                <Suspense fallback={<PageLoader />}>
-                  <ProductCatalog />
-                </Suspense>
-              </ShopLayout>
-            }
-          />
-          <Route
-            path="/khuyen-mai"
-            element={
-              <ShopLayout>
-                <Suspense fallback={<PageLoader />}>
-                  <PromotionsPage />
-                </Suspense>
-              </ShopLayout>
-            }
-          />
-          <Route
-            path="/thu-vien"
-            element={
-              <ShopLayout>
-                <Suspense fallback={<PageLoader />}>
-                  <MaintenanceGallery />
-                </Suspense>
-              </ShopLayout>
-            }
-          />
           {/* Admin Shop Pages - Manage shop content */}
           <Route
             path="/admin/khuyen-mai"
@@ -451,14 +420,46 @@ export default function App() {
               <ErrorBoundary>
                 <TopProgressBar />
                 <Routes>
-                  {/* Public Routes */}
+                  {/* Public Routes - No authentication */}
                   <Route path="/login" element={<LoginPage />} />
                   <Route
                     path="/reset-password"
                     element={<ResetPasswordPage />}
                   />
+                  
+                  {/* Public Shop Pages - No authentication required */}
+                  <Route
+                    path="/san-pham"
+                    element={
+                      <ShopLayout>
+                        <Suspense fallback={<PageLoader />}>
+                          <ProductCatalog />
+                        </Suspense>
+                      </ShopLayout>
+                    }
+                  />
+                  <Route
+                    path="/khuyen-mai"
+                    element={
+                      <ShopLayout>
+                        <Suspense fallback={<PageLoader />}>
+                          <PromotionsPage />
+                        </Suspense>
+                      </ShopLayout>
+                    }
+                  />
+                  <Route
+                    path="/thu-vien"
+                    element={
+                      <ShopLayout>
+                        <Suspense fallback={<PageLoader />}>
+                          <MaintenanceGallery />
+                        </Suspense>
+                      </ShopLayout>
+                    }
+                  />
 
-                  {/* Protected Routes */}
+                  {/* Protected Routes - Require authentication */}
                   <Route
                     path="/*"
                     element={
