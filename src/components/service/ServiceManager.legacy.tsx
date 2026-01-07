@@ -47,6 +47,7 @@ import {
   useWorkOrdersRepo,
   useWorkOrdersFilteredRepo,
 } from "../../hooks/useWorkOrdersRepository";
+import { completeWorkOrderPayment } from "../../lib/repository/workOrdersRepository";
 import type { RepairTemplate } from "../../hooks/useRepairTemplatesRepository";
 import { usePartsRepo } from "../../hooks/usePartsRepository";
 import { useEmployeesRepo } from "../../hooks/useEmployeesRepository";
@@ -1265,6 +1266,31 @@ export default function ServiceManager() {
           totalPaid: totalPaid > 0 ? totalPaid : undefined,
           remainingAmount: remainingAmount,
         } as any);
+
+        // 🔹 FIX Mobile: Nếu cập nhật phiếu thành paymentStatus = 'paid', gọi complete_payment để trừ kho
+        const wasUnpaidOrPartial = editingOrder.paymentStatus !== "paid";
+        if (
+          paymentStatus === "paid" &&
+          wasUnpaidOrPartial &&
+          parts.length > 0
+        ) {
+          try {
+            console.log(
+              "[handleMobileSave] Order became fully paid, calling completeWorkOrderPayment to deduct inventory"
+            );
+            await completeWorkOrderPayment(
+              editingOrder.id,
+              paymentMethod || "cash",
+              0 // Số tiền = 0 vì đã thanh toán hết rồi, chỉ cần trừ kho
+            );
+          } catch (err: any) {
+            console.error("[handleMobileSave] Error deducting inventory:", err);
+            showToast.warning(
+              "Đã cập nhật phiếu nhưng có lỗi khi trừ kho: " +
+              (err.message || "Unknown error")
+            );
+          }
+        }
 
         finalOrderData = {
           ...editingOrder,
