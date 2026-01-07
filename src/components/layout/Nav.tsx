@@ -28,6 +28,7 @@ import {
   Home,
   DollarSign,
   Truck,
+  Tag,
 } from "lucide-react";
 
 export function Nav() {
@@ -292,6 +293,14 @@ export function Nav() {
                 label="Báo cáo"
               />
             )}
+            {isOwnerOrManager && (
+              <NavLink
+                to="/admin/promotions"
+                colorKey="pink"
+                icon={<Tag className="w-4 h-4" />}
+                label="Khuyến mãi"
+              />
+            )}
           </div>
 
           {/* Right: Notifications and Home Icon (mobile only) */}
@@ -427,6 +436,15 @@ export function Nav() {
                         color="amber"
                         onClick={() => setShowMobileMenu(false)}
                       />
+                      {isOwnerOrManager && (
+                        <MobileDrawerLink
+                          to="/admin/promotions"
+                          icon={<Tag className="w-5 h-5" />}
+                          label="Quản lý khuyến mãi"
+                          color="pink"
+                          onClick={() => setShowMobileMenu(false)}
+                        />
+                      )}
                     </div>
                   </div>
                 )}

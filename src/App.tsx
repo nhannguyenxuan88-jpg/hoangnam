@@ -20,6 +20,7 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { RoleBasedRedirect } from "./components/auth/RoleBasedRedirect";
 import { useAppContext } from "./contexts/AppContext";
 import { BottomNav, Nav } from "./components/layout";
+import { ShopLayout } from "./components/layout/ShopLayout";
 import Dashboard from "./components/dashboard/Dashboard";
 import RepoErrorPanel from "./components/common/RepoErrorPanel";
 import TetTheme from "./components/common/TetTheme";
@@ -34,6 +35,14 @@ const InventoryManager = lazyImport(
 
 // Delivery Manager - Standalone page for delivery orders
 const DeliveryManager = lazyImport(() => import("./components/sales/DeliveryManager").then(m => ({ default: m.DeliveryManager })));
+
+// Shop pages - Public access for customers
+const ProductCatalog = lazyImport(() => import("./pages/shop/ProductCatalog"));
+const PromotionsPage = lazyImport(() => import("./pages/shop/PromotionsPage"));
+const MaintenanceGallery = lazyImport(() => import("./pages/shop/MaintenanceGallery"));
+
+// Admin pages - For managing shop content
+const PromotionManager = lazyImport(() => import("./pages/admin/PromotionManager"));
 
 // Delivery Test Page (for testing only)
 const DeliveryTest = lazyImport(() => import("./pages/DeliveryTest").then(m => ({ default: m.DeliveryTest })));
@@ -216,24 +225,27 @@ const queryClient = new QueryClient({
 const MainLayout: React.FC = () => {
   const location = useLocation();
   const isSalesPage = location.pathname === "/sales";
+  const isShopPage = ['/shop', '/promotions', '/gallery'].includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors pb-20 md:pb-0 relative overflow-hidden">
       {/* Subtle background watermark logo - centered */}
-      <div
-        className="fixed inset-0 flex items-center justify-center pointer-events-none z-0"
-      >
-        <img
-          src="/logo-smartcare.png"
-          alt=""
-          className="w-[60vw] h-[60vh] max-w-[500px] max-h-[500px] object-contain opacity-[0.05] dark:opacity-[0.04]"
-          style={{
-            filter: 'grayscale(100%)',
-          }}
-        />
-      </div>
+      {!isShopPage && (
+        <div
+          className="fixed inset-0 flex items-center justify-center pointer-events-none z-0"
+        >
+          <img
+            src="/logo-smartcare.png"
+            alt=""
+            className="w-[60vw] h-[60vh] max-w-[500px] max-h-[500px] object-contain opacity-[0.05] dark:opacity-[0.04]"
+            style={{
+              filter: 'grayscale(100%)',
+            }}
+          />
+        </div>
+      )}
       <TetTheme />
-      <Nav />
+      {!isShopPage && <Nav />}
       <main
         className={`max-w-[1600px] mx-auto ${isSalesPage ? "p-0" : "p-0 md:p-6"
           }`}
@@ -369,6 +381,48 @@ const MainLayout: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          {/* Public Shop Pages - No authentication required */}
+          <Route
+            path="/shop"
+            element={
+              <ShopLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <ProductCatalog />
+                </Suspense>
+              </ShopLayout>
+            }
+          />
+          <Route
+            path="/promotions"
+            element={
+              <ShopLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <PromotionsPage />
+                </Suspense>
+              </ShopLayout>
+            }
+          />
+          <Route
+            path="/gallery"
+            element={
+              <ShopLayout>
+                <Suspense fallback={<PageLoader />}>
+                  <MaintenanceGallery />
+                </Suspense>
+              </ShopLayout>
+            }
+          />
+          {/* Admin Shop Pages - Manage shop content */}
+          <Route
+            path="/admin/promotions"
+            element={
+              <ProtectedRoute requiredRoles={["owner", "manager"]}>
+                <Suspense fallback={<PageLoader />}>
+                  <PromotionManager />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/admin/migration"
             element={
@@ -382,7 +436,7 @@ const MainLayout: React.FC = () => {
         </Routes>
       </main>
       {/* Bottom Navigation for Mobile */}
-      <BottomNav />
+      {!isShopPage && <BottomNav />}
     </div>
   );
 };
