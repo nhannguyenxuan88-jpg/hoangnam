@@ -43,6 +43,7 @@ const MaintenanceGallery = lazyImport(() => import("./pages/shop/MaintenanceGall
 
 // Admin pages - For managing shop content
 const PromotionManager = lazyImport(() => import("./pages/admin/PromotionManager"));
+const GalleryManager = lazyImport(() => import("./pages/admin/GalleryManager"));
 
 // Delivery Test Page (for testing only)
 const DeliveryTest = lazyImport(() => import("./pages/DeliveryTest").then(m => ({ default: m.DeliveryTest })));
@@ -393,6 +394,16 @@ const MainLayout: React.FC = () => {
             }
           />
           <Route
+            path="/admin/thu-vien"
+            element={
+              <ProtectedRoute requiredRoles={["owner", "manager"]}>
+                <Suspense fallback={<PageLoader />}>
+                  <GalleryManager />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/migration"
             element={
               <ProtectedRoute requiredRoles={["owner"]}>
@@ -426,7 +437,7 @@ export default function App() {
                     path="/reset-password"
                     element={<ResetPasswordPage />}
                   />
-                  
+
                   {/* Public Shop Pages - No authentication required */}
                   <Route
                     path="/san-pham"

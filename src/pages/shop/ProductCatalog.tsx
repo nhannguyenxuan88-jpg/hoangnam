@@ -35,7 +35,7 @@ export default function ProductCatalog() {
     const fetchProducts = async () => {
       try {
         console.log('🔍 [Shop] Bắt đầu fetch sản phẩm...');
-        
+
         // Select only existing columns: id, name, sku, category, stock, retailPrice, wholesalePrice
         const { data, error } = await supabase
           .from('parts')
@@ -55,12 +55,12 @@ export default function ProductCatalog() {
           console.error('❌ [Shop] Lỗi fetch:', error);
           throw error;
         }
-        
+
         console.log('✅ [Shop] Fetch thành công!', {
           products: data?.length,
           currentBranchId
         });
-        
+
         setParts(data || []);
       } catch (error) {
         console.error('❌ [Shop] Error fetching products:', error);
@@ -91,13 +91,13 @@ export default function ProductCatalog() {
       searchQuery,
       selectedCategory
     });
-    
+
     let filtered = parts.filter((p) => {
       // Stock is JSONB: {CN1: quantity}
       // Get actual branch ID from stock keys (CN1, CN2, etc.)
       const stockKeys = p.stock && typeof p.stock === 'object' ? Object.keys(p.stock) : [];
       const actualBranchId = stockKeys[0] || 'CN1'; // Use first branch or default to CN1
-      
+
       // Calculate TOTAL stock across ALL branches
       let totalStock = 0;
       if (p.stock && typeof p.stock === 'object') {
@@ -106,11 +106,11 @@ export default function ProductCatalog() {
           return sum + numQty;
         }, 0);
       }
-      
+
       const hasStock = totalStock > 0;
-      
+
       if (!hasStock) return false;
-      
+
       // Store actual branch ID in product for display
       (p as any).actualBranchId = actualBranchId;
 
@@ -205,252 +205,257 @@ export default function ProductCatalog() {
       ) : (
         <>
           {/* Hero Section */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
-            <div className="container mx-auto px-4">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                🏍️ Phụ Tùng Xe Máy Chính Hãng
+          <div className="relative overflow-hidden bg-slate-900 text-white py-20">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 z-0 opacity-20">
+              <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-500 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-purple-500 rounded-full blur-3xl"></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/50 to-transparent"></div>
+            </div>
+
+            <div className="container mx-auto px-4 relative z-10 text-center">
+              <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+                Phụ Tùng Xe Máy Chính Hãng
               </h1>
-          <p className="text-xl text-blue-100">
-            Tìm kiếm và đặt hàng phụ tùng nhanh chóng, tiện lợi
-          </p>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-8">
-        {/* Search & Filter Bar */}
-        <div className="bg-white dark:bg-[#1e1e2d] rounded-2xl shadow-xl p-4 md:p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Tìm theo tên hoặc mã SKU..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-[#151521] border-2 border-transparent focus:border-blue-500 rounded-xl text-slate-900 dark:text-white transition-colors"
-              />
+              <p className="text-xl text-slate-300 max-w-2xl mx-auto">
+                Tìm kiếm và đặt hàng phụ tùng chất lượng cao nhanh chóng, tiện lợi với mức giá tốt nhất
+              </p>
             </div>
-
-            {/* Category Filter */}
-            <div className="flex items-center gap-2">
-              <Filter className="w-5 h-5 text-slate-400" />
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-4 py-3 bg-slate-50 dark:bg-[#151521] border-2 border-transparent focus:border-blue-500 rounded-xl text-slate-900 dark:text-white transition-colors"
-              >
-                <option value="all">Tất cả danh mục</option>
-                {categories
-                  .filter((c) => c !== "all")
-                  .map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            {/* View Mode Toggle */}
-            <div className="flex items-center gap-2 bg-slate-50 dark:bg-[#151521] rounded-xl p-1">
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === "grid"
-                    ? "bg-blue-500 text-white"
-                    : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                }`}
-              >
-                <Grid className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode("list")}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === "list"
-                    ? "bg-blue-500 text-white"
-                    : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                }`}
-              >
-                <List className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Cart Button */}
-            <button
-              onClick={() => setShowCart(true)}
-              className="relative px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-colors flex items-center gap-2"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              <span>Giỏ hàng</span>
-              {cartItems.length > 0 && (
-                <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                  {cartItems.length}
-                </span>
-              )}
-            </button>
           </div>
 
-          {/* Results count */}
-          <div className="mt-4 text-sm text-slate-500 dark:text-slate-400">
-            Hiển thị <span className="font-bold text-blue-600 dark:text-blue-400">{Math.min(displayCount, filteredProducts.length)}</span> / {filteredProducts.length} sản phẩm
-          </div>
-        </div>
-
-        {/* Products Grid/List */}
-        {viewMode === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.slice(0, displayCount).map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={addToCart}
-                cartQuantity={cart.get(product.id) || 0}
-                currentBranchId={currentBranchId}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredProducts.slice(0, displayCount).map((product) => (
-              <ProductListItem
-                key={product.id}
-                product={product}
-                onAddToCart={addToCart}
-                cartQuantity={cart.get(product.id) || 0}
-                currentBranchId={currentBranchId}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Load More Button */}
-        {displayCount < filteredProducts.length && (
-          <div className="flex justify-center mt-8">
-            <button
-              onClick={() => setDisplayCount(prev => prev + 12)}
-              className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
-            >
-              Xem thêm ({filteredProducts.length - displayCount} sản phẩm)
-            </button>
-          </div>
-        )}
-
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-16">
-            <Package className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-500 dark:text-slate-400 text-lg">
-              Không tìm thấy sản phẩm phù hợp
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Cart Modal */}
-      {showCart && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center">
-          <div className="bg-white dark:bg-[#1e1e2d] w-full md:max-w-2xl md:rounded-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <ShoppingCart className="w-6 h-6" />
-                Giỏ hàng của bạn
-              </h2>
-              <button
-                onClick={() => setShowCart(false)}
-                className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Cart Items */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {cartItems.length === 0 ? (
-                <div className="text-center py-12">
-                  <ShoppingCart className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-                  <p className="text-slate-500 dark:text-slate-400">
-                    Giỏ hàng trống
-                  </p>
+          <div className="container mx-auto px-4 py-8">
+            {/* Search & Filter Bar */}
+            <div className="sticky top-4 z-40 bg-white/80 dark:bg-[#1e1e2d]/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 rounded-2xl shadow-xl p-4 md:p-6 mb-8 transition-all duration-300">
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* Search */}
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Tìm theo tên hoặc mã SKU..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-[#151521] border-2 border-transparent focus:border-blue-500 rounded-xl text-slate-900 dark:text-white transition-colors"
+                  />
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {cartItems.map((item) => (
-                    <div
-                      key={item.part.id}
-                      className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-[#151521] rounded-xl"
-                    >
-                      <img
-                        src={item.part.imageUrl || `/images/products/${item.part.sku || 'placeholder'}.png`}
-                        alt={item.part.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          if (e.currentTarget.src.endsWith('.png')) {
-                            e.currentTarget.src = `/images/products/${item.part.sku || 'placeholder'}.jpg`;
-                          } else {
-                            e.currentTarget.src = "/images/products/placeholder.jpg";
-                          }
-                        }}
-                      />
-                      <div className="flex-1">
-                        <h3 className="font-bold text-slate-900 dark:text-white">
-                          {item.part.name}
-                        </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          {item.part.sku}
-                        </p>
-                        <p className="font-bold text-blue-600 dark:text-blue-400">
-                          {formatCurrency(item.part.retailPrice?.[currentBranchId] || 0)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => removeFromCart(item.part.id)}
-                          className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
-                        >
-                          -
-                        </button>
-                        <span className="w-8 text-center font-bold text-slate-900 dark:text-white">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => addToCart(item.part.id)}
-                          className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/40 transition-colors"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
 
-            {/* Footer */}
-            {cartItems.length > 0 && (
-              <div className="p-6 border-t border-slate-200 dark:border-slate-700">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-lg font-bold text-slate-700 dark:text-slate-300">
-                    Tổng cộng:
-                  </span>
-                  <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {formatCurrency(cartTotal)}
-                  </span>
+                {/* Category Filter */}
+                <div className="flex items-center gap-2">
+                  <Filter className="w-5 h-5 text-slate-400" />
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="px-4 py-3 bg-slate-50 dark:bg-[#151521] border-2 border-transparent focus:border-blue-500 rounded-xl text-slate-900 dark:text-white transition-colors"
+                  >
+                    <option value="all">Tất cả danh mục</option>
+                    {categories
+                      .filter((c) => c !== "all")
+                      .map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                  </select>
                 </div>
+
+                {/* View Mode Toggle */}
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-[#151521] rounded-xl p-1">
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={`p-2 rounded-lg transition-colors ${viewMode === "grid"
+                        ? "bg-blue-500 text-white"
+                        : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      }`}
+                  >
+                    <Grid className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`p-2 rounded-lg transition-colors ${viewMode === "list"
+                        ? "bg-blue-500 text-white"
+                        : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      }`}
+                  >
+                    <List className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Cart Button */}
                 <button
-                  onClick={handleOrder}
-                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2"
+                  onClick={() => setShowCart(true)}
+                  className="relative px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-colors flex items-center gap-2"
                 >
-                  <MessageCircle className="w-5 h-5" />
-                  Đặt hàng ngay
+                  <ShoppingCart className="w-5 h-5" />
+                  <span>Giỏ hàng</span>
+                  {cartItems.length > 0 && (
+                    <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                      {cartItems.length}
+                    </span>
+                  )}
                 </button>
-                <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-3">
-                  Nhấn để gửi đơn hàng qua Zalo
+              </div>
+
+              {/* Results count */}
+              <div className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                Hiển thị <span className="font-bold text-blue-600 dark:text-blue-400">{Math.min(displayCount, filteredProducts.length)}</span> / {filteredProducts.length} sản phẩm
+              </div>
+            </div>
+
+            {/* Products Grid/List */}
+            {viewMode === "grid" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
+                {filteredProducts.slice(0, displayCount).map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onAddToCart={addToCart}
+                    cartQuantity={cart.get(product.id) || 0}
+                    currentBranchId={currentBranchId}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredProducts.slice(0, displayCount).map((product) => (
+                  <ProductListItem
+                    key={product.id}
+                    product={product}
+                    onAddToCart={addToCart}
+                    cartQuantity={cart.get(product.id) || 0}
+                    currentBranchId={currentBranchId}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Load More Button */}
+            {displayCount < filteredProducts.length && (
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={() => setDisplayCount(prev => prev + 12)}
+                  className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
+                >
+                  Xem thêm ({filteredProducts.length - displayCount} sản phẩm)
+                </button>
+              </div>
+            )}
+
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-16">
+                <Package className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-500 dark:text-slate-400 text-lg">
+                  Không tìm thấy sản phẩm phù hợp
                 </p>
               </div>
             )}
           </div>
-        </div>
-      )}
+
+          {/* Cart Modal */}
+          {showCart && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center">
+              <div className="bg-white dark:bg-[#1e1e2d] w-full md:max-w-2xl md:rounded-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                {/* Header */}
+                <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <ShoppingCart className="w-6 h-6" />
+                    Giỏ hàng của bạn
+                  </h2>
+                  <button
+                    onClick={() => setShowCart(false)}
+                    className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Cart Items */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  {cartItems.length === 0 ? (
+                    <div className="text-center py-12">
+                      <ShoppingCart className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+                      <p className="text-slate-500 dark:text-slate-400">
+                        Giỏ hàng trống
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {cartItems.map((item) => (
+                        <div
+                          key={item.part.id}
+                          className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-[#151521] rounded-xl"
+                        >
+                          <img
+                            src={item.part.imageUrl || `/images/products/${item.part.sku || 'placeholder'}.png`}
+                            alt={item.part.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              if (e.currentTarget.src.endsWith('.png')) {
+                                e.currentTarget.src = `/images/products/${item.part.sku || 'placeholder'}.jpg`;
+                              } else {
+                                e.currentTarget.src = "/images/products/placeholder.jpg";
+                              }
+                            }}
+                          />
+                          <div className="flex-1">
+                            <h3 className="font-bold text-slate-900 dark:text-white">
+                              {item.part.name}
+                            </h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                              {item.part.sku}
+                            </p>
+                            <p className="font-bold text-blue-600 dark:text-blue-400">
+                              {formatCurrency(item.part.retailPrice?.[currentBranchId] || 0)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => removeFromCart(item.part.id)}
+                              className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/40 transition-colors"
+                            >
+                              -
+                            </button>
+                            <span className="w-8 text-center font-bold text-slate-900 dark:text-white">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() => addToCart(item.part.id)}
+                              className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/40 transition-colors"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                {cartItems.length > 0 && (
+                  <div className="p-6 border-t border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-lg font-bold text-slate-700 dark:text-slate-300">
+                        Tổng cộng:
+                      </span>
+                      <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {formatCurrency(cartTotal)}
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleOrder}
+                      className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      Đặt hàng ngay
+                    </button>
+                    <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-3">
+                      Nhấn để gửi đơn hàng qua Zalo
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
@@ -471,14 +476,20 @@ function ProductCard({
 }) {
   const categoryColor = getCategoryColor(product.category || "");
 
+  // Determine availability
+  const stock = (product.stock && typeof product.stock === 'object')
+    ? (product.stock[(product as any).actualBranchId || 'CN1'] || 0)
+    : 0;
+  const isOutOfStock = stock <= 0;
+
   return (
-    <div className="bg-white dark:bg-[#1e1e2d] rounded-xl shadow-lg hover:shadow-2xl transition-shadow overflow-hidden">
+    <div className="group relative bg-white dark:bg-[#1e1e2d] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 overflow-hidden flex flex-col h-full">
       {/* Image */}
-      <div className="relative aspect-square bg-slate-100 dark:bg-slate-800">
+      <div className="relative aspect-square bg-slate-50 dark:bg-[#151521] overflow-hidden">
         <img
           src={product.imageUrl || `/images/products/${product.sku || 'placeholder'}.webp`}
           alt={product.name}
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}
           onError={(e) => {
             const target = e.currentTarget;
             // Try .webp -> .png -> .jpg -> placeholder
@@ -491,53 +502,64 @@ function ProductCard({
             }
           }}
         />
-        {product.category && (
-          <div
-            className={`absolute top-3 right-3 px-3 py-1 ${categoryColor} rounded-full text-xs font-bold`}
-          >
-            {product.category}
-          </div>
-        )}
+
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex flex-col gap-2">
+          {product.category && (
+            <span className={`px-3 py-1 bg-black/50 backdrop-blur-md text-white text-xs font-bold rounded-full`}>
+              {product.category}
+            </span>
+          )}
+        </div>
+
         {cartQuantity > 0 && (
-          <div className="absolute top-3 left-3 w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold">
+          <div className="absolute top-3 right-3 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold shadow-lg animate-scaleIn">
             {cartQuantity}
           </div>
         )}
+
+        {/* Overlay Actions */}
+        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+          {!isOutOfStock && (
+            <button
+              onClick={() => onAddToCart(product.id)}
+              className="bg-white text-slate-900 px-6 py-2 rounded-full font-bold shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 hover:bg-blue-50"
+            >
+              Thêm nhanh
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Info */}
-      <div className="p-4">
-        <h3 className="font-bold text-slate-900 dark:text-white mb-1 line-clamp-2">
-          {product.name}
-        </h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
-          SKU: {product.sku}
-        </p>
-
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-            {formatCurrency(
-              (product.retailPrice && typeof product.retailPrice === 'object')
-                ? (product.retailPrice[(product as any).actualBranchId || 'CN1'] || 0)
-                : 0
-            )}
-          </span>
-          <span className="text-sm text-slate-500 dark:text-slate-400">
-            Còn: {
-              (product.stock && typeof product.stock === 'object')
-                ? (product.stock[(product as any).actualBranchId || 'CN1'] || 0)
-                : 0
-            }
-          </span>
+      <div className="p-5 flex flex-col flex-1">
+        <div className="mb-auto">
+          <p className="text-xs text-slate-400 font-mono mb-1">#{product.sku}</p>
+          <h3 className="font-bold text-slate-800 dark:text-slate-100 leading-tight mb-2 line-clamp-2 group-hover:text-blue-500 transition-colors">
+            {product.name}
+          </h3>
         </div>
 
-        <button
-          onClick={() => onAddToCart(product.id)}
-          className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors flex items-center justify-center gap-2"
-        >
-          <ShoppingCart className="w-4 h-4" />
-          Thêm vào giỏ
-        </button>
+        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-end justify-between">
+          <div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Đơn giá</p>
+            <span className="text-xl font-extrabold text-blue-600 dark:text-blue-400">
+              {formatCurrency(
+                (product.retailPrice && typeof product.retailPrice === 'object')
+                  ? (product.retailPrice[(product as any).actualBranchId || 'CN1'] || 0)
+                  : 0
+              )}
+            </span>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Kho</p>
+            {isOutOfStock ? (
+              <span className="text-sm font-bold text-red-500">Hết hàng</span>
+            ) : (
+              <span className="text-sm font-bold text-emerald-500">{stock}</span>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

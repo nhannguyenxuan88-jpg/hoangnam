@@ -12,6 +12,7 @@ interface Promotion {
   start_date: string;
   end_date: string;
   image_url?: string;
+  detail_image_url?: string;
   products?: string[];
   min_purchase?: number;
   is_active: boolean;
@@ -23,6 +24,8 @@ export default function PromotionManager() {
   const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [detailImageFile, setDetailImageFile] = useState<File | null>(null);
+  const [detailImagePreview, setDetailImagePreview] = useState<string>('');
   const [uploadProgress, setUploadProgress] = useState(0);
   const queryClient = useQueryClient();
 
@@ -34,7 +37,7 @@ export default function PromotionManager() {
         .from('promotions')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       return data as Promotion[];
     }
@@ -62,41 +65,88 @@ export default function PromotionManager() {
   // Create/Update mutation
   const saveMutation = useMutation({
     mutationFn: async (formData: Partial<Promotion>) => {
-      let imageUrl = formData.image_url;
+      console.log('💾 Saving promotion:', formData);
 
-      // Upload image if new file selected
+      let imageUrl = formData.image_url;
+      let detailImageUrl = formData.detail_image_url;
+
+      // Upload thumbnail image if new file selected
       if (imageFile) {
-        setUploadProgress(50);
-        imageUrl = await uploadImage(imageFile);
-        setUploadProgress(100);
+        console.log('📷 Uploading thumbnail image...');
+        setUploadProgress(25);
+        try {
+          imageUrl = await uploadImage(imageFile);
+          console.log('✅ Thumbnail uploaded:', imageUrl);
+        } catch (uploadErr) {
+          console.error('❌ Thumbnail upload failed:', uploadErr);
+          throw new Error('Không thể tải hình thumbnail lên. Vui lòng thử lại.');
+        }
       }
+
+      // Upload detail image if new file selected
+      if (detailImageFile) {
+        console.log('📷 Uploading detail image...');
+        setUploadProgress(50);
+        try {
+          detailImageUrl = await uploadImage(detailImageFile);
+          console.log('✅ Detail image uploaded:', detailImageUrl);
+        } catch (uploadErr) {
+          console.error('❌ Detail image upload failed:', uploadErr);
+          throw new Error('Không thể tải hình chi tiết lên. Vui lòng thử lại.');
+        }
+      }
+
+      setUploadProgress(75);
 
       const promotionData = {
         ...formData,
-        image_url: imageUrl
+        image_url: imageUrl,
+        detail_image_url: detailImageUrl
       };
+
+      console.log('📤 Sending to database:', promotionData);
 
       if (editingPromotion) {
         // Update
-        const { error } = await supabase
+        console.log('🔄 Updating promotion ID:', editingPromotion.id);
+        const { data, error } = await supabase
           .from('promotions')
           .update(promotionData)
-          .eq('id', editingPromotion.id);
-        
-        if (error) throw error;
+          .eq('id', editingPromotion.id)
+          .select();
+
+        if (error) {
+          console.error('❌ Update error:', error);
+          throw new Error(`Lỗi cập nhật: ${error.message}`);
+        }
+        console.log('✅ Update success:', data);
+        return data;
       } else {
         // Insert
-        const { error } = await supabase
+        console.log('➕ Creating new promotion');
+        const { data, error } = await supabase
           .from('promotions')
-          .insert([promotionData]);
-        
-        if (error) throw error;
+          .insert([promotionData])
+          .select();
+
+        if (error) {
+          console.error('❌ Insert error:', error);
+          throw new Error(`Lỗi thêm mới: ${error.message}`);
+        }
+        console.log('✅ Insert success:', data);
+        return data;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('🎉 Mutation success, refreshing data...');
       queryClient.invalidateQueries({ queryKey: ['promotions-admin'] });
       queryClient.invalidateQueries({ queryKey: ['promotions'] });
       resetForm();
+      alert('✅ Lưu thành công!');
+    },
+    onError: (error: Error) => {
+      console.error('❌ Mutation error:', error);
+      alert(`❌ Lỗi: ${error.message}`);
     }
   });
 
@@ -107,7 +157,7 @@ export default function PromotionManager() {
         .from('promotions')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw error;
     },
     onSuccess: () => {
@@ -128,10 +178,22 @@ export default function PromotionManager() {
     }
   };
 
+  const handleDetailImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setDetailImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setDetailImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
+
     const promotion: Partial<Promotion> = {
       title: formData.get('title') as string,
       description: formData.get('description') as string,
@@ -142,7 +204,8 @@ export default function PromotionManager() {
       min_purchase: formData.get('min_purchase') ? Number(formData.get('min_purchase')) : undefined,
       is_active: formData.get('is_active') === 'on',
       featured: formData.get('featured') === 'on',
-      image_url: editingPromotion?.image_url
+      image_url: editingPromotion?.image_url,
+      detail_image_url: editingPromotion?.detail_image_url
     };
 
     saveMutation.mutate(promotion);
@@ -153,12 +216,15 @@ export default function PromotionManager() {
     setEditingPromotion(null);
     setImageFile(null);
     setImagePreview('');
+    setDetailImageFile(null);
+    setDetailImagePreview('');
     setUploadProgress(0);
   };
 
   const startEdit = (promotion: Promotion) => {
     setEditingPromotion(promotion);
     setImagePreview(promotion.image_url || '');
+    setDetailImagePreview(promotion.detail_image_url || '');
     setIsFormOpen(true);
   };
 
@@ -224,7 +290,7 @@ export default function PromotionManager() {
                       <div className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-500 transition-colors">
                         <ImageIcon className="h-5 w-5 text-gray-400" />
                         <span className="text-sm text-gray-600">
-                          {imageFile ? imageFile.name : 'Chọn hình ảnh...'}
+                          {imageFile ? imageFile.name : 'Chọn hình thumbnail...'}
                         </span>
                       </div>
                       <input
@@ -235,17 +301,52 @@ export default function PromotionManager() {
                       />
                     </label>
                   </div>
-                  {uploadProgress > 0 && uploadProgress < 100 && (
-                    <div className="mt-2">
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-orange-600 transition-all duration-300"
-                          style={{ width: `${uploadProgress}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
+                  <p className="text-xs text-gray-500 mt-1">Kích thước: 800 x 400 px (tỷ lệ 2:1)</p>
                 </div>
+
+                {/* Detail Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hình Chi Tiết (hiển thị khi bấm Xem chi tiết)
+                  </label>
+                  <div className="flex items-center gap-4">
+                    {detailImagePreview && (
+                      <img
+                        src={detailImagePreview}
+                        alt="Detail Preview"
+                        className="h-40 w-32 object-cover rounded-lg border-2 border-blue-200"
+                      />
+                    )}
+                    <label className="flex-1 cursor-pointer">
+                      <div className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-blue-300 rounded-lg hover:border-blue-500 transition-colors bg-blue-50">
+                        <ImageIcon className="h-5 w-5 text-blue-400" />
+                        <span className="text-sm text-blue-600">
+                          {detailImageFile ? detailImageFile.name : 'Chọn hình chi tiết...'}
+                        </span>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleDetailImageSelect}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Kích thước: 800 x 1000 px hoặc tự do</p>
+                </div>
+
+                {/* Upload Progress */}
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                  <div>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-orange-600 transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Đang tải lên... {uploadProgress}%</p>
+                  </div>
+                )}
 
                 {/* Title */}
                 <div>

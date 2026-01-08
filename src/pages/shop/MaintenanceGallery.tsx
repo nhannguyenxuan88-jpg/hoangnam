@@ -10,12 +10,15 @@ import {
   CheckCircle,
   Calendar,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "../../supabaseClient";
 
 interface MaintenanceGalleryItem {
   id: string;
   title: string;
   description: string;
   imageUrl: string;
+  videoId?: string;
   vehicleModel?: string;
   serviceType?: string;
   date: string;
@@ -25,109 +28,51 @@ interface MaintenanceGalleryItem {
   featured?: boolean;
 }
 
+interface DBGalleryItem {
+  id: string;
+  title: string;
+  description: string;
+  image_url?: string;
+  video_id?: string;
+  vehicle_model?: string;
+  service_type?: string;
+  date: string;
+  before_image?: string;
+  after_image?: string;
+  rating?: number;
+  featured?: boolean;
+}
+
 export default function MaintenanceGallery() {
-  // Sample gallery items - you can fetch from Supabase later
-  const [galleryItems] = useState<MaintenanceGalleryItem[]>([
-    {
-      id: "work1",
-      title: "Đại Tu Động Cơ Honda Winner X",
-      description:
-        "Đại tu động cơ toàn diện, thay piston, xéc măng, sửa đại thuận. Xe chạy như mới sau 80.000km",
-      imageUrl: "/images/maintenance/winner-engine-1.jpg",
-      beforeImage: "/images/maintenance/winner-before.jpg",
-      afterImage: "/images/maintenance/winner-after.jpg",
-      vehicleModel: "Honda Winner X",
-      serviceType: "Đại tu động cơ",
-      date: "2026-01-05",
-      rating: 5,
-      featured: true,
-    },
-    {
-      id: "work2",
-      title: "Sơn Xe Yamaha Exciter 155",
-      description:
-        "Sơn lại toàn bộ xe với màu xanh GP độc đáo. Bóng gương, không tì vết",
-      imageUrl: "/images/maintenance/exciter-paint-1.jpg",
-      beforeImage: "/images/maintenance/exciter-before.jpg",
-      afterImage: "/images/maintenance/exciter-after.jpg",
-      vehicleModel: "Yamaha Exciter 155",
-      serviceType: "Sơn xe",
-      date: "2026-01-03",
-      rating: 5,
-      featured: true,
-    },
-    {
-      id: "work3",
-      title: "Thay Dàn Phanh Honda SH Mode",
-      description:
-        "Thay dàn phanh ABS chính hãng, kiểm tra hệ thống phanh toàn diện",
-      imageUrl: "/images/maintenance/sh-brake-1.jpg",
-      vehicleModel: "Honda SH Mode",
-      serviceType: "Thay phanh",
-      date: "2025-12-28",
-      rating: 5,
-    },
-    {
-      id: "work4",
-      title: "Độ Đèn LED Sirius",
-      description:
-        "Độ đèn pha LED bi xenon, đèn xi nhan, đèn hậu full LED. Sáng như ban ngày",
-      imageUrl: "/images/maintenance/sirius-led-1.jpg",
-      beforeImage: "/images/maintenance/sirius-before.jpg",
-      afterImage: "/images/maintenance/sirius-after.jpg",
-      vehicleModel: "Yamaha Sirius",
-      serviceType: "Độ xe",
-      date: "2025-12-25",
-      rating: 5,
-    },
-    {
-      id: "work5",
-      title: "Bảo Dưỡng Định Kỳ Vision 2024",
-      description:
-        "Thay dầu nhớt, lọc gió, bugi, vệ sinh bình xăng con, kiểm tra toàn bộ hệ thống",
-      imageUrl: "/images/maintenance/vision-maintenance-1.jpg",
-      vehicleModel: "Honda Vision 2024",
-      serviceType: "Bảo dưỡng",
-      date: "2025-12-20",
-      rating: 5,
-    },
-    {
-      id: "work6",
-      title: "Sửa Hệ Thống Điện Wave Alpha",
-      description:
-        "Tìm và sửa chập điện, thay dây điện cũ, kiểm tra acquy và đề",
-      imageUrl: "/images/maintenance/wave-electric-1.jpg",
-      vehicleModel: "Honda Wave Alpha",
-      serviceType: "Sửa chữa điện",
-      date: "2025-12-15",
-      rating: 5,
-    },
-    {
-      id: "work7",
-      title: "Độ Pô Akrapovic Winner",
-      description:
-        "Độ pô Akrapovic chính hãng, tăng công suất, âm thanh thể thao",
-      imageUrl: "/images/maintenance/winner-exhaust-1.jpg",
-      vehicleModel: "Honda Winner X",
-      serviceType: "Độ xe",
-      date: "2025-12-10",
-      rating: 5,
-    },
-    {
-      id: "work8",
-      title: "Phục Hồi Xe Tai Nạn PCX",
-      description:
-        "Sửa xe sau tai nạn, thay thế toàn bộ dàn vỏ, sơn lại, kiểm tra khung xe",
-      imageUrl: "/images/maintenance/pcx-accident-1.jpg",
-      beforeImage: "/images/maintenance/pcx-before.jpg",
-      afterImage: "/images/maintenance/pcx-after.jpg",
-      vehicleModel: "Honda PCX",
-      serviceType: "Phục hồi tai nạn",
-      date: "2025-12-01",
-      rating: 5,
-      featured: true,
-    },
-  ]);
+  // Fetch gallery items from Supabase
+  const { data: galleryItems = [], isLoading } = useQuery({
+    queryKey: ['gallery-items'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('gallery_items')
+        .select('*')
+        .order('featured', { ascending: false })
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+
+      // Map snake_case to camelCase
+      return (data as DBGalleryItem[]).map(item => ({
+        id: item.id,
+        title: item.title,
+        description: item.description || '',
+        imageUrl: item.image_url || '/images/maintenance/placeholder.jpg',
+        videoId: item.video_id,
+        vehicleModel: item.vehicle_model,
+        serviceType: item.service_type,
+        date: item.date,
+        beforeImage: item.before_image,
+        afterImage: item.after_image,
+        rating: item.rating,
+        featured: item.featured,
+      })) as MaintenanceGalleryItem[];
+    }
+  });
 
   const [selectedItem, setSelectedItem] = useState<MaintenanceGalleryItem | null>(null);
   const [filter, setFilter] = useState<string>("all");
@@ -139,6 +84,14 @@ export default function MaintenanceGallery() {
     if (filter === "all") return true;
     return item.serviceType === filter;
   });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 dark:from-[#0a0a0f] dark:to-[#1a1a2e] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 dark:from-[#0a0a0f] dark:to-[#1a1a2e]">
@@ -219,11 +172,10 @@ export default function MaintenanceGallery() {
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <button
             onClick={() => setFilter("all")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              filter === "all"
-                ? "bg-blue-600 text-white"
-                : "bg-white dark:bg-[#1e1e2d] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#2a2a3d]"
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === "all"
+              ? "bg-blue-600 text-white"
+              : "bg-white dark:bg-[#1e1e2d] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#2a2a3d]"
+              }`}
           >
             Tất cả
           </button>
@@ -231,11 +183,10 @@ export default function MaintenanceGallery() {
             <button
               key={type}
               onClick={() => setFilter(type!)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filter === type
-                  ? "bg-blue-600 text-white"
-                  : "bg-white dark:bg-[#1e1e2d] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#2a2a3d]"
-              }`}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === type
+                ? "bg-blue-600 text-white"
+                : "bg-white dark:bg-[#1e1e2d] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#2a2a3d]"
+                }`}
             >
               {type}
             </button>
@@ -372,6 +323,7 @@ function LightboxModal({
   onClose: () => void;
 }) {
   const [showBefore, setShowBefore] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
@@ -383,9 +335,20 @@ function LightboxModal({
       </button>
 
       <div className="max-w-5xl w-full bg-white dark:bg-[#1e1e2d] rounded-2xl overflow-hidden">
-        {/* Image */}
+        {/* Video or Image */}
         <div className="relative bg-slate-900">
-          {item.beforeImage && item.afterImage ? (
+          {/* YouTube Video */}
+          {item.videoId && showVideo ? (
+            <div className="aspect-video">
+              <iframe
+                src={`https://www.youtube.com/embed/${item.videoId}?autoplay=1`}
+                title={item.title}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          ) : item.beforeImage && item.afterImage ? (
             <div className="relative aspect-video">
               <img
                 src={showBefore ? item.beforeImage : item.afterImage}
@@ -395,34 +358,54 @@ function LightboxModal({
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
                 <button
                   onClick={() => setShowBefore(true)}
-                  className={`px-4 py-2 rounded-lg font-bold transition-colors ${
-                    showBefore
-                      ? "bg-white text-slate-900"
-                      : "bg-white/20 text-white hover:bg-white/30"
-                  }`}
+                  className={`px-4 py-2 rounded-lg font-bold transition-colors ${showBefore
+                    ? "bg-white text-slate-900"
+                    : "bg-white/20 text-white hover:bg-white/30"
+                    }`}
                 >
                   Trước
                 </button>
                 <button
                   onClick={() => setShowBefore(false)}
-                  className={`px-4 py-2 rounded-lg font-bold transition-colors ${
-                    !showBefore
-                      ? "bg-white text-slate-900"
-                      : "bg-white/20 text-white hover:bg-white/30"
-                  }`}
+                  className={`px-4 py-2 rounded-lg font-bold transition-colors ${!showBefore
+                    ? "bg-white text-slate-900"
+                    : "bg-white/20 text-white hover:bg-white/30"
+                    }`}
                 >
                   Sau
                 </button>
               </div>
             </div>
           ) : (
-            <div className="aspect-video">
+            <div className="aspect-video relative">
               <img
                 src={item.imageUrl}
                 alt={item.title}
                 className="w-full h-full object-contain"
               />
+              {/* Play button overlay if video exists */}
+              {item.videoId && !showVideo && (
+                <button
+                  onClick={() => setShowVideo(true)}
+                  className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/50 transition-colors"
+                >
+                  <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center shadow-2xl">
+                    <Play className="w-10 h-10 text-white fill-white ml-1" />
+                  </div>
+                </button>
+              )}
             </div>
+          )}
+
+          {/* Video toggle button if has video */}
+          {item.videoId && (
+            <button
+              onClick={() => setShowVideo(!showVideo)}
+              className="absolute top-4 left-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold flex items-center gap-2 transition-colors"
+            >
+              <Play className="w-4 h-4" />
+              {showVideo ? 'Xem ảnh' : 'Xem video'}
+            </button>
           )}
         </div>
 
