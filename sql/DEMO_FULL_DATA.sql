@@ -78,22 +78,58 @@ $$;
 DO $$
 BEGIN
   IF to_regclass('public.employees') IS NOT NULL THEN
-    -- Schema commonly used in this repo: employees(branch_id, base_salary, start_date, position, ...)
-    INSERT INTO public.employees (
-      id,
-      name,
-      phone,
-      email,
-      position,
-      base_salary,
-      start_date,
-      branch_id,
-      status
-    ) VALUES
-    ('emp-demo-001', 'Nguyễn Văn Tài', '0909111222', 'nguyentai@motocare.vn', 'technician', 8000000, CURRENT_DATE - 120, 'CN1', 'active'),
-    ('emp-demo-002', 'Trần Minh Tuấn', '0909333444', 'trantuan@motocare.vn', 'technician', 7500000, CURRENT_DATE - 90, 'CN1', 'active'),
-    ('emp-demo-003', 'Lê Thị Hoa', '0909555666', 'lehoa@motocare.vn', 'cashier', 6000000, CURRENT_DATE - 60, 'CN1', 'active')
-    ON CONFLICT (id) DO NOTHING;
+    -- Employees schema differs across environments; detect columns before inserting.
+
+    -- Variant A (snake_case payroll schema): position/base_salary/branch_id/start_date/status
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema='public' AND table_name='employees' AND column_name='position'
+    ) THEN
+      INSERT INTO public.employees (
+        id,
+        name,
+        phone,
+        email,
+        position,
+        base_salary,
+        start_date,
+        branch_id,
+        status
+      ) VALUES
+      ('emp-demo-001', 'Nguyễn Văn Tài', '0909111222', 'nguyentai@motocare.vn', 'technician', 8000000, CURRENT_DATE - 120, 'CN1', 'active'),
+      ('emp-demo-002', 'Trần Minh Tuấn', '0909333444', 'trantuan@motocare.vn', 'technician', 7500000, CURRENT_DATE - 90, 'CN1', 'active'),
+      ('emp-demo-003', 'Lê Thị Hoa', '0909555666', 'lehoa@motocare.vn', 'cashier', 6000000, CURRENT_DATE - 60, 'CN1', 'active')
+      ON CONFLICT (id) DO NOTHING;
+
+    -- Variant B (demo/master schema): role/salary + quoted "branchId"/"createdAt" + active
+    ELSIF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema='public' AND table_name='employees' AND column_name='role'
+    ) THEN
+      INSERT INTO public.employees (
+        id,
+        name,
+        phone,
+        email,
+        role,
+        salary,
+        "branchId",
+        active
+      ) VALUES
+      ('emp-demo-001', 'Nguyễn Văn Tài', '0909111222', 'nguyentai@motocare.vn', 'technician', 8000000, 'CN1', true),
+      ('emp-demo-002', 'Trần Minh Tuấn', '0909333444', 'trantuan@motocare.vn', 'technician', 7500000, 'CN1', true),
+      ('emp-demo-003', 'Lê Thị Hoa', '0909555666', 'lehoa@motocare.vn', 'cashier', 6000000, 'CN1', true)
+      ON CONFLICT (id) DO NOTHING;
+
+    -- Fallback: minimal columns
+    ELSE
+      INSERT INTO public.employees (id, name, phone)
+      VALUES
+      ('emp-demo-001', 'Nguyễn Văn Tài', '0909111222'),
+      ('emp-demo-002', 'Trần Minh Tuấn', '0909333444'),
+      ('emp-demo-003', 'Lê Thị Hoa', '0909555666')
+      ON CONFLICT (id) DO NOTHING;
+    END IF;
   END IF;
 END;
 $$;
