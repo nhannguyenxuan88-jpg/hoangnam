@@ -350,12 +350,12 @@ DECLARE
   v_count BIGINT;
 BEGIN
   IF to_regclass('public.suppliers') IS NOT NULL THEN
-    EXECUTE $$SELECT COUNT(*) FROM public.suppliers WHERE id LIKE 'sup-demo%'$$ INTO v_count;
+    EXECUTE 'SELECT COUNT(*) FROM public.suppliers WHERE id LIKE ''sup-demo%''' INTO v_count;
     RAISE NOTICE 'Nhà cung cấp: %', v_count;
   END IF;
 
   IF to_regclass('public.employees') IS NOT NULL THEN
-    EXECUTE $$SELECT COUNT(*) FROM public.employees WHERE id LIKE 'emp-demo%'$$ INTO v_count;
+    EXECUTE 'SELECT COUNT(*) FROM public.employees WHERE id LIKE ''emp-demo%''' INTO v_count;
     RAISE NOTICE 'Nhân viên: %', v_count;
   END IF;
 END;
