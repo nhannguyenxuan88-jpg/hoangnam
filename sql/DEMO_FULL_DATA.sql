@@ -84,8 +84,7 @@ INSERT INTO public.store_settings (
   "storeEmail",
   "bankName",
   "bankAccount",
-  "bankAccountName",
-  "taxId"
+  "bankAccountName"
 ) VALUES (
   'default',
   'Motocare Demo - Trung tâm sửa chữa xe máy',
@@ -94,8 +93,7 @@ INSERT INTO public.store_settings (
   'demo@motocare.vn',
   'Ngân hàng TMCP Ngoại Thương Việt Nam (Vietcombank)',
   '1234567890',
-  'CONG TY TNHH MOTOCARE',
-  '0123456789'
+  'CONG TY TNHH MOTOCARE'
 )
 ON CONFLICT (id) DO UPDATE SET
   "storeName" = EXCLUDED."storeName",
@@ -104,8 +102,7 @@ ON CONFLICT (id) DO UPDATE SET
   "storeEmail" = EXCLUDED."storeEmail",
   "bankName" = EXCLUDED."bankName",
   "bankAccount" = EXCLUDED."bankAccount",
-  "bankAccountName" = EXCLUDED."bankAccountName",
-  "taxId" = EXCLUDED."taxId";
+  "bankAccountName" = EXCLUDED."bankAccountName";
 
 -- 7. PHIẾU SỬA CHỮA MẪU
 INSERT INTO public.work_orders (
