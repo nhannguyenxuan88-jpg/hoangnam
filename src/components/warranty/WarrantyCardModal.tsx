@@ -120,27 +120,25 @@ export const WarrantyCardModal: React.FC<WarrantyCardModalProps> = ({
                             Thông tin thiết bị
                         </h4>
                         <div className="space-y-2">
-                            <input
-                                type="text"
-                                value={formData.deviceModel}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, deviceModel: e.target.value })
-                                }
-                                placeholder="Tên thiết bị / Model *"
-                                className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                                required
-                            />
-                            placeholder="IMEI / Serial Number"
-                            className="w-full pl-3 pr-10 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowScanner(true)}
-                                className="absolute right-1 top-1 p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
-                                title="Quét mã vạch"
-                            >
-                                <Scan className="w-4 h-4" />
-                            </button>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={formData.imeiSerial}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, imeiSerial: e.target.value })
+                                    }
+                                    placeholder="IMEI / Serial Number"
+                                    className="w-full pl-3 pr-10 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowScanner(true)}
+                                    className="absolute right-1 top-1 p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                                    title="Quét mã vạch"
+                                >
+                                    <Scan className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -237,7 +235,16 @@ export const WarrantyCardModal: React.FC<WarrantyCardModalProps> = ({
                     {createWarrantyMutation.isPending ? "Đang tạo..." : "✓ Cấp Phiếu BH"}
                 </button>
             </div>
+
+            <ScannerModal
+                isOpen={showScanner}
+                onClose={() => setShowScanner(false)}
+                onScan={(result) => {
+                    setFormData(prev => ({ ...prev, imeiSerial: result }));
+                    if (navigator.vibrate) navigator.vibrate(200);
+                }}
+            />
         </div>
-        </div >
-    );
+    </div >
+);
 };
