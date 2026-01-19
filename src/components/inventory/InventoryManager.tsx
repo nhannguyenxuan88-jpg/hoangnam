@@ -269,7 +269,9 @@ const InventoryManagerNew: React.FC = () => {
     queryFn: async () => {
       let query = supabase
         .from("parts")
-        .select("id, name, sku, category, stock, reserved, costPrice, retailPrice")
+        // Use "*" to be compatible with demo DBs that may not have optional columns
+        // like reserved/costPrice yet. Selecting missing columns causes PostgREST 400.
+        .select("*")
         .order("name");
 
       if (categoryFilter && categoryFilter !== "all") {
@@ -525,8 +527,12 @@ const InventoryManagerNew: React.FC = () => {
       const stock = part.stock?.[currentBranchId] || 0;
       const reserved = part.reserved?.[currentBranchId] || 0;
       const available = stock - reserved; // ✅ Calculate available
-      const costPrice = part.costPrice?.[currentBranchId] || 0;
-      return sum + available * costPrice; // ✅ Use available stock
+      // Prefer costPrice if present; otherwise fallback to retailPrice for demo datasets
+      // where import/cost price hasn't been filled.
+      const unitValue =
+        Number(part.costPrice?.[currentBranchId] || 0) ||
+        Number(part.retailPrice?.[currentBranchId] || 0);
+      return sum + available * unitValue;
     }, 0);
   }, [allPartsData, currentBranchId]);
 

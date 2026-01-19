@@ -55,15 +55,15 @@ export function Nav() {
   const isOwnerOrManager =
     role === USER_ROLES.OWNER || role === USER_ROLES.MANAGER;
   const can = {
-    viewFinance: isOwnerOrManager,
-    viewPayroll: isOwnerOrManager,
-    viewAnalytics: isOwnerOrManager,
-    viewDebt: isOwnerOrManager,
-    viewEmployees: isOwnerOrManager,
+    viewFinance: false,
+    viewPayroll: false,
+    viewAnalytics: false,
+    viewDebt: false,
+    viewEmployees: false,
     viewSettings: isOwnerOrManager,
     viewInventory: isOwnerOrManager,
     viewDashboard: isOwnerOrManager,
-    viewReports: isOwnerOrManager,
+    viewReports: false,
   } as const;
 
   return (
@@ -233,12 +233,7 @@ export function Nav() {
               icon={<Wrench className="w-4 h-4" />}
               label="Sửa chữa"
             />
-            <NavLink
-              to="/sales"
-              colorKey="emerald"
-              icon={<Cart className="w-4 h-4" />}
-              label="Bán hàng"
-            />
+            {/* Sales link removed */}
             {can.viewInventory && (
               <NavLink
                 to="/inventory"
@@ -253,54 +248,7 @@ export function Nav() {
               icon={<Users className="w-4 h-4" />}
               label="Khách hàng"
             />
-            {can.viewEmployees && (
-              <NavLink
-                to="/employees"
-                colorKey="indigo"
-                icon={<BriefcaseBusiness className="w-4 h-4" />}
-                label="Nhân viên"
-              />
-            )}
-            {can.viewFinance && (
-              <NavLink
-                to="/finance"
-                colorKey="rose"
-                icon={<Landmark className="w-4 h-4" />}
-                label="Tài chính"
-              />
-            )}
-            {can.viewDebt && (
-              <NavLink
-                to="/debt"
-                colorKey="orange"
-                icon={<HandCoins className="w-4 h-4" />}
-                label="Công nợ"
-              />
-            )}
-            {can.viewAnalytics && (
-              <NavLink
-                to="/analytics"
-                colorKey="teal"
-                icon={<BarChart3 className="w-4 h-4" />}
-                label="Phân tích"
-              />
-            )}
-            {can.viewReports && (
-              <NavLink
-                to="/reports"
-                colorKey="fuchsia"
-                icon={<FileText className="w-4 h-4" />}
-                label="Báo cáo"
-              />
-            )}
-            {isOwnerOrManager && (
-              <NavLink
-                to="/admin/khuyen-mai"
-                colorKey="pink"
-                icon={<Tag className="w-4 h-4" />}
-                label="Khuyến mãi"
-              />
-            )}
+            {/* Removed unrelated links: Employees, Finance, Debt, Analytics, Reports, Promotions */}
           </div>
 
           {/* Right: Notifications and Home Icon (mobile only) */}
@@ -368,122 +316,7 @@ export function Nav() {
                 )}
               </div>
 
-              {/* Secondary Functions - Grouped by category */}
-              <div className="p-4 space-y-6">
-                {/* Management Section */}
-                <div>
-                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-3 mb-2">
-                    Quản lý
-                  </div>
-                  <div className="space-y-1">
-                    {can.viewEmployees && (
-                      <MobileDrawerLink
-                        to="/employees"
-                        icon={<BriefcaseBusiness className="w-5 h-5" />}
-                        label="Nhân viên"
-                        color="indigo"
-                        onClick={() => setShowMobileMenu(false)}
-                      />
-                    )}
-                    {can.viewDebt && (
-                      <MobileDrawerLink
-                        to="/debt"
-                        icon={<HandCoins className="w-5 h-5" />}
-                        label="Công nợ"
-                        color="orange"
-                        onClick={() => setShowMobileMenu(false)}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* Finance & Reports Section */}
-                {(can.viewFinance || can.viewAnalytics) && (
-                  <div>
-                    <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-3 mb-2">
-                      Tài chính & Báo cáo
-                    </div>
-                    <div className="space-y-1">
-                      {can.viewFinance && (
-                        <MobileDrawerLink
-                          to="/finance"
-                          icon={<Landmark className="w-5 h-5" />}
-                          label="Tài chính"
-                          color="rose"
-                          onClick={() => setShowMobileMenu(false)}
-                        />
-                      )}
-                      {can.viewAnalytics && (
-                        <MobileDrawerLink
-                          to="/analytics"
-                          icon={<BarChart3 className="w-5 h-5" />}
-                          label="Phân tích"
-                          color="teal"
-                          onClick={() => setShowMobileMenu(false)}
-                        />
-                      )}
-                      <MobileDrawerLink
-                        to="/reports"
-                        icon={<FileText className="w-5 h-5" />}
-                        label="Báo cáo"
-                        color="fuchsia"
-                        onClick={() => setShowMobileMenu(false)}
-                      />
-                      <MobileDrawerLink
-                        to="/tax-report"
-                        icon={<DollarSign className="w-5 h-5" />}
-                        label="Báo cáo thuế"
-                        color="amber"
-                        onClick={() => setShowMobileMenu(false)}
-                      />
-                      {isOwnerOrManager && (
-                        <MobileDrawerLink
-                          to="/admin/khuyen-mai"
-                          icon={<Tag className="w-5 h-5" />}
-                          label="Quản lý khuyến mãi"
-                          color="pink"
-                          onClick={() => setShowMobileMenu(false)}
-                        />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Settings Section */}
-                <div>
-                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-3 mb-2">
-                    Hệ thống
-                  </div>
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => {
-                        toggleTheme();
-                        setShowMobileMenu(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition text-slate-700 dark:text-slate-300"
-                    >
-                      {theme === "dark" ? (
-                        <Moon className="w-5 h-5" />
-                      ) : (
-                        <Sun className="w-5 h-5" />
-                      )}
-                      <span className="font-medium">
-                        Chế độ {theme === "dark" ? "tối" : "sáng"}
-                      </span>
-                    </button>
-
-                    {can.viewSettings && (
-                      <MobileDrawerLink
-                        to="/settings"
-                        icon={<Cog className="w-5 h-5" />}
-                        label="Cài đặt"
-                        color="slate"
-                        onClick={() => setShowMobileMenu(false)}
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
+              {/* Removed Management, Finance, Reports, Settings sections from Mobile Drawer */}
 
               {/* Logout Button - Fixed at bottom */}
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">

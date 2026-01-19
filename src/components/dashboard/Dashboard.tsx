@@ -141,126 +141,14 @@ const Dashboard: React.FC = () => {
               })}
             </p>
 
-            {/* Mini stats trong header */}
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                onClick={() => setShowBalance(!showBalance)}
-                className="bg-white/20 backdrop-blur-sm rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 hover:bg-white/30 transition-colors"
-              >
-                {showBalance ? (
-                  <EyeOff className="w-3.5 h-3.5" />
-                ) : (
-                  <Eye className="w-3.5 h-3.5" />
-                )}
-                <div className="text-left">
-                  <p className="text-[10px] opacity-80">Tiền mặt</p>
-                  <p className="text-xs font-semibold">
-                    {showBalance ? formatCurrency(cashBalance) : "••••••"}
-                  </p>
-                </div>
-              </button>
-              <button
-                onClick={() => setShowBalance(!showBalance)}
-                className="bg-white/20 backdrop-blur-sm rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 hover:bg-white/30 transition-colors"
-              >
-                <Landmark className="w-3.5 h-3.5" />
-                <div className="text-left">
-                  <p className="text-[10px] opacity-80">Ngân hàng</p>
-                  <p className="text-xs font-semibold">
-                    {showBalance ? formatCurrency(bankBalance) : "••••••"}
-                  </p>
-                </div>
-              </button>
-            </div>
+            {/* Finance stats hidden */}
           </div>
 
           <Bell className="w-6 h-6 md:w-7 md:h-7 opacity-80 hover:opacity-100 cursor-pointer transition" />
         </div>
       </div>
 
-      {/* Báo cáo - Dropdown với Doanh thu & Lợi nhuận - Chỉ hiện trên mobile */}
-      <div className="md:hidden bg-white dark:bg-slate-800 rounded-xl p-4 md:p-5 shadow-sm border border-slate-200 dark:border-slate-700">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base md:text-lg font-bold text-slate-900 dark:text-white">
-              Báo cáo
-            </h2>
-            <button
-              onClick={() => setShowRevenue(!showRevenue)}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-1"
-            >
-              {showRevenue ? (
-                <EyeOff className="w-4 h-4" />
-              ) : (
-                <Eye className="w-4 h-4" />
-              )}
-            </button>
-          </div>
-          <select
-            value={reportFilter}
-            onChange={(e) => setReportFilter(e.target.value)}
-            className="text-sm bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <optgroup label="Thời gian">
-              <option value="today">Hôm nay</option>
-              <option value="7days">7 ngày qua</option>
-              <option value="week">Tuần này</option>
-              <option value="month">Tháng này</option>
-              <option value="year">Năm nay</option>
-            </optgroup>
-            <optgroup label="Theo tháng">
-              <option value="month1">Tháng 1</option>
-              <option value="month2">Tháng 2</option>
-              <option value="month3">Tháng 3</option>
-              <option value="month4">Tháng 4</option>
-              <option value="month5">Tháng 5</option>
-              <option value="month6">Tháng 6</option>
-              <option value="month7">Tháng 7</option>
-              <option value="month8">Tháng 8</option>
-              <option value="month9">Tháng 9</option>
-              <option value="month10">Tháng 10</option>
-              <option value="month11">Tháng 11</option>
-              <option value="month12">Tháng 12</option>
-            </optgroup>
-            <optgroup label="Theo quý">
-              <option value="q1">Quý 1 (T1-T3)</option>
-              <option value="q2">Quý 2 (T4-T6)</option>
-              <option value="q3">Quý 3 (T7-T9)</option>
-              <option value="q4">Quý 4 (T10-T12)</option>
-            </optgroup>
-          </select>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 md:gap-4">
-          <Link
-            to="/reports"
-            className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 md:p-4 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-          >
-            <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mb-1">
-              Doanh thu
-            </p>
-            <p className="text-lg md:text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {showRevenue ? formatCurrency(filteredStats.revenue) : "******"}
-            </p>
-          </Link>
-          <Link
-            to="/reports"
-            className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 md:p-4 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-          >
-            <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mb-1">
-              Lợi nhuận
-            </p>
-            <p
-              className={`text-lg md:text-2xl font-bold ${filteredStats.profit >= 0
-                ? "text-green-600 dark:text-green-400"
-                : "text-red-600 dark:text-red-400"
-                }`}
-            >
-              {showRevenue ? formatCurrency(filteredStats.profit) : "******"}
-            </p>
-          </Link>
-        </div>
-      </div>
+      {/* Báo cáo nhanh hidden */}
 
       {/* Danh sách trạng thái phiếu sửa chữa - Chỉ hiện trên mobile */}
       <div className="md:hidden bg-white dark:bg-slate-800 rounded-xl p-4 md:p-5 shadow-sm border border-slate-200 dark:border-slate-700">
@@ -307,13 +195,6 @@ const Dashboard: React.FC = () => {
           Truy cập nhanh
         </h3>
         <div className="grid grid-cols-4 gap-3 md:gap-4">
-          {/* Nhóm Chính - Hàng 1 */}
-          <QuickActionCard
-            to="/sales"
-            icon={<ShoppingCart className="w-6 h-6 md:w-7 md:h-7" />}
-            label="Bán hàng"
-            color="emerald"
-          />
           <QuickActionCard
             to="/service"
             icon={<Wrench className="w-6 h-6 md:w-7 md:h-7" />}
@@ -331,52 +212,6 @@ const Dashboard: React.FC = () => {
             icon={<Users className="w-6 h-6 md:w-7 md:h-7" />}
             label="Khách hàng"
             color="cyan"
-          />
-
-          {/* Nhóm Tài chính - Hàng 2 */}
-          <QuickActionCard
-            to="/finance"
-            icon={<Landmark className="w-6 h-6 md:w-7 md:h-7" />}
-            label="Tài chính"
-            color="violet"
-          />
-          <QuickActionCard
-            to="/debt"
-            icon={<HandCoins className="w-6 h-6 md:w-7 md:h-7" />}
-            label="Công nợ"
-            color="rose"
-          />
-          <QuickActionCard
-            to="/cashbook"
-            icon={<Wallet className="w-6 h-6 md:w-7 md:h-7" />}
-            label="Sổ quỹ"
-            color="amber"
-          />
-          <QuickActionCard
-            to="/reports"
-            icon={<FileText className="w-6 h-6 md:w-7 md:h-7" />}
-            label="Báo cáo"
-            color="slate"
-          />
-
-          {/* Nhóm Quản lý & Khác - Hàng 3 */}
-          <QuickActionCard
-            to="/employees"
-            icon={<BriefcaseBusiness className="w-6 h-6 md:w-7 md:h-7" />}
-            label="Nhân viên"
-            color="purple"
-          />
-          <QuickActionCard
-            to="/categories"
-            icon={<List className="w-6 h-6 md:w-7 md:h-7" />}
-            label="Danh mục"
-            color="slate"
-          />
-          <QuickActionCard
-            to="/lookup"
-            icon={<Search className="w-6 h-6 md:w-7 md:h-7" />}
-            label="Tra cứu"
-            color="slate"
           />
           <QuickActionCard
             to="/settings"
@@ -464,127 +299,12 @@ const Dashboard: React.FC = () => {
         </select>
       </div>
 
-      {/* Overview Cards (Desktop) */}
-      <div className="hidden md:grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Doanh thu"
-          value={formatCurrency(filteredStats.revenue)}
-          subtitle={`${filteredStats.orderCount} đơn bán, ${todayStats.workOrdersCount} phiếu DV`}
-          colorKey="blue"
-          icon={DollarSign}
-        />
-        <StatCard
-          title="Lợi nhuận"
-          value={formatCurrency(filteredStats.profit)}
-          subtitle={`Biên LN: ${filteredStats.revenue > 0
-            ? Math.round((filteredStats.profit / filteredStats.revenue) * 100)
-            : 0
-            }%`}
-          colorKey="emerald"
-          icon={TrendingUp}
-        />
-        <StatCard
-          title="Tiền mặt"
-          value={formatCurrency(cashBalance)}
-          subtitle="Trong két sắt"
-          colorKey="amber"
-          icon={Wallet}
-        />
-        <StatCard
-          title="Ngân hàng"
-          value={formatCurrency(bankBalance)}
-          subtitle="Tài khoản chính"
-          colorKey="violet"
-          icon={Landmark}
-        />
-      </div>
-
-      {/* Charts Section (Desktop) */}
-      <div className="hidden md:grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Doanh thu 7 ngày */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-blue-600" />
-              Doanh thu 7 ngày qua
-            </h3>
-          </div>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={last7DaysRevenue}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                <XAxis dataKey="date" fontSize={12} tickMargin={10} />
-                <YAxis
-                  fontSize={12}
-                  tickFormatter={(val) =>
-                    val >= 1000000 ? `${val / 1000000}M` : `${val / 1000}K`
-                  }
-                />
-                <Tooltip
-                  formatter={(value: any) => formatCurrency(value)}
-                  labelStyle={{ color: "#333" }}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  name="Doanh thu"
-                  stroke="#3b82f6"
-                  strokeWidth={3}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="expense"
-                  name="Chi phí"
-                  stroke="#ef4444"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Top Sản phẩm */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-500" />
-            Top sản phẩm & dịch vụ
-          </h3>
-          <div className="space-y-4">
-            {topProducts.map((product, idx) => (
-              <div key={idx} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${idx === 0
-                      ? "bg-amber-100 text-amber-600"
-                      : idx === 1
-                        ? "bg-slate-100 text-slate-600"
-                        : idx === 2
-                          ? "bg-orange-100 text-orange-600"
-                          : "bg-slate-50 text-slate-400"
-                      }`}
-                  >
-                    {idx + 1}
-                  </div>
-                  <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                    {product.name}
-                  </span>
-                </div>
-                <span className="text-sm font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-md">
-                  {product.quantity}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Overview & Charts - Removed Finance/Sales charts */}
+      {/* Work Order Stats and Alerts only */}
 
       <div className="hidden md:grid gap-4 md:grid-cols-3">
-        {/* Alerts & Warnings */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+        {/* Alerts & Warnings - Now full width or large part */}
+        <div className="md:col-span-1 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
           <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-orange-500" />
             Cần chú ý
@@ -617,79 +337,36 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Work Order Stats */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+        {/* Work Order Stats - Expanded */}
+        <div className="md:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
           <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
             <Wrench className="w-5 h-5 text-blue-500" />
             Trạng thái sửa chữa
           </h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-blue-50 dark:bg-blue-900/10 rounded-xl">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="flex flex-col items-center justify-center p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Tiếp nhận mới
               </span>
-              <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+              <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                 {workOrderStats.newOrders}
               </span>
             </div>
-            <div className="flex justify-between items-center p-3 bg-amber-50 dark:bg-amber-900/10 rounded-xl">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <div className="flex flex-col items-center justify-center p-4 bg-amber-50 dark:bg-amber-900/10 rounded-xl">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Đang sửa chữa
               </span>
-              <span className="text-lg font-bold text-amber-600 dark:text-amber-400">
+              <span className="text-3xl font-bold text-amber-600 dark:text-amber-400">
                 {workOrderStats.inProgress}
               </span>
             </div>
-            <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/10 rounded-xl">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <div className="flex flex-col items-center justify-center p-4 bg-green-50 dark:bg-green-900/10 rounded-xl">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Đã hoàn thành
               </span>
-              <span className="text-lg font-bold text-green-600 dark:text-green-400">
+              <span className="text-3xl font-bold text-green-600 dark:text-green-400">
                 {workOrderStats.completed}
               </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Cấu trúc thu chi (Pie Chart) */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-            <PieChart className="w-5 h-5 text-violet-500" />
-            Cấu trúc thu chi
-          </h3>
-          <div className="h-60">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={incomeExpenseData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {incomeExpenseData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: any) => formatCurrency(value)} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-2 grid grid-cols-2 gap-4 text-center">
-            <div>
-              <p className="text-xs text-slate-500">Tổng thu</p>
-              <p className="font-bold text-emerald-600">
-                {formatCurrency(incomeExpenseData[0].value)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500">Tổng chi</p>
-              <p className="font-bold text-red-600">
-                {formatCurrency(incomeExpenseData[1].value)}
-              </p>
             </div>
           </div>
         </div>

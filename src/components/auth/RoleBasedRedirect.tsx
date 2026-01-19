@@ -24,5 +24,5 @@ export const RoleBasedRedirect: React.FC = () => {
     }
 
     // Default for owner, manager, and others
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/service" replace />;
 };
