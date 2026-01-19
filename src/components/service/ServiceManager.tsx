@@ -179,29 +179,11 @@ export default function ServiceManager() {
     branchId: currentBranchId,
   });
 
-  // Fetch customers from Supabase directly
-  const [fetchedCustomers, setFetchedCustomers] = useState<any[]>([]);
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      const { data, error } = await supabase
-        .from("customers")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(2000); // Increased limit to find older customers
-
-      if (!error && data) {
-        setFetchedCustomers(data);
-      }
-    };
-    fetchCustomers();
-  }, []);
-
-  // Use fetched data if available, otherwise use context
+  // Use context data directly for better performance
   // Prioritize contextParts to match Dashboard logic (cached costs)
   // Fallback to fetchedParts if context is empty
   const parts = contextParts.length > 0 ? contextParts : (fetchedParts || []);
-  const displayCustomers =
-    fetchedCustomers.length > 0 ? fetchedCustomers : customers;
+  const displayCustomers = customers;
   const displayEmployees = fetchedEmployees || employees;
   const displayWorkOrders = fetchedWorkOrders || workOrders;
 

@@ -130,111 +130,114 @@ export const WarrantyCardModal: React.FC<WarrantyCardModalProps> = ({
                                 className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
                                 required
                             />
-                            <input
-                                type="text"
-                                value={formData.imeiSerial}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, imeiSerial: e.target.value })
-                                }
-                                placeholder="IMEI / Serial Number"
-                                className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                            placeholder="IMEI / Serial Number"
+                            className="w-full pl-3 pr-10 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowScanner(true)}
+                                className="absolute right-1 top-1 p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                                title="Quét mã vạch"
+                            >
+                                <Scan className="w-4 h-4" />
+                            </button>
                         </div>
-                    </div>
-
-                    {/* Warranty Period */}
-                    <div>
-                        <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-2">
-                            <Calendar className="w-4 h-4" />
-                            Thời hạn bảo hành
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {[3, 6, 12].map((months) => (
-                                <button
-                                    key={months}
-                                    onClick={() =>
-                                        setFormData({ ...formData, warrantyPeriodMonths: months })
-                                    }
-                                    className={`py-2.5 rounded-lg text-sm font-bold transition-all ${formData.warrantyPeriodMonths === months
-                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
-                                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                        }`}
-                                >
-                                    {months} tháng
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Covered Content - Flexible Text Input */}
-                    <div>
-                        <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-2">
-                            <Package className="w-4 h-4" />
-                            Nội dung bảo hành
-                        </label>
-                        <textarea
-                            value={formData.coveredParts}
-                            onChange={(e) =>
-                                setFormData({ ...formData, coveredParts: e.target.value })
-                            }
-                            rows={3}
-                            placeholder="VD: Toàn bộ sản phẩm (trừ phụ kiện), Động cơ + pin xe điện, Lỗi phần cứng do nhà sản xuất..."
-                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                        />
-                        <p className="text-xs text-slate-400 mt-1">
-                            💡 Ghi rõ những gì được bảo hành (linh kiện, bộ phận, toàn bộ sản phẩm...)
-                        </p>
-                    </div>
-
-                    {/* Coverage Terms */}
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                            Điều kiện bảo hành
-                        </label>
-                        <textarea
-                            value={formData.coverageTerms}
-                            onChange={(e) =>
-                                setFormData({ ...formData, coverageTerms: e.target.value })
-                            }
-                            rows={3}
-                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                        />
-                    </div>
-
-                    {/* Notes */}
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                            Ghi chú
-                        </label>
-                        <textarea
-                            value={formData.notes}
-                            onChange={(e) =>
-                                setFormData({ ...formData, notes: e.target.value })
-                            }
-                            rows={2}
-                            placeholder="Ghi chú thêm (nếu có)"
-                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                        />
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="flex-shrink-0 p-4 border-t border-slate-200 dark:border-slate-700 flex gap-3">
-                    <button
-                        onClick={onClose}
-                        className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                    >
-                        Hủy
-                    </button>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={!formData.deviceModel || createWarrantyMutation.isPending}
-                        className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-blue-500/20"
-                    >
-                        {createWarrantyMutation.isPending ? "Đang tạo..." : "✓ Cấp Phiếu BH"}
-                    </button>
+                {/* Warranty Period */}
+                <div>
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-2">
+                        <Calendar className="w-4 h-4" />
+                        Thời hạn bảo hành
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                        {[3, 6, 12].map((months) => (
+                            <button
+                                key={months}
+                                onClick={() =>
+                                    setFormData({ ...formData, warrantyPeriodMonths: months })
+                                }
+                                className={`py-2.5 rounded-lg text-sm font-bold transition-all ${formData.warrantyPeriodMonths === months
+                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
+                                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                    }`}
+                            >
+                                {months} tháng
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Covered Content - Flexible Text Input */}
+                <div>
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-2">
+                        <Package className="w-4 h-4" />
+                        Nội dung bảo hành
+                    </label>
+                    <textarea
+                        value={formData.coveredParts}
+                        onChange={(e) =>
+                            setFormData({ ...formData, coveredParts: e.target.value })
+                        }
+                        rows={3}
+                        placeholder="VD: Toàn bộ sản phẩm (trừ phụ kiện), Động cơ + pin xe điện, Lỗi phần cứng do nhà sản xuất..."
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                    />
+                    <p className="text-xs text-slate-400 mt-1">
+                        💡 Ghi rõ những gì được bảo hành (linh kiện, bộ phận, toàn bộ sản phẩm...)
+                    </p>
+                </div>
+
+                {/* Coverage Terms */}
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                        Điều kiện bảo hành
+                    </label>
+                    <textarea
+                        value={formData.coverageTerms}
+                        onChange={(e) =>
+                            setFormData({ ...formData, coverageTerms: e.target.value })
+                        }
+                        rows={3}
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                    />
+                </div>
+
+                {/* Notes */}
+                <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                        Ghi chú
+                    </label>
+                    <textarea
+                        value={formData.notes}
+                        onChange={(e) =>
+                            setFormData({ ...formData, notes: e.target.value })
+                        }
+                        rows={2}
+                        placeholder="Ghi chú thêm (nếu có)"
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                    />
                 </div>
             </div>
+
+            {/* Footer */}
+            <div className="flex-shrink-0 p-4 border-t border-slate-200 dark:border-slate-700 flex gap-3">
+                <button
+                    onClick={onClose}
+                    className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                    Hủy
+                </button>
+                <button
+                    onClick={handleSubmit}
+                    disabled={!formData.deviceModel || createWarrantyMutation.isPending}
+                    className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-blue-500/20"
+                >
+                    {createWarrantyMutation.isPending ? "Đang tạo..." : "✓ Cấp Phiếu BH"}
+                </button>
+            </div>
         </div>
+        </div >
     );
 };
