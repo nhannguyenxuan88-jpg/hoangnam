@@ -1,7 +1,8 @@
-import React, { useState } from "react";
-import { X, Shield, Calendar, Package } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, Shield, Calendar, Package, Scan } from "lucide-react";
 import { useCreateWarrantyCard } from "../../hooks/useWarrantyRepository";
 import { showToast } from "../../utils/toast";
+import { ScannerModal } from "../common/ScannerModal";
 
 interface WarrantyCardModalProps {
     isOpen: boolean;
@@ -29,10 +30,23 @@ export const WarrantyCardModal: React.FC<WarrantyCardModalProps> = ({
         imeiSerial,
         warrantyPeriodMonths: 3,
         warrantyType: "standard" as "standard" | "extended" | "premium",
-        coveredParts: "Toàn bộ sản phẩm, bao gồm lỗi do nhà sản xuất", // Changed to string
+        coveredParts: "Toàn bộ sản phẩm, bao gồm lỗi do nhà sản xuất",
         coverageTerms: "Bảo hành không áp dụng với hư hỏng do rơi vỡ, ngấm nước, hoặc can thiệp bên ngoài",
         notes: "",
     });
+
+    const [showScanner, setShowScanner] = useState(false);
+
+    // Update state when props change
+    useEffect(() => {
+        setFormData(prev => ({
+            ...prev,
+            customerName,
+            customerPhone,
+            deviceModel,
+            imeiSerial,
+        }));
+    }, [customerName, customerPhone, deviceModel, imeiSerial]);
 
     const createWarrantyMutation = useCreateWarrantyCard();
 
@@ -50,7 +64,7 @@ export const WarrantyCardModal: React.FC<WarrantyCardModalProps> = ({
                 imei_serial: formData.imeiSerial,
                 warranty_period_months: formData.warrantyPeriodMonths,
                 warranty_type: formData.warrantyType,
-                covered_parts: [formData.coveredParts], // Wrap string in array for database
+                covered_parts: [formData.coveredParts],
                 coverage_terms: formData.coverageTerms,
                 work_order_id: workOrderId,
                 notes: formData.notes,
@@ -120,6 +134,16 @@ export const WarrantyCardModal: React.FC<WarrantyCardModalProps> = ({
                             Thông tin thiết bị
                         </h4>
                         <div className="space-y-2">
+                            <input
+                                type="text"
+                                value={formData.deviceModel}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, deviceModel: e.target.value })
+                                }
+                                placeholder="Tên thiết bị / Model *"
+                                className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                                required
+                            />
                             <div className="relative">
                                 <input
                                     type="text"
@@ -141,99 +165,99 @@ export const WarrantyCardModal: React.FC<WarrantyCardModalProps> = ({
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Warranty Period */}
-                <div>
-                    <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-2">
-                        <Calendar className="w-4 h-4" />
-                        Thời hạn bảo hành
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                        {[3, 6, 12].map((months) => (
-                            <button
-                                key={months}
-                                onClick={() =>
-                                    setFormData({ ...formData, warrantyPeriodMonths: months })
-                                }
-                                className={`py-2.5 rounded-lg text-sm font-bold transition-all ${formData.warrantyPeriodMonths === months
-                                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
-                                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                    }`}
-                            >
-                                {months} tháng
-                            </button>
-                        ))}
+                    {/* Warranty Period */}
+                    <div>
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-2">
+                            <Calendar className="w-4 h-4" />
+                            Thời hạn bảo hành
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {[3, 6, 12].map((months) => (
+                                <button
+                                    key={months}
+                                    onClick={() =>
+                                        setFormData({ ...formData, warrantyPeriodMonths: months })
+                                    }
+                                    className={`py-2.5 rounded-lg text-sm font-bold transition-all ${formData.warrantyPeriodMonths === months
+                                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
+                                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                        }`}
+                                >
+                                    {months} tháng
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Covered Content */}
+                    <div>
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-2">
+                            <Package className="w-4 h-4" />
+                            Nội dung bảo hành
+                        </label>
+                        <textarea
+                            value={formData.coveredParts}
+                            onChange={(e) =>
+                                setFormData({ ...formData, coveredParts: e.target.value })
+                            }
+                            rows={3}
+                            placeholder="VD: Toàn bộ sản phẩm (trừ phụ kiện), Động cơ + pin xe điện, Lỗi phần cứng do nhà sản xuất..."
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                        />
+                        <p className="text-xs text-slate-400 mt-1">
+                            💡 Ghi rõ những gì được bảo hành (linh kiện, bộ phận, toàn bộ sản phẩm...)
+                        </p>
+                    </div>
+
+                    {/* Coverage Terms */}
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                            Điều kiện bảo hành
+                        </label>
+                        <textarea
+                            value={formData.coverageTerms}
+                            onChange={(e) =>
+                                setFormData({ ...formData, coverageTerms: e.target.value })
+                            }
+                            rows={3}
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                        />
+                    </div>
+
+                    {/* Notes */}
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                            Ghi chú
+                        </label>
+                        <textarea
+                            value={formData.notes}
+                            onChange={(e) =>
+                                setFormData({ ...formData, notes: e.target.value })
+                            }
+                            rows={2}
+                            placeholder="Ghi chú thêm (nếu có)"
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                        />
                     </div>
                 </div>
 
-                {/* Covered Content - Flexible Text Input */}
-                <div>
-                    <label className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-2">
-                        <Package className="w-4 h-4" />
-                        Nội dung bảo hành
-                    </label>
-                    <textarea
-                        value={formData.coveredParts}
-                        onChange={(e) =>
-                            setFormData({ ...formData, coveredParts: e.target.value })
-                        }
-                        rows={3}
-                        placeholder="VD: Toàn bộ sản phẩm (trừ phụ kiện), Động cơ + pin xe điện, Lỗi phần cứng do nhà sản xuất..."
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                    />
-                    <p className="text-xs text-slate-400 mt-1">
-                        💡 Ghi rõ những gì được bảo hành (linh kiện, bộ phận, toàn bộ sản phẩm...)
-                    </p>
+                {/* Footer */}
+                <div className="flex-shrink-0 p-4 border-t border-slate-200 dark:border-slate-700 flex gap-3">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                        Hủy
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={!formData.deviceModel || createWarrantyMutation.isPending}
+                        className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-blue-500/20"
+                    >
+                        {createWarrantyMutation.isPending ? "Đang tạo..." : "✓ Cấp Phiếu BH"}
+                    </button>
                 </div>
-
-                {/* Coverage Terms */}
-                <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                        Điều kiện bảo hành
-                    </label>
-                    <textarea
-                        value={formData.coverageTerms}
-                        onChange={(e) =>
-                            setFormData({ ...formData, coverageTerms: e.target.value })
-                        }
-                        rows={3}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                    />
-                </div>
-
-                {/* Notes */}
-                <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-                        Ghi chú
-                    </label>
-                    <textarea
-                        value={formData.notes}
-                        onChange={(e) =>
-                            setFormData({ ...formData, notes: e.target.value })
-                        }
-                        rows={2}
-                        placeholder="Ghi chú thêm (nếu có)"
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                    />
-                </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex-shrink-0 p-4 border-t border-slate-200 dark:border-slate-700 flex gap-3">
-                <button
-                    onClick={onClose}
-                    className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                >
-                    Hủy
-                </button>
-                <button
-                    onClick={handleSubmit}
-                    disabled={!formData.deviceModel || createWarrantyMutation.isPending}
-                    className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-blue-500/20"
-                >
-                    {createWarrantyMutation.isPending ? "Đang tạo..." : "✓ Cấp Phiếu BH"}
-                </button>
             </div>
 
             <ScannerModal
@@ -245,6 +269,5 @@ export const WarrantyCardModal: React.FC<WarrantyCardModalProps> = ({
                 }}
             />
         </div>
-    </div >
-);
+    );
 };
