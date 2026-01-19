@@ -1,10 +1,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Search, Trash2 } from "lucide-react";
-import {
-  useCreateCashTxRepo,
-} from "../../../hooks/useCashTransactionsRepository";
-import { AddTransactionModal } from "../../finance/CashBookModals";
+
+
 import { useSuppliers } from "../../../hooks/useSuppliers";
 import { supabase } from "../../../supabaseClient";
 import { showToast } from "../../../utils/toast";
@@ -129,56 +127,7 @@ const EditReceiptModal: React.FC<{
     fetchPaymentInfo();
   }, [receipt.receiptCode]);
 
-  const [showAddTransactionModal, setShowAddTransactionModal] = useState(false);
-  const createCashTxRepo = useCreateCashTxRepo();
 
-  const handleCreateTransaction = async (data: any) => {
-    try {
-      // Explicitly map fields to match CreateCashTxInput interface
-      await createCashTxRepo.mutateAsync({
-        type: data.type,
-        amount: data.amount,
-        branchId: currentBranchId,
-        paymentSourceId: data.paymentSourceId || "cash",
-        date: data.date,
-        notes: `${data.notes || ""} - ${receipt.receiptCode}`,
-        category: data.category,
-        recipient: data.recipient,
-      });
-      setShowAddTransactionModal(false);
-
-      // Re-fetch payment info
-      const { data: txData } = await supabase
-        .from("cash_transactions")
-        .select("paymentsource")
-        .ilike("description", `%${receipt.receiptCode}%`)
-        .maybeSingle();
-
-      if (txData) {
-        const newCashier = (txData.paymentsource === "bank" || txData.paymentsource === "transfer")
-          ? "(Chuyển khoản)"
-          : "(Tiền mặt)";
-
-        // If payments array exists, update it. If empty (unpaid), create new entry.
-        setPayments(prev => {
-          if (prev.length > 0) {
-            return prev.map(p => ({ ...p, cashier: newCashier }));
-          } else {
-            return [{
-              time: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
-              date: new Date(),
-              payer: "Nhân viên", // Using a default as 'profile' is not available in this scope
-              cashier: newCashier,
-              amount: receipt.total,
-            }];
-          }
-        });
-        setIsPaid(true);
-      }
-    } catch (error) {
-      console.error("Failed to create transaction", error);
-    }
-  };
 
   React.useEffect(() => {
     const firstItem = receipt.items[0];
@@ -786,15 +735,7 @@ const EditReceiptModal: React.FC<{
                     </svg>
                     Đã thanh toán đủ
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddTransactionModal(true)}
-                    className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm flex items-center gap-1"
-                    title="Tạo phiếu chi"
-                  >
-                    <span className="text-lg">+</span>
-                    Tạo phiếu chi
-                  </button>
+
                 </div>
               </div>
 
@@ -949,19 +890,7 @@ const EditReceiptModal: React.FC<{
           currentBranchId={currentBranchId}
         />
       </div >
-      {showAddTransactionModal && (
-        <AddTransactionModal
-          onClose={() => setShowAddTransactionModal(false)}
-          onSave={handleCreateTransaction}
-          initialData={{
-            type: "expense",
-            amount: receipt.total,
-            category: "supplier_payment",
-            recipient: supplier,
-            notes: `Chi trả NCC ${supplier} - Phiếu nhập ${receipt.receiptCode}`,
-          }}
-        />
-      )}
+
     </div >
   );
 };

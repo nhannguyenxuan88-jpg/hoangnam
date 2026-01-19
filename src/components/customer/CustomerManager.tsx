@@ -39,7 +39,7 @@ import {
   useDeleteSupplier,
 } from "../../hooks/useSuppliers";
 import type { Customer, Sale, WorkOrder, Vehicle } from "../../types";
-import { useSalesRepo } from "../../hooks/useSalesRepository";
+// Sales repo removed
 import { useWorkOrdersRepo } from "../../hooks/useWorkOrdersRepository";
 import { showToast } from "../../utils/toast";
 import {
@@ -54,7 +54,6 @@ interface CustomerHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
   customer: Customer | null;
-  sales: Sale[];
   workOrders: WorkOrder[];
 }
 
@@ -62,44 +61,26 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
   isOpen,
   onClose,
   customer,
-  sales,
   workOrders,
 }) => {
-  const [activeTab, setActiveTab] = useState<"sales" | "workorders">("sales");
-
   if (!isOpen || !customer) return null;
 
-  // Filter by customer
-  const customerSales = sales.filter(
-    (s) =>
-      s.customer?.id === customer.id || s.customer?.phone === customer.phone
-  );
   const customerWorkOrders = workOrders.filter(
     (wo) => wo.customerPhone === customer.phone
   );
 
-  // Calculate actual total spent from sales and work orders
-  const totalSpentFromSales = customerSales.reduce(
-    (sum, sale) => sum + (sale.total || 0),
-    0
-  );
-  const totalSpentFromWorkOrders = customerWorkOrders.reduce(
+  const actualTotalSpent = customerWorkOrders.reduce(
     (sum, wo) => sum + (wo.total || 0),
     0
   );
-  const actualTotalSpent = totalSpentFromSales + totalSpentFromWorkOrders;
 
-  // Calculate actual visit count from unique dates
-  const allVisitDates = [
-    ...customerSales.map((s) => new Date(s.date).toDateString()),
-    ...customerWorkOrders.map((wo) =>
+  const uniqueVisitDates = new Set(
+    customerWorkOrders.map((wo) =>
       new Date(wo.creationDate || wo.id).toDateString()
-    ),
-  ];
-  const uniqueVisitDates = new Set(allVisitDates);
+    )
+  );
   const actualVisitCount = uniqueVisitDates.size;
 
-  // Calculate loyalty points: 1 point = 10,000đ
   const actualLoyaltyPoints = Math.floor(actualTotalSpent / 10000);
 
   return (
@@ -158,15 +139,7 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
         </div>
 
         {/* Stats Summary - Desktop */}
-        <div className="hidden md:grid grid-cols-5 gap-4 p-5 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-100 dark:border-blue-800/50 text-center">
-            <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-              {customerSales.length}
-            </div>
-            <div className="text-[10px] uppercase tracking-wider font-bold text-blue-500/70 dark:text-blue-400/50">
-              Hóa đơn
-            </div>
-          </div>
+        <div className="hidden md:grid grid-cols-4 gap-4 p-5 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
           <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-xl border border-emerald-100 dark:border-emerald-800/50 text-center">
             <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
               {customerWorkOrders.length}
@@ -216,199 +189,70 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
             <div className="text-sm font-bold text-amber-400">⭐ {actualLoyaltyPoints.toLocaleString()}</div>
           </div>
           <div className="flex-shrink-0 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50 min-w-[80px]">
-            <div className="text-xs text-slate-400 mb-1">Hóa đơn</div>
-            <div className="text-sm font-bold text-blue-400">{customerSales.length}</div>
-          </div>
-          <div className="flex-shrink-0 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50 min-w-[80px]">
             <div className="text-xs text-slate-400 mb-1">Phiếu SC</div>
             <div className="text-sm font-bold text-emerald-400">{customerWorkOrders.length}</div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-6 px-6 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 md:pt-0 pt-2">
-          <button
-            onClick={() => setActiveTab("sales")}
-            className={`pb-3 pt-4 font-bold text-sm transition-all relative ${activeTab === "sales"
-              ? "text-blue-600 dark:text-blue-400"
-              : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-              }`}
-          >
-            🛒 Hóa đơn ({customerSales.length})
-            {activeTab === "sales" && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full"></div>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("workorders")}
-            className={`pb-3 pt-4 font-bold text-sm transition-all relative ${activeTab === "workorders"
-              ? "text-blue-600 dark:text-blue-400"
-              : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-              }`}
-          >
-            🔧 Phiếu sửa chữa ({customerWorkOrders.length})
-            {activeTab === "workorders" && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full"></div>
-            )}
-          </button>
-        </div>
-
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50/30 dark:bg-slate-900/10 custom-scrollbar">
-          {activeTab === "sales" ? (
-            <div className="space-y-4">
-              {customerSales.length === 0 ? (
-                <div className="text-center py-20">
-                  <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Package className="w-8 h-8 text-slate-300" />
+          <div className="space-y-4">
+            {customerWorkOrders.map((wo) => {
+              const isCompleted = wo.status === "Trả máy" || wo.status === "Đã sửa xong";
+              const isInProgress = wo.status === "Đang sửa";
+              const statusClass = isCompleted
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50"
+                : isInProgress
+                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800/50"
+                  : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600";
+
+              return (
+                <div key={wo.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 md:p-5 shadow-sm">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center border border-emerald-100 dark:border-emerald-800/50">
+                        <Wrench className="w-5 h-5 text-emerald-500" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-900 dark:text-slate-100">
+                          {formatAnyId(wo.id)}
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                          <Bike className="w-3 h-3" />
+                          {wo.vehicleModel} • {wo.licensePlate}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-black text-slate-900 dark:text-slate-100">
+                        {formatCurrency(wo.total)}
+                      </div>
+                      <div className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border mt-1 ${statusClass}`}>
+                        {wo.status}
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-slate-500 dark:text-slate-400 font-medium">Chưa có hóa đơn nào</p>
+                  <div className="flex items-start gap-2 text-sm">
+                    <div className="mt-0.5 p-1 rounded bg-slate-100 dark:bg-slate-700">
+                      <Clock className="w-3 h-3 text-slate-500" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="text-slate-500 dark:text-slate-400">Vấn đề:</span>
+                      <p className="font-medium text-slate-800 dark:text-slate-200 mt-0.5">{wo.issueDescription}</p>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                customerSales.map((sale) => (
-                  <div
-                    key={sale.id}
-                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 md:p-5 shadow-sm hover:shadow-md transition-all group"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center border border-blue-100 dark:border-blue-800/50">
-                          <CreditCard className="w-5 h-5 text-blue-500" />
-                        </div>
-                        <div>
-                          <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 transition-colors">
-                            {sale.sale_code || sale.id.substring(0, 8)}
-                          </div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
-                            <Calendar className="w-3 h-3" />
-                            {formatDate(sale.date)}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-black text-slate-900 dark:text-slate-100">
-                          {formatCurrency(sale.total)}
-                        </div>
-                        <div className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full inline-block mt-1 ${sale.paymentMethod === "cash"
-                          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                          : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                          }`}>
-                          {sale.paymentMethod === "cash" ? "💵 Tiền mặt" : "🏦 Chuyển khoản"}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-50 dark:bg-slate-900/30 rounded-xl p-3 space-y-2">
-                      {sale.items.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="text-sm text-slate-700 dark:text-slate-300 flex justify-between items-center"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-[10px] font-bold">
-                              {item.quantity}
-                            </span>
-                            <span className="font-medium truncate max-w-[150px] md:max-w-xs">{item.partName}</span>
-                          </div>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">
-                            {formatCurrency(item.quantity * item.sellingPrice)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {customerWorkOrders.length === 0 ? (
-                <div className="text-center py-20">
-                  <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Wrench className="w-8 h-8 text-slate-300" />
-                  </div>
-                  <p className="text-slate-500 dark:text-slate-400 font-medium">Chưa có phiếu sửa chữa nào</p>
+              );
+            })}
+            {customerWorkOrders.length === 0 && (
+              <div className="text-center py-20">
+                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Wrench className="w-8 h-8 text-slate-300" />
                 </div>
-              ) : (
-                customerWorkOrders.map((wo) => {
-                  const isCompleted =
-                    wo.status === "Trả máy" || wo.status === "Đã sửa xong";
-                  const isInProgress = wo.status === "Đang sửa";
-                  const statusClass = isCompleted
-                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50"
-                    : isInProgress
-                      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800/50"
-                      : "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600";
-
-                  return (
-                    <div
-                      key={wo.id}
-                      className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 md:p-5 shadow-sm hover:shadow-md transition-all group"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center border border-emerald-100 dark:border-emerald-800/50">
-                            <Wrench className="w-5 h-5 text-emerald-500" />
-                          </div>
-                          <div>
-                            <div className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 transition-colors">
-                              {formatAnyId(wo.id)}
-                            </div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
-                              <Bike className="w-3 h-3" />
-                              {wo.vehicleModel} • {wo.licensePlate}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-black text-slate-900 dark:text-slate-100">
-                            {formatCurrency(wo.total)}
-                          </div>
-                          <div className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border mt-1 ${statusClass}`}>
-                            {wo.status}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-2 text-sm">
-                          <div className="mt-0.5 p-1 rounded bg-slate-100 dark:bg-slate-700">
-                            <Clock className="w-3 h-3 text-slate-500" />
-                          </div>
-                          <div className="flex-1">
-                            <span className="text-slate-500 dark:text-slate-400">Vấn đề:</span>
-                            <p className="font-medium text-slate-800 dark:text-slate-200 mt-0.5">{wo.issueDescription}</p>
-                          </div>
-                        </div>
-
-                        {wo.partsUsed && wo.partsUsed.length > 0 && (
-                          <div className="bg-slate-50 dark:bg-slate-900/30 rounded-xl p-3">
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Phụ tùng sử dụng</div>
-                            <div className="space-y-2">
-                              {wo.partsUsed.map((part: any, idx: number) => (
-                                <div
-                                  key={idx}
-                                  className="text-xs flex justify-between items-center"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-slate-500">{part.quantity} x</span>
-                                    <span className="font-medium text-slate-700 dark:text-slate-300">{part.name}</span>
-                                  </div>
-                                  <span className="font-bold text-slate-900 dark:text-slate-100">
-                                    {formatCurrency(part.price * part.quantity)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          )}
+                <p className="text-slate-500 dark:text-slate-400 font-medium">Chưa có phiếu sửa chữa nào</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer - Desktop */}
@@ -434,6 +278,7 @@ const CustomerHistoryModal: React.FC<CustomerHistoryModalProps> = ({
     </div>
   );
 };
+
 
 // Auto-classify customer segment based on business rules
 const classifyCustomer = (customer: Customer): Customer["segment"] => {
@@ -526,7 +371,7 @@ const CustomerManager: React.FC = () => {
   const [showActionSheet, setShowActionSheet] = useState(false);
 
   // Fetch sales and work orders for history
-  const { data: allSales = [] } = useSalesRepo();
+  // Sales repo removed
   const { data: allWorkOrders = [] } = useWorkOrdersRepo();
 
   // Reset display count khi search hoặc filter thay đổi
@@ -596,27 +441,19 @@ const CustomerManager: React.FC = () => {
 
   // Helper function to calculate actual stats for a customer (consistent with CustomerHistoryModal)
   const calculateCustomerStats = (customer: Customer) => {
-    const customerSales = allSales.filter(
-      (s) =>
-        s.customer?.id === customer.id || s.customer?.phone === customer.phone
-    );
     const customerWorkOrders = allWorkOrders.filter(
       (wo) => wo.customerPhone === customer.phone && wo.status !== "Đã hủy"
     );
 
-    const totalFromSales = customerSales.reduce(
-      (sum, s) => sum + (s.total || 0),
-      0
-    );
     const totalFromWorkOrders = customerWorkOrders.reduce(
       (sum, wo) => sum + (wo.total || 0),
       0
     );
-    const totalSpent = totalFromSales + totalFromWorkOrders;
+    const totalSpent = totalFromWorkOrders;
 
     // Calculate visit count from unique dates
+    // Using creationDate or id (timestamp)
     const allVisitDates = [
-      ...customerSales.map((s) => new Date(s.date).toDateString()),
       ...customerWorkOrders.map((wo) =>
         new Date(wo.creationDate || wo.id).toDateString()
       ),
@@ -625,7 +462,6 @@ const CustomerManager: React.FC = () => {
 
     // Calculate last visit date (most recent transaction)
     const allTransactionDates = [
-      ...customerSales.map((s) => new Date(s.date)),
       ...customerWorkOrders.map((wo) => new Date(wo.creationDate || wo.id)),
     ];
     const lastVisit =
@@ -707,7 +543,7 @@ const CustomerManager: React.FC = () => {
     });
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayedCustomers, allSales, allWorkOrders]);
+  }, [displayedCustomers, allWorkOrders]);
 
   const handleDelete = async (id: string) => {
     if (
@@ -1760,7 +1596,6 @@ const CustomerManager: React.FC = () => {
         isOpen={!!viewHistoryCustomer}
         onClose={() => setViewHistoryCustomer(null)}
         customer={viewHistoryCustomer}
-        sales={allSales}
         workOrders={allWorkOrders}
       />
 

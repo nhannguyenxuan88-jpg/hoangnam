@@ -35,6 +35,11 @@ const InventoryManager = lazyImport(
 const ServiceManager = lazyImport(
   () => import("./components/service/ServiceManager")
 );
+const WarrantyManager = lazyImport(
+  () => import("./components/warranty/WarrantyManager").then((m) => ({
+    default: m.WarrantyManager,
+  }))
+);
 const ServiceHistory = lazyImport(() =>
   import("./components/service/ServiceHistory").then((m) => ({
     default: m.ServiceHistory,
@@ -43,9 +48,7 @@ const ServiceHistory = lazyImport(() =>
 const CustomerManager = lazyImport(
   () => import("./components/customer/CustomerManager")
 );
-const EmployeeManager = lazyImport(
-  () => import("./components/employee/EmployeeManager")
-);
+
 const CategoriesManager = lazyImport(
   () => import("./components/categories/CategoriesManager")
 );
@@ -134,7 +137,12 @@ const MigrationPage = () => (
   <Suspense fallback={<PageLoader />}>
     <MigrationTool />
   </Suspense>
-)
+);
+const WarrantyPage = () => (
+  <Suspense fallback={<PageLoader />}>
+    <WarrantyManager />
+  </Suspense>
+);
 
 
 const MainLayout: React.FC = () => {
@@ -194,6 +202,7 @@ const MainLayout: React.FC = () => {
           <Route path="/lookup" element={<LookupPage />} />
           <Route path="/service" element={<Service />} />
           <Route path="/service-history" element={<ServiceHistoryPage />} />
+          <Route path="/warranty" element={<WarrantyPage />} />
           <Route path="/customers" element={<Customers />} />
           <Route
             path="/settings"

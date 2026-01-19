@@ -1,10 +1,9 @@
 import { useMemo } from "react";
-import { useSalesRepo } from "../../../hooks/useSalesRepository";
+// Sales repo removed
 import { useWorkOrdersRepo } from "../../../hooks/useWorkOrdersRepository";
 import { usePartsRepo } from "../../../hooks/usePartsRepository";
 import { useCashTxRepo } from "../../../hooks/useCashTransactionsRepository";
-import { useCashBalance } from "../../../hooks/useCashBalance";
-import { useLoansRepo } from "../../../hooks/useLoansRepository";
+// CashBalance and Loans repos removed
 import { useAppContext } from "../../../contexts/AppContext";
 
 import { calculateFinancialSummary } from "../../../lib/reports/financialSummary";
@@ -14,12 +13,13 @@ export const useDashboardData = (
     selectedMonth?: number,
     selectedQuarter?: number
 ) => {
-    const { data: sales = [] } = useSalesRepo();
+    const sales: any[] = []; // Sales module removed
     const { data: workOrders = [] } = useWorkOrdersRepo();
     const { data: parts = [] } = usePartsRepo();
     const { data: cashTransactions = [] } = useCashTxRepo();
-    const { cashBalance, bankBalance } = useCashBalance();
-    const { data: loans = [] } = useLoansRepo();
+    // Stubs for removed hooks
+    const { cashBalance, bankBalance } = { cashBalance: 0, bankBalance: 0 };
+    const { data: loans = [] } = { data: [] as any[] };
     const { currentBranchId } = useAppContext();
 
     const today = new Date().toISOString().slice(0, 10);

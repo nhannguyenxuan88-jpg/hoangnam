@@ -6,6 +6,7 @@ import {
   ShoppingCart as Cart,
   Boxes,
   Users,
+  Shield,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { USER_ROLES } from "../../constants";
@@ -187,6 +188,13 @@ export const BottomNav: React.FC = () => {
       icon: <Wrench className="w-6 h-6" />,
       label: "Sửa chữa",
       color: "violet",
+      show: true,
+    },
+    {
+      to: "/warranty",
+      icon: <Shield className="w-6 h-6" />,
+      label: "Bảo hành",
+      color: "emerald",
       show: true,
     },
     // Sales tab removed

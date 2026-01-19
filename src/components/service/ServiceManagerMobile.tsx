@@ -150,7 +150,7 @@ const WorkOrderCard = React.memo(({
           </span>
         </div>
         <div className="flex items-center gap-2 mb-1.5 text-sm">
-          <span className="text-xs">🏍️</span>
+          <span className="text-xs">📱</span>
           <span className="text-slate-700 dark:text-gray-300 flex-1 min-w-0 truncate">
             {workOrder.vehicleModel}
           </span>
@@ -284,6 +284,7 @@ export function ServiceManagerMobile({
   const [showFilterPopup, setShowFilterPopup] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [activeTab, setActiveTab] = useState<"orders" | "history" | "templates">("orders");
+  const [showWarrantyModal, setShowWarrantyModal] = useState(false);
 
   // Financial data visibility state (owner-only feature)
   const [showFinancials, setShowFinancials] = useState(false);
@@ -577,7 +578,7 @@ export function ServiceManagerMobile({
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-gray-500" />
                 <input
                   type="text"
-                  placeholder="Tìm tên, SĐT, biển số..."
+                  placeholder="Tìm tên, SĐT, IMEI..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-3 py-2.5 bg-slate-100 dark:bg-[#2b2b40] border border-slate-300 dark:border-gray-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-gray-500 text-sm focus:outline-none focus:border-[#009ef7]"

@@ -1,7 +1,7 @@
 import { supabase } from "../../supabaseClient";
 import type { Part } from "../../types";
 import { RepoResult, success, failure } from "./types";
-import { safeAudit } from "./auditLogsRepository";
+// import { safeAudit } from "./auditLogsRepository";
 import { generateSKU } from "../../utils/sku";
 
 // Centralized table name constant
@@ -125,14 +125,8 @@ export async function createPart(
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
-    await safeAudit(userId, {
-      action: "part.create",
-      tableName: PARTS_TABLE,
-      recordId: (data as any).id,
-      oldData: null,
-      newData: data,
-    });
+    } catch { }
+    // Audit removed
     return success(data as Part);
   } catch (e: any) {
     return failure({
@@ -179,14 +173,8 @@ export async function updatePart(
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
-    await safeAudit(userId, {
-      action: "part.update",
-      tableName: PARTS_TABLE,
-      recordId: id,
-      oldData: oldRows,
-      newData: data,
-    });
+    } catch { }
+    // Audit removed
     return success(data as Part);
   } catch (e: any) {
     return failure({
@@ -286,14 +274,8 @@ export async function deletePartById(
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
-    await safeAudit(userId, {
-      action: "part.delete",
-      tableName: PARTS_TABLE,
-      recordId: id,
-      oldData: oldRows,
-      newData: null,
-    });
+    } catch { }
+    // Audit removed
     return success({ id });
   } catch (e: any) {
     return failure({

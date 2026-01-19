@@ -1,194 +1,149 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  fetchCustomerDebts,
-  createCustomerDebt,
-  updateCustomerDebt,
-  deleteCustomerDebt,
-  fetchSupplierDebts,
-  createSupplierDebt,
-  updateSupplierDebt,
-  deleteSupplierDebt,
+    fetchCustomerDebts,
+    createCustomerDebt,
+    updateCustomerDebt,
+    deleteCustomerDebt,
+    fetchSupplierDebts,
+    createSupplierDebt,
+    updateSupplierDebt,
+    deleteSupplierDebt,
 } from "../lib/repository/debtsRepository";
 import type { CustomerDebt, SupplierDebt } from "../types";
 import { showToast } from "../utils/toast";
 import { mapRepoErrorForUser } from "../utils/errorMapping";
 
-// ========== CUSTOMER DEBTS HOOKS ==========
+// CUSTOMER DEBTS
 
-export function useCustomerDebtsRepo() {
-  return useQuery({
-    queryKey: ["customer_debts"],
-    queryFn: async () => {
-      const result = await fetchCustomerDebts();
-      if (!result.ok) {
-        throw new Error(mapRepoErrorForUser(result.error));
-      }
-      return result.data;
-    },
-  });
-}
+export const useCustomerDebtsRepo = () => {
+    return useQuery({
+        queryKey: ["customerDebts"],
+        queryFn: async () => {
+            const res = await fetchCustomerDebts();
+            if (!res.ok) throw res.error;
+            return res.data;
+        },
+    });
+};
 
-export function useCreateCustomerDebtRepo() {
-  const queryClient = useQueryClient();
+export const useCreateCustomerDebtRepo = () => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (
+            debt: Omit<CustomerDebt, "id"> & { workOrderId?: string; saleId?: string }
+        ) => {
+            const res = await createCustomerDebt(debt);
+            if (!res.ok) throw res.error;
+            return res.data;
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["customerDebts"] });
+            // Invalidate dashboard or analytics if needed
+        },
+        onError: (err: any) => showToast.error(mapRepoErrorForUser(err)),
+    });
+};
 
-  return useMutation({
-    mutationFn: async (debt: Omit<CustomerDebt, "id">) => {
-      const result = await createCustomerDebt(debt);
-      if (!result.ok) {
-        const errorMsg = result.error
-          ? mapRepoErrorForUser(result.error)
-          : "Không thể thêm công nợ";
-        throw new Error(errorMsg);
-      }
-      return result.data;
-    },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["customer_debts"] });
-      // Only show toast if not from sale (sale will handle its own toast)
-      if (!(variables as any).saleId) {
-        showToast.success("Thêm công nợ thành công!");
-      }
-    },
-    onError: (error: any, variables) => {
-      // Only show toast if not from sale (sale will handle its own toast)
-      if (!(variables as any).saleId) {
-        showToast.error(error?.message || "Có lỗi xảy ra");
-      }
-    },
-  });
-}
+export const useUpdateCustomerDebtRepo = () => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async ({
+            id,
+            updates,
+        }: {
+            id: string;
+            updates: Partial<CustomerDebt>;
+        }) => {
+            const res = await updateCustomerDebt(id, updates);
+            if (!res.ok) throw res.error;
+            return res.data;
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["customerDebts"] });
+            showToast.success("Đã cập nhật công nợ khách hàng");
+        },
+        onError: (err: any) => showToast.error(mapRepoErrorForUser(err)),
+    });
+};
 
-export function useUpdateCustomerDebtRepo() {
-  const queryClient = useQueryClient();
+export const useDeleteCustomerDebtRepo = () => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const res = await deleteCustomerDebt(id);
+            if (!res.ok) throw res.error;
+            return res.data;
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["customerDebts"] });
+            showToast.success("Đã xóa công nợ khách hàng");
+        },
+        onError: (err: any) => showToast.error(mapRepoErrorForUser(err)),
+    });
+};
 
-  return useMutation({
-    mutationFn: async ({
-      id,
-      updates,
-    }: {
-      id: string;
-      updates: Partial<CustomerDebt>;
-    }) => {
-      const result = await updateCustomerDebt(id, updates);
-      if (!result.ok) {
-        throw new Error(mapRepoErrorForUser(result.error));
-      }
-      return result.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["customer_debts"] });
-      showToast.success("Cập nhật công nợ thành công!");
-    },
-    onError: (error: any) => {
-      showToast.error(error?.message || "Có lỗi xảy ra");
-    },
-  });
-}
+// SUPPLIER DEBTS
 
-export function useDeleteCustomerDebtRepo() {
-  const queryClient = useQueryClient();
+export const useSupplierDebtsRepo = () => {
+    return useQuery({
+        queryKey: ["supplierDebts"],
+        queryFn: async () => {
+            const res = await fetchSupplierDebts();
+            if (!res.ok) throw res.error;
+            return res.data;
+        },
+    });
+};
 
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const result = await deleteCustomerDebt(id);
-      if (!result.ok) {
-        throw new Error(mapRepoErrorForUser(result.error));
-      }
-      return result.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["customer_debts"] });
-      showToast.success("Xóa công nợ thành công!");
-    },
-    onError: (error: any) => {
-      showToast.error(error?.message || "Có lỗi xảy ra");
-    },
-  });
-}
+export const useCreateSupplierDebtRepo = () => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (debt: Omit<SupplierDebt, "id">) => {
+            const res = await createSupplierDebt(debt);
+            if (!res.ok) throw res.error;
+            return res.data;
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["supplierDebts"] });
+        },
+        onError: (err: any) => showToast.error(mapRepoErrorForUser(err)),
+    });
+};
 
-// ========== SUPPLIER DEBTS HOOKS ==========
+export const useUpdateSupplierDebtRepo = () => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async ({
+            id,
+            updates,
+        }: {
+            id: string;
+            updates: Partial<SupplierDebt>;
+        }) => {
+            const res = await updateSupplierDebt(id, updates);
+            if (!res.ok) throw res.error;
+            return res.data;
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["supplierDebts"] });
+            showToast.success("Đã cập nhật công nợ nhà cung cấp");
+        },
+        onError: (err: any) => showToast.error(mapRepoErrorForUser(err)),
+    });
+};
 
-export function useSupplierDebtsRepo() {
-  return useQuery({
-    queryKey: ["supplier_debts"],
-    queryFn: async () => {
-      const result = await fetchSupplierDebts();
-      if (!result.ok) {
-        throw new Error(mapRepoErrorForUser(result.error));
-      }
-      return result.data;
-    },
-  });
-}
-
-export function useCreateSupplierDebtRepo() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (debt: Omit<SupplierDebt, "id">) => {
-      const result = await createSupplierDebt(debt);
-      if (!result.ok) {
-        const errorMsg = result.error
-          ? mapRepoErrorForUser(result.error)
-          : "Không thể thêm công nợ";
-        throw new Error(errorMsg);
-      }
-      return result.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["supplier_debts"] });
-      showToast.success("Thêm công nợ thành công!");
-    },
-    onError: (error: any) => {
-      showToast.error(error?.message || "Có lỗi xảy ra");
-    },
-  });
-}
-
-export function useUpdateSupplierDebtRepo() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      id,
-      updates,
-    }: {
-      id: string;
-      updates: Partial<SupplierDebt>;
-    }) => {
-      const result = await updateSupplierDebt(id, updates);
-      if (!result.ok) {
-        throw new Error(mapRepoErrorForUser(result.error));
-      }
-      return result.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["supplier_debts"] });
-      showToast.success("Cập nhật công nợ thành công!");
-    },
-    onError: (error: any) => {
-      showToast.error(error?.message || "Có lỗi xảy ra");
-    },
-  });
-}
-
-export function useDeleteSupplierDebtRepo() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const result = await deleteSupplierDebt(id);
-      if (!result.ok) {
-        throw new Error(mapRepoErrorForUser(result.error));
-      }
-      return result.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["supplier_debts"] });
-      showToast.success("Xóa công nợ thành công!");
-    },
-    onError: (error: any) => {
-      showToast.error(error?.message || "Có lỗi xảy ra");
-    },
-  });
-}
+export const useDeleteSupplierDebtRepo = () => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const res = await deleteSupplierDebt(id);
+            if (!res.ok) throw res.error;
+            return res.data;
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["supplierDebts"] });
+            showToast.success("Đã xóa công nợ nhà cung cấp");
+        },
+        onError: (err: any) => showToast.error(mapRepoErrorForUser(err)),
+    });
+};

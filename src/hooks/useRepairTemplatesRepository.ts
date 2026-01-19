@@ -80,6 +80,11 @@ export function useRepairTemplates() {
       const { data, error } = await query;
 
       if (error) {
+        // Suppress missing table error
+        if (error.code === 'PGRST205' || error.message?.includes('does not exist')) {
+          console.warn("Repair templates table missing, returning empty array.");
+          return [] as RepairTemplate[];
+        }
         console.error("Error fetching repair templates:", error);
         throw error;
       }
@@ -119,6 +124,11 @@ export function useAllRepairTemplates() {
       const { data, error } = await query;
 
       if (error) {
+        // Suppress missing table error
+        if (error.code === 'PGRST205' || error.message?.includes('does not exist')) {
+          console.warn("Repair templates table missing, returning empty array.");
+          return [] as RepairTemplate[];
+        }
         console.error("Error fetching all repair templates:", error);
         throw error;
       }

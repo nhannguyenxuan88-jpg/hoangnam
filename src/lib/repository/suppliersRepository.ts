@@ -1,7 +1,7 @@
 import { supabase } from "../../supabaseClient";
 import type { Supplier } from "../../types";
 import { RepoResult, success, failure } from "./types";
-import { safeAudit } from "./auditLogsRepository";
+// import { safeAudit } from "./auditLogsRepository";
 
 const SUPPLIERS_TABLE = "suppliers";
 
@@ -60,14 +60,8 @@ export async function createSupplier(
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
-    await safeAudit(userId, {
-      action: "supplier.create",
-      tableName: SUPPLIERS_TABLE,
-      recordId: (data as any).id,
-      oldData: null,
-      newData: data,
-    });
+    } catch { }
+    // Audit removed
     return success(data as Supplier);
   } catch (e: any) {
     return failure({
@@ -91,7 +85,7 @@ export async function updateSupplier(
         .eq("id", id)
         .single();
       oldRow = resp?.data ?? null;
-    } catch {}
+    } catch { }
     const { data, error } = await supabase
       .from(SUPPLIERS_TABLE)
       .update({ ...updates })
@@ -108,14 +102,8 @@ export async function updateSupplier(
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
-    await safeAudit(userId, {
-      action: "supplier.update",
-      tableName: SUPPLIERS_TABLE,
-      recordId: id,
-      oldData: oldRow,
-      newData: data,
-    });
+    } catch { }
+    // Audit removed
     return success((data || { id, ...oldRow, ...updates }) as Supplier);
   } catch (e: any) {
     return failure({
@@ -138,7 +126,7 @@ export async function deleteSupplier(
         .eq("id", id)
         .single();
       oldRow = resp?.data ?? null;
-    } catch {}
+    } catch { }
     const { error } = await supabase
       .from(SUPPLIERS_TABLE)
       .delete()
@@ -153,14 +141,8 @@ export async function deleteSupplier(
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
-    await safeAudit(userId, {
-      action: "supplier.delete",
-      tableName: SUPPLIERS_TABLE,
-      recordId: id,
-      oldData: oldRow,
-      newData: null,
-    });
+    } catch { }
+    // Audit removed
     return success({ id });
   } catch (e: any) {
     return failure({

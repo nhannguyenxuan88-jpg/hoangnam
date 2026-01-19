@@ -27,7 +27,12 @@ import {
   MessageSquare,
   Package,
   ScanBarcode,
+  Upload,
+  Camera,
+  ArrowLeft,
 } from "lucide-react";
+import { useCheckWarranty } from "../../hooks/useWarrantyRepository";
+import { WarrantyCardModal } from "../warranty/WarrantyCardModal";
 import BarcodeScannerModal from "../common/BarcodeScannerModal";
 import { formatCurrency, formatWorkOrderId, normalizeSearchText } from "../../utils/format";
 import { getCategoryColor } from "../../utils/categoryColors";
@@ -74,139 +79,68 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   viewMode = false,
   onSwitchToEdit,
 }) => {
-  // Popular motorcycle models in Vietnam - same as desktop
-  const POPULAR_MOTORCYCLES = [
-    // === HONDA ===
-    "Honda Wave Alpha",
-    "Honda Wave RSX",
-    "Honda Wave RSX FI",
-    "Honda Wave 110",
-    "Honda Wave S110",
-    "Honda Super Dream",
-    "Honda Dream",
-    "Honda Blade 110",
-    "Honda Future 125",
-    "Honda Future Neo",
-    "Honda Winner X",
-    "Honda Winner 150",
-    "Honda CB150R",
-    "Honda CB150X",
-    "Honda CB300R",
-    "Honda Vision",
-    "Honda Air Blade 125",
-    "Honda Air Blade 150",
-    "Honda Air Blade 160",
-    "Honda SH Mode 125",
-    "Honda SH 125i",
-    "Honda SH 150i",
-    "Honda SH 160i",
-    "Honda SH 350i",
-    "Honda Lead 125",
-    "Honda PCX 125",
-    "Honda PCX 160",
-    "Honda Vario 125",
-    "Honda Vario 150",
-    "Honda Vario 160",
-    "Honda ADV 150",
-    "Honda ADV 160",
-    "Honda ADV 350",
-    "Honda Forza 250",
-    "Honda Forza 300",
-    "Honda Forza 350",
-    "Honda Giorno",
-    "Honda Stylo 160",
-    "Honda Click",
-    "Honda Super Cub",
-    "Honda Dream II",
-    // === YAMAHA ===
-    "Yamaha Sirius",
-    "Yamaha Sirius FI",
-    "Yamaha Sirius RC",
-    "Yamaha Jupiter",
-    "Yamaha Jupiter FI",
-    "Yamaha Jupiter Finn",
-    "Yamaha Exciter 135",
-    "Yamaha Exciter 150",
-    "Yamaha Exciter 155",
-    "Yamaha FZ150i",
-    "Yamaha MT-15",
-    "Yamaha R15",
-    "Yamaha Grande",
-    "Yamaha Grande Hybrid",
-    "Yamaha Janus",
-    "Yamaha FreeGo",
-    "Yamaha FreeGo S",
-    "Yamaha Latte",
-    "Yamaha NVX 125",
-    "Yamaha NVX 155",
-    "Yamaha NMAX",
-    "Yamaha NMAX 155",
-    "Yamaha XMAX 300",
-    "Yamaha Nouvo",
-    "Yamaha Nouvo LX",
-    "Yamaha Mio",
-    "Yamaha Mio Classico",
-    // === SUZUKI ===
-    "Suzuki Axelo",
-    "Suzuki Viva",
-    "Suzuki Smash",
-    "Suzuki Revo",
-    "Suzuki Raider 150",
-    "Suzuki Raider R150",
-    "Suzuki Satria F150",
-    "Suzuki GSX-R150",
-    "Suzuki GSX-S150",
-    "Suzuki Address",
-    "Suzuki Address 110",
-    "Suzuki Impulse",
-    "Suzuki Burgman Street",
-    // === SYM ===
-    "SYM Elegant",
-    "SYM Attila",
-    "SYM Attila Venus",
-    "SYM Angela",
-    "SYM Galaxy",
-    "SYM Star SR",
-    "SYM Shark",
-    // === PIAGGIO & VESPA ===
-    "Piaggio Liberty",
-    "Piaggio Liberty 125",
-    "Piaggio Liberty 150",
-    "Piaggio Medley",
-    "Piaggio Medley 125",
-    "Vespa Sprint",
-    "Vespa Sprint 125",
-    "Vespa Sprint 150",
-    "Vespa Primavera",
-    "Vespa Primavera 125",
-    "Vespa LX",
-    "Vespa S",
-    "Vespa GTS",
-    "Vespa GTS 125",
-    "Vespa GTS 300",
-    // === KYMCO ===
-    "Kymco Like",
-    "Kymco Like 125",
-    "Kymco Like 150",
-    "Kymco Many",
-    "Kymco Many 110",
-    "Kymco Many 125",
-    // === VINFAST ===
-    "VinFast Klara",
-    "VinFast Klara S",
-    "VinFast Ludo",
-    "VinFast Impes",
-    "VinFast Tempest",
-    "VinFast Vento",
-    "VinFast Evo200",
-    "VinFast Feliz",
-    "VinFast Feliz S",
-    "VinFast Theon",
-    // === KHÁC ===
-    "Xe điện khác",
-    "Xe 50cc khác",
-    "Xe nhập khẩu khác",
-    "Khác",
+  // Popular electronic devices for repair
+  const POPULAR_DEVICES = [
+    // === ĐIỆN THOẠI (PHONES) ===
+    "iPhone 15 Pro Max",
+    "iPhone 15 Pro",
+    "iPhone 15",
+    "iPhone 14 Pro Max",
+    "iPhone 14 Pro",
+    "iPhone 14",
+    "iPhone 13 Pro Max",
+    "iPhone 13",
+    "iPhone 12",
+    "iPhone 11",
+    "Samsung Galaxy S24 Ultra",
+    "Samsung Galaxy S23 Ultra",
+    "Samsung Galaxy S22 Ultra",
+    "Samsung Galaxy Z Fold 5",
+    "Samsung Galaxy Z Flip 5",
+    "Samsung Galaxy A54",
+    "Samsung Galaxy A34",
+    "OPPO Reno 10",
+    "OPPO Find N3",
+    "Xiaomi 13 Pro",
+    "Xiaomi Redmi Note 13 Pro",
+    "Vivo V29",
+    "Realme 11 Pro",
+
+    // === LAPTOP ===
+    "MacBook Pro 16-inch",
+    "MacBook Pro 14-inch",
+    "MacBook Air M2",
+    "MacBook Air M1",
+    "Dell XPS 15",
+    "Dell XPS 13",
+    "HP Pavilion 15",
+    "HP Envy 13",
+    "Lenovo ThinkPad X1 Carbon",
+    "Lenovo IdeaPad 3",
+    "Asus VivoBook",
+    "Asus ROG Zephyrus",
+    "Acer Aspire 5",
+    "MSI Gaming GF63",
+
+    // === MÁY TÍNH BẢNG (TABLETS) ===
+    "iPad Pro 12.9-inch",
+    "iPad Pro 11-inch",
+    "iPad Air",
+    "iPad Gen 10",
+    "Samsung Galaxy Tab S9",
+    "Samsung Galaxy Tab A8",
+
+    // === THIẾT BỊ KHÁC ===
+    "Apple Watch Series 9",
+    "Apple Watch SE",
+    "AirPods Pro",
+    "AirPods",
+    "Tai nghe Bluetooth",
+    "Loa Bluetooth",
+    "Camera hành trình",
+    "Máy ảnh Canon",
+    "Máy ảnh Sony",
+    "Thiết bị khác",
   ];
 
   // Find customer and vehicle from workOrder data
@@ -412,6 +346,14 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
   const [customerPage, setCustomerPage] = useState(0);
   const [hasMoreCustomers, setHasMoreCustomers] = useState(true);
+
+  // Warranty checker
+  const { data: activeWarranty } = useCheckWarranty(
+    selectedVehicle?.licensePlate, // IMEI/Serial
+    selectedCustomer?.phone,
+    selectedVehicle?.model
+  );
+
   const CUSTOMER_PAGE_SIZE = 20;
   const [showPartSearch, setShowPartSearch] = useState(false);
   const [partSearchTerm, setPartSearchTerm] = useState("");
@@ -432,6 +374,16 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [newCustomerVehicleModel, setNewCustomerVehicleModel] = useState("");
   const [newCustomerLicensePlate, setNewCustomerLicensePlate] = useState("");
+
+  // State for manual parts entry
+  const [showAddManualPart, setShowAddManualPart] = useState(false);
+  const [newManualPartName, setNewManualPartName] = useState("");
+  const [newManualPartCost, setNewManualPartCost] = useState(0);
+  const [newManualPartPrice, setNewManualPartPrice] = useState(0);
+  const [newManualPartQuantity, setNewManualPartQuantity] = useState(1);
+
+  // Warranty modal state
+  const [showWarrantyModal, setShowWarrantyModal] = useState(false);
 
   // State for vehicle model dropdowns
   const [showVehicleDropdown, setShowVehicleDropdown] = useState(false);
@@ -745,6 +697,30 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     setAdditionalServices(additionalServices.filter((s) => s.id !== id));
   };
 
+  const handleAddManualPart = () => {
+    if (!newManualPartName) return;
+
+    setSelectedParts([
+      ...selectedParts,
+      {
+        partId: `manual-${Date.now()}`,
+        partName: newManualPartName,
+        quantity: newManualPartQuantity,
+        sellingPrice: newManualPartPrice,
+        costPrice: newManualPartCost,
+        sku: "",
+        category: "Linh kiện ngoài",
+      },
+    ]);
+
+    // Reset form
+    setNewManualPartName("");
+    setNewManualPartCost(0);
+    setNewManualPartPrice(0);
+    setNewManualPartQuantity(1);
+    setShowAddManualPart(false);
+  };
+
   const handleAddVehicle = () => {
     if (!newVehiclePlate || !newVehicleName) return;
     const newVehicle: Vehicle = {
@@ -946,7 +922,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
       } else {
         errorMessage = "❌ Lỗi kết nối (Timeout/Mạng). Vui lòng kiểm tra kết nối mạng.";
       }
-      
+
       alert(errorMessage + "\n\nDữ liệu đã được lưu tạm. Bạn có thể thử lại hoặc chụp màn hình.");
       // onClose(); // Don't close so user can retry
     }
@@ -1340,7 +1316,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                   { id: WORK_ORDER_STATUS.RECEIVED, label: "Nhận", icon: FileText },
                   { id: WORK_ORDER_STATUS.IN_PROGRESS, label: "Sửa", icon: Wrench },
                   { id: WORK_ORDER_STATUS.COMPLETED, label: "Xong", icon: CheckCircle },
-                  { id: WORK_ORDER_STATUS.DELIVERED, label: "Trả", icon: Bike },
+                  { id: WORK_ORDER_STATUS.DELIVERED, label: "Trả", icon: Smartphone },
                 ].map((item) => {
                   const isActive = status === item.id;
                   const Icon = item.icon;
@@ -1600,7 +1576,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
             {selectedCustomer && (
               <div className="space-y-3 pt-2">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
-                  Chọn xe sửa chữa
+                  Chọn thiết bị sửa chữa
                 </label>
 
                 <div className="grid grid-cols-1 gap-2.5">
@@ -1642,7 +1618,36 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                     className="w-full py-3.5 border-2 border-dashed border-slate-700 hover:border-blue-500/50 hover:bg-blue-500/5 rounded-2xl text-slate-500 hover:text-blue-400 transition-all flex items-center justify-center gap-2 text-xs font-bold"
                   >
                     <Plus className="w-4 h-4" />
-                    Thêm xe mới
+                    Thêm thiết bị mới
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Warranty Status Badge - Show when device selected and has active warranty */}
+            {selectedVehicle && activeWarranty && (
+              <div className="px-4 pb-4">
+                <div className="p-4 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-2 border-emerald-500 rounded-2xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/30 flex items-center justify-center">
+                      <span className="text-lg">🛡️</span>
+                    </div>
+                    <div>
+                      <div className="text-emerald-400 font-bold text-sm">CÒN BẢO HÀNH</div>
+                      <div className="text-emerald-300 text-xs">
+                        Còn {activeWarranty.days_remaining} ngày • Hết hạn: {new Date(activeWarranty.warranty_end_date).toLocaleDateString('vi-VN')}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      // Set as warranty claim - just set labor to 0
+                      setLaborCost(0);
+                      showToast.success("Đã chuyển sang chế độ Bảo hành - Miễn phí công!");
+                    }}
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition-all shadow-lg"
+                  >
+                    ✓ Tạo Phiếu Bảo Hành (Miễn phí)
                   </button>
                 </div>
               </div>
@@ -1653,7 +1658,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
               <div className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
-                    Số KM hiện tại
+                    Mật khẩu màn hình
                   </label>
                   <div className="relative">
                     <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -1661,7 +1666,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                       type="number"
                       value={currentKm}
                       onChange={(e) => setCurrentKm(e.target.value)}
-                      placeholder="Nhập số KM..."
+                      placeholder="Nhập mật khẩu..."
                       inputMode="numeric"
                       className="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white text-sm focus:border-blue-500 transition-all"
                     />
@@ -1705,7 +1710,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
-                    Mô tả tình trạng xe
+                    Mô tả sự cố
                   </label>
                   <div className="relative">
                     <Wrench className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
@@ -1728,7 +1733,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
               <div className="px-4 pb-4 space-y-3">
                 <div className="flex items-center justify-between ml-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    Phụ tùng sử dụng
+                    Linh kiện sử dụng
                   </label>
                   {selectedParts.length > 0 && (
                     <span className="text-[10px] font-bold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full">
@@ -1816,7 +1821,16 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                   className="w-full py-3.5 bg-blue-600/10 border border-blue-500/30 hover:bg-blue-600/20 rounded-2xl text-blue-400 transition-all flex items-center justify-center gap-2 text-xs font-bold active:scale-[0.98]"
                 >
                   <Plus className="w-4 h-4" />
-                  Thêm phụ tùng
+                  Thêm linh kiện
+                </button>
+
+                {/* Add Manual Part Button */}
+                <button
+                  onClick={() => setShowAddManualPart(true)}
+                  className="w-full py-3.5 bg-purple-600/10 border border-purple-500/30 hover:bg-purple-600/20 rounded-2xl text-purple-400 transition-all flex items-center justify-center gap-2 text-xs font-bold active:scale-[0.98]"
+                >
+                  <Plus className="w-4 h-4" />
+                  Thêm linh kiện tự do
                 </button>
               </div>
 
@@ -1824,7 +1838,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
               <div className="px-4 pb-4 space-y-3">
                 <div className="flex items-center justify-between ml-1">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    Dịch vụ & Gia công
+                    Dịch vụ bên ngoài
                   </label>
                   {additionalServices.length > 0 && (
                     <span className="text-[10px] font-bold text-orange-400 bg-orange-400/10 px-2 py-0.5 rounded-full">
@@ -1913,7 +1927,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                   className="w-full py-3.5 bg-orange-600/10 border border-orange-500/30 hover:bg-orange-600/20 rounded-2xl text-orange-400 transition-all flex items-center justify-center gap-2 text-xs font-bold active:scale-[0.98]"
                 >
                   <Plus className="w-4 h-4" />
-                  Thêm dịch vụ ngoài
+                  Thêm dịch vụ bên ngoài
                 </button>
               </div>
             </>
@@ -2186,7 +2200,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                       <span className="text-blue-400 text-xs">ℹ️</span>
                     </div>
                     <p className="text-blue-300 text-xs leading-relaxed">
-                      <span className="font-semibold">Lưu ý:</span> Khi tạo phiếu mới, chọn trạng thái "Tiếp nhận" hoặc "Đang sửa". 
+                      <span className="font-semibold">Lưu ý:</span> Khi tạo phiếu mới, chọn trạng thái "Tiếp nhận" hoặc "Đang sửa".
                       Thanh toán khi trả xe chỉ khả dụng khi chỉnh sửa phiếu đã có sẵn.
                     </p>
                   </div>
@@ -2210,7 +2224,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-slate-500 dark:text-slate-400">Tiền phụ tùng:</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Tiền linh kiện:</span>
                     <span className="text-xs font-bold text-slate-900 dark:text-white">
                       {formatCurrency(partsTotal)}
                     </span>
@@ -2435,7 +2449,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
               {/* Header */}
               <div className="flex-shrink-0 p-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <h3 className="text-slate-900 dark:text-white font-semibold text-sm">
-                  🔍 Tìm phụ tùng
+                  🔍 Tìm linh kiện
                 </h3>
                 <button
                   onClick={() => {
@@ -2599,7 +2613,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
                 <h3 className="text-slate-900 dark:text-white font-semibold text-base">
-                  THÊM DỊCH VỤ GIA CÔNG
+                  THÊM DỊCH VỤ BÊN NGOÀI
                 </h3>
                 <button
                   onClick={() => {
@@ -2620,13 +2634,13 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                 {/* Service Name */}
                 <div>
                   <label className="block text-sm font-medium text-slate-500 dark:text-slate-300 mb-2">
-                    Tên công việc / Mô tả:
+                    Tên dịch vụ / Mô tả:
                   </label>
                   <input
                     type="text"
                     value={newServiceName}
                     onChange={(e) => setNewServiceName(e.target.value)}
-                    placeholder="Nhập tên (VD: Hàn yếm, Sơn...)"
+                    placeholder="VD: Unlock iCloud, Flash ROM, Jailbreak..."
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-[#151521] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-[#009ef7] focus:outline-none transition-colors"
                     autoFocus
                   />
@@ -2735,6 +2749,161 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
         )
       }
 
+      {/* Add Manual Part Modal - Similar to Add Service */}
+      {
+        showAddManualPart && (
+          <div className="fixed inset-0 bg-black/70 z-[110] flex items-end md:items-center md:justify-center">
+            <div className="w-full md:max-w-md bg-white dark:bg-[#1e1e2d] rounded-t-2xl md:rounded-xl overflow-hidden transition-colors">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+                <h3 className="text-slate-900 dark:text-white font-semibold text-base">
+                  THÊM LINH KIỆN TỰ DO
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowAddManualPart(false);
+                    setNewManualPartName("");
+                    setNewManualPartCost(0);
+                    setNewManualPartPrice(0);
+                    setNewManualPartQuantity(1);
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Form Content */}
+              <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+                {/* Part Name */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-500 dark:text-slate-300 mb-2">
+                    Tên linh kiện:
+                  </label>
+                  <input
+                    type="text"
+                    value={newManualPartName}
+                    onChange={(e) => setNewManualPartName(e.target.value)}
+                    placeholder="Nhập tên (VD: Màn hình iPhone 14, Pin Samsung...)"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-[#151521] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-purple-500 focus:outline-none transition-colors"
+                    autoFocus
+                  />
+                </div>
+
+                {/* Quantity Stepper */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Số lượng:
+                  </label>
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      onClick={() =>
+                        setNewManualPartQuantity(Math.max(1, newManualPartQuantity - 1))
+                      }
+                      className="w-12 h-12 bg-slate-100 dark:bg-[#2b2b40] hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg flex items-center justify-center text-slate-900 dark:text-white text-2xl font-bold transition-colors"
+                    >
+                      −
+                    </button>
+                    <div className="w-20 h-12 bg-slate-50 dark:bg-[#151521] border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-center">
+                      <span className="text-slate-900 dark:text-white text-xl font-bold">
+                        {newManualPartQuantity}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() =>
+                        setNewManualPartQuantity(newManualPartQuantity + 1)
+                      }
+                      className="w-12 h-12 bg-slate-100 dark:bg-[#2b2b40] hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg flex items-center justify-center text-slate-900 dark:text-white text-2xl font-bold transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Cost & Price Section */}
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-500 dark:text-slate-300 mb-3 uppercase tracking-wide">
+                    CHI PHÍ & GIÁ BÁN
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Cost Price */}
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1.5">
+                        Giá nhập (Vốn):
+                      </label>
+                      <div className="relative">
+                        <NumberInput
+                          value={newManualPartCost}
+                          onChange={(val: number) => setNewManualPartCost(val)}
+                          placeholder="0"
+                          className="w-full px-3 py-3 pr-8 bg-slate-50 dark:bg-[#151521] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-500 dark:text-slate-400 text-sm focus:border-slate-400 dark:focus:border-slate-600 focus:outline-none transition-colors"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
+                          ₫
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Selling Price */}
+                    <div>
+                      <label className="block text-xs text-purple-400 mb-1.5">
+                        Giá bán (Khách):
+                      </label>
+                      <div className="relative">
+                        <NumberInput
+                          value={newManualPartPrice}
+                          onChange={(val: number) => setNewManualPartPrice(val)}
+                          placeholder="0"
+                          className="w-full px-3 py-3 pr-8 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-500/30 rounded-lg text-purple-600 dark:text-purple-400 font-semibold text-sm focus:border-purple-500 focus:outline-none transition-colors"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-400 text-xs">
+                          ₫
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Total Preview */}
+                <div className="p-4 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-500/30 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-600 dark:text-slate-400">
+                      Tổng cộng:
+                    </span>
+                    <span className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                      {formatCurrency(newManualPartPrice * newManualPartQuantity)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="p-4 border-t border-slate-200 dark:border-slate-700 flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowAddManualPart(false);
+                    setNewManualPartName("");
+                    setNewManualPartCost(0);
+                    setNewManualPartPrice(0);
+                    setNewManualPartQuantity(1);
+                  }}
+                  className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 rounded-xl font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleAddManualPart}
+                  disabled={!newManualPartName}
+                  className="flex-1 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-purple-500/20"
+                >
+                  ✓ Thêm
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
       {/* Add Vehicle Modal - Premium Redesign */}
       {showAddVehicle && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
@@ -2742,9 +2911,9 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                  <Bike className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <Smartphone className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
-                <h3 className="text-slate-900 dark:text-white font-bold text-base">Thêm xe mới</h3>
+                <h3 className="text-slate-900 dark:text-white font-bold text-base">Thêm thiết bị mới</h3>
               </div>
               <button
                 onClick={() => setShowAddVehicle(false)}
@@ -2756,21 +2925,21 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
 
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
-                  Biển số xe
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">
+                  IMEI / SERIAL NUMBER
                 </label>
                 <input
                   type="text"
                   value={newVehiclePlate}
-                  onChange={(e) => setNewVehiclePlate(e.target.value.toUpperCase())}
-                  placeholder="59G1-123.45"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm font-bold uppercase focus:border-blue-500 transition-all"
+                  onChange={(e) => setNewVehiclePlate(e.target.value)}
+                  placeholder="VD: 123456789012345"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm focus:border-blue-500 transition-all"
                 />
               </div>
 
               <div className="space-y-1.5 relative">
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
-                  Tên xe
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">
+                  Tên thiết bị / Model
                 </label>
                 <input
                   type="text"
@@ -2780,13 +2949,13 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                     setShowVehicleDropdown(true);
                   }}
                   onFocus={() => setShowVehicleDropdown(true)}
-                  placeholder="Chọn hoặc nhập dòng xe"
+                  placeholder="Chọn hoặc nhập tên thiết bị"
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm focus:border-blue-500 transition-all"
                 />
                 {/* Vehicle Model Dropdown */}
                 {showVehicleDropdown && (
                   <div className="absolute z-20 w-full mt-1 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-[200px] overflow-y-auto scrollbar-hide">
-                    {POPULAR_MOTORCYCLES.filter((model) =>
+                    {POPULAR_DEVICES.filter((model) =>
                       model.toLowerCase().includes(newVehicleName.toLowerCase())
                     )
                       .slice(0, 10)
@@ -2803,7 +2972,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                           {model}
                         </button>
                       ))}
-                    {POPULAR_MOTORCYCLES.filter((model) =>
+                    {POPULAR_DEVICES.filter((model) =>
                       model.toLowerCase().includes(newVehicleName.toLowerCase())
                     ).length === 0 && (
                         <div className="px-4 py-3 text-xs text-slate-500 text-center italic">
@@ -2825,7 +2994,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                   onClick={handleAddVehicle}
                   className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
                 >
-                  Thêm xe
+                  Thêm thiết bị
                 </button>
               </div>
             </div>
@@ -2924,7 +3093,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                   {/* Vehicle Model Dropdown for New Customer */}
                   {showCustomerVehicleDropdown && (
                     <div className="absolute z-20 w-full mt-1 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-[200px] overflow-y-auto scrollbar-hide">
-                      {POPULAR_MOTORCYCLES.filter((model) =>
+                      {POPULAR_DEVICES.filter((model) =>
                         model
                           .toLowerCase()
                           .includes(newCustomerVehicleModel.toLowerCase())
@@ -2943,7 +3112,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                             {model}
                           </button>
                         ))}
-                      {POPULAR_MOTORCYCLES.filter((model) =>
+                      {POPULAR_DEVICES.filter((model) =>
                         model
                           .toLowerCase()
                           .includes(newCustomerVehicleModel.toLowerCase())

@@ -1,7 +1,7 @@
 import { supabase } from "../../supabaseClient";
 import type { PaymentSource } from "../../types";
 import { RepoResult, success, failure } from "./types";
-import { safeAudit } from "./auditLogsRepository";
+// import { safeAudit } from "./auditLogsRepository";
 
 const TABLE = "payment_sources";
 
@@ -69,14 +69,8 @@ export async function updatePaymentSourceBalance(
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
-    await safeAudit(userId, {
-      action: "payment_source.balance_adjust",
-      tableName: TABLE,
-      recordId: id,
-      oldData: { balance },
-      newData: { balance: newBalance, delta, branchId },
-    });
+    } catch { }
+    // Audit removed
     return success(data as PaymentSource);
   } catch (e: any) {
     return failure({

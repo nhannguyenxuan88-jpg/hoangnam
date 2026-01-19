@@ -26,7 +26,7 @@ import { createCashTransaction } from "../lib/repository/cashTransactionsReposit
 import { updatePaymentSourceBalance } from "../lib/repository/paymentSourcesRepository";
 import { showToast } from "../utils/toast";
 import { mapRepoErrorForUser } from "../utils/errorMapping";
-import { safeAudit } from "../lib/repository/auditLogsRepository";
+// import { safeAudit } from "../lib/repository/auditLogsRepository";
 import { supabase } from "../supabaseClient";
 
 interface AppContextType {
@@ -827,12 +827,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
             showToast.error(mapRepoErrorForUser(balRes.error));
           }
           // Audit: thu nợ khách hàng
-          void safeAudit(userId, {
-            action: "debt.customer_pay",
-            tableName: "customer_debts",
-            oldData: null,
-            newData: { customerIds, totalPaid, paymentMethod, timestamp },
-          });
+          // safeAudit(userId, {
+          //   action: "debt.customer_pay",
+          //   tableName: "customer_debts",
+          //   oldData: null,
+          //   newData: { customerIds, totalPaid, paymentMethod, timestamp },
+          // });
         })();
       }
     },
@@ -900,12 +900,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
             showToast.error(mapRepoErrorForUser(balRes.error));
           }
           // Audit: trả nợ nhà cung cấp
-          void safeAudit(userId, {
-            action: "debt.supplier_pay",
-            tableName: "supplier_debts",
-            oldData: null,
-            newData: { supplierIds, totalPaid, paymentMethod, timestamp },
-          });
+          // safeAudit(userId, {
+          //   action: "debt.supplier_pay",
+          //   tableName: "supplier_debts",
+          //   oldData: null,
+          //   newData: { supplierIds, totalPaid, paymentMethod, timestamp },
+          // });
         })();
       }
     },

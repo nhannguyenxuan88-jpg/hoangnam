@@ -8,6 +8,7 @@ import { NavLink, MobileDrawerLink } from "./index";
 import {
   LayoutDashboard,
   Wrench,
+  Shield,
   ShoppingCart as Cart,
   Boxes,
   Users,
@@ -232,6 +233,12 @@ export function Nav() {
               colorKey="violet"
               icon={<Wrench className="w-4 h-4" />}
               label="Sửa chữa"
+            />
+            <NavLink
+              to="/warranty"
+              colorKey="emerald"
+              icon={<Shield className="w-4 h-4" />}
+              label="Bảo hành"
             />
             {/* Sales link removed */}
             {can.viewInventory && (

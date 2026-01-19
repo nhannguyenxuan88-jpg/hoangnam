@@ -1,7 +1,7 @@
 import { supabase } from "../../supabaseClient";
 import type { WorkOrder, StockWarning } from "../../types";
 import { RepoResult, success, failure } from "./types";
-import { safeAudit } from "./auditLogsRepository";
+// import { safeAudit } from "./auditLogsRepository";
 
 const WORK_ORDERS_TABLE = "work_orders";
 
@@ -48,7 +48,8 @@ export async function fetchWorkOrders(): Promise<RepoResult<WorkOrder[]>> {
     const { data, error } = await supabase
       .from(WORK_ORDERS_TABLE)
       .select("*")
-      .order("creationdate", { ascending: false }); // Use lowercase to match DB column
+      .order("creationdate", { ascending: false })
+      .limit(100); // Only load 100 most recent orders
 
     console.log("[fetchWorkOrders] Raw data from DB:", data);
     console.log(
@@ -113,10 +114,8 @@ export async function fetchWorkOrdersFiltered(options?: {
     const { data, error } = await query;
 
     console.log(
-      `[fetchWorkOrdersFiltered] Loaded ${
-        data?.length || 0
-      } orders (limit: ${limit}, daysBack: ${
-        daysBack === 0 ? "ALL" : daysBack
+      `[fetchWorkOrdersFiltered] Loaded ${data?.length || 0
+      } orders (limit: ${limit}, daysBack: ${daysBack === 0 ? "ALL" : daysBack
       })`
     );
 
@@ -215,17 +214,16 @@ export async function createWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
           const jsonStr = rawDetails.slice(colon + 1).trim();
           try {
             items = JSON.parse(jsonStr);
-          } catch {}
+          } catch { }
         }
         const list = Array.isArray(items)
           ? items
-              .map(
-                (d: any) =>
-                  `${d.partName || d.partId || "?"} (còn ${d.available}, cần ${
-                    d.requested
-                  })`
-              )
-              .join(", ")
+            .map(
+              (d: any) =>
+                `${d.partName || d.partId || "?"} (còn ${d.available}, cần ${d.requested
+                })`
+            )
+            .join(", ")
           : "";
         return failure({
           code: "validation",
@@ -335,15 +333,9 @@ export async function createWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
+    } catch { }
 
-    await safeAudit(userId, {
-      action: "work_order.create",
-      tableName: WORK_ORDERS_TABLE,
-      recordId: normalizedWorkOrder.id,
-      oldData: null,
-      newData: normalizedWorkOrder,
-    });
+    // Audit removed
 
     return success({
       ...normalizedWorkOrder,
@@ -419,17 +411,16 @@ export async function updateWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
           const jsonStr = rawDetails.slice(colon + 1).trim();
           try {
             items = JSON.parse(jsonStr);
-          } catch {}
+          } catch { }
         }
         const list = Array.isArray(items)
           ? items
-              .map(
-                (d: any) =>
-                  `${d.partName || d.partId || "?"} (còn ${d.available}, cần ${
-                    d.requested
-                  })`
-              )
-              .join(", ")
+            .map(
+              (d: any) =>
+                `${d.partName || d.partId || "?"} (còn ${d.available}, cần ${d.requested
+                })`
+            )
+            .join(", ")
           : "";
         return failure({
           code: "validation",
@@ -496,14 +487,8 @@ export async function updateWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
-    await safeAudit(userId, {
-      action: "work_order.update",
-      tableName: WORK_ORDERS_TABLE,
-      recordId: (workOrderRow as any).id,
-      oldData: null,
-      newData: workOrderRow,
-    });
+    } catch { }
+    // Audit removed
 
     return success({
       ...(workOrderRow as any),
@@ -544,14 +529,8 @@ export async function updateWorkOrder(
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
-    await safeAudit(userId, {
-      action: "work_order.update",
-      tableName: WORK_ORDERS_TABLE,
-      recordId: id,
-      oldData: null, // Would need to fetch before update
-      newData: data,
-    });
+    } catch { }
+    // Audit removed
 
     return success(data as WorkOrder);
   } catch (e: any) {
@@ -582,14 +561,8 @@ export async function deleteWorkOrder(id: string): Promise<RepoResult<void>> {
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
-    await safeAudit(userId, {
-      action: "work_order.delete",
-      tableName: WORK_ORDERS_TABLE,
-      recordId: id,
-      oldData: null,
-      newData: null,
-    });
+    } catch { }
+    // Audit removed
 
     return success(undefined);
   } catch (e: any) {
@@ -618,7 +591,7 @@ export async function refundWorkOrder(
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
+    } catch { }
 
     const { data, error } = await supabase.rpc("work_order_refund_atomic", {
       p_order_id: orderId,
@@ -676,13 +649,7 @@ export async function refundWorkOrder(
       return failure({ code: "unknown", message: "Kết quả RPC không hợp lệ" });
     }
 
-    await safeAudit(userId, {
-      action: "work_order.refund",
-      tableName: WORK_ORDERS_TABLE,
-      recordId: orderId,
-      oldData: null,
-      newData: workOrderRow,
-    });
+    // Audit removed
 
     return success({
       ...(workOrderRow as any),
@@ -722,7 +689,7 @@ export async function completeWorkOrderPayment(
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
+    } catch { }
 
     const { data, error } = await supabase.rpc("work_order_complete_payment", {
       p_order_id: orderId,
@@ -744,17 +711,16 @@ export async function completeWorkOrderPayment(
           const jsonStr = rawDetails.slice(colon + 1).trim();
           try {
             items = JSON.parse(jsonStr);
-          } catch {}
+          } catch { }
         }
         const list = Array.isArray(items)
           ? items
-              .map(
-                (d: any) =>
-                  `${d.partName || d.partId || "?"} (còn ${d.available}, cần ${
-                    d.requested
-                  })`
-              )
-              .join(", ")
+            .map(
+              (d: any) =>
+                `${d.partName || d.partId || "?"} (còn ${d.available}, cần ${d.requested
+                })`
+            )
+            .join(", ")
           : "";
         return failure({
           code: "validation",
@@ -821,13 +787,7 @@ export async function completeWorkOrderPayment(
       });
     }
 
-    await safeAudit(userId, {
-      action: "work_order.payment",
-      tableName: WORK_ORDERS_TABLE,
-      recordId: orderId,
-      oldData: null,
-      newData: workOrderRow,
-    });
+    // Audit removed
 
     return success({
       ...normalizeWorkOrder(workOrderRow),

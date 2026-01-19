@@ -26,7 +26,7 @@ import {
 
 } from "lucide-react";
 import { useAppContext } from "../../contexts/AppContext";
-import { safeAudit } from "../../lib/repository/auditLogsRepository";
+// import { safeAudit } from "../../lib/repository/auditLogsRepository";
 import { supabase } from "../../supabaseClient";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import {
@@ -801,26 +801,27 @@ const InventoryManagerNew: React.FC = () => {
         showToast.success(`Nhập kho thành công! Mã phiếu: ${receiptCode}`);
 
         // High-level audit of goods receipt batch
-        void safeAudit(profile?.id || null, {
-          action: "inventory.receipt",
-          tableName: "inventory_transactions",
-          oldData: null,
-          newData: {
-            receiptCode,
-            supplierId,
-            supplierName,
-            items: items.map((i) => ({
-              partId: i.partId,
-              quantity: i.quantity,
-              importPrice: i.importPrice,
-              sellingPrice: i.sellingPrice,
-            })),
-            totalAmount,
-            paidAmount,
-            debtAmount,
-            paymentInfo,
-          },
-        });
+        // High-level audit of goods receipt batch
+        // safeAudit(profile?.id || null, {
+        //   action: "inventory.receipt",
+        //   tableName: "inventory_transactions",
+        //   oldData: null,
+        //   newData: {
+        //     receiptCode,
+        //     supplierId,
+        //     supplierName,
+        //     items: items.map((i) => ({
+        //       partId: i.partId,
+        //       quantity: i.quantity,
+        //       importPrice: i.importPrice,
+        //       sellingPrice: i.sellingPrice,
+        //     })),
+        //     totalAmount,
+        //     paidAmount,
+        //     debtAmount,
+        //     paymentInfo,
+        //   },
+        // });
       } catch (err: any) {
         console.error("🛑 Lỗi lưu phiếu nhập kho:", err);
         showToast.error(`Lỗi: ${err.message || "Không rõ"}`);
@@ -2660,20 +2661,20 @@ const InventoryManagerNew: React.FC = () => {
               // Audit summary for import (best-effort)
               try {
                 const { data: userData } = await supabase.auth.getUser();
-                await safeAudit(userData?.user?.id || null, {
-                  action: "inventory.import",
-                  tableName: "inventory_transactions",
-                  oldData: null,
-                  newData: {
-                    totalRows: importedData.length + rowErrors.length,
-                    created: createdCount,
-                    updated: updatedCount,
-                    skipped: rowErrors.length,
-                    sampleErrors: rowErrors.slice(0, 10),
-                    branchId: currentBranchId,
-                    at: importDate,
-                  },
-                });
+                // await safeAudit(userData?.user?.id || null, {
+                //   action: "inventory.import",
+                //   tableName: "inventory_transactions",
+                //   oldData: null,
+                //   newData: {
+                //     totalRows: importedData.length + rowErrors.length,
+                //     created: createdCount,
+                //     updated: updatedCount,
+                //     skipped: rowErrors.length,
+                //     sampleErrors: rowErrors.slice(0, 10),
+                //     branchId: currentBranchId,
+                //     at: importDate,
+                //   },
+                // });
               } catch { }
 
               setShowImportModal(false);

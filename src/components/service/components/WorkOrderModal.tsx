@@ -10,7 +10,7 @@ import {
   useUpdateWorkOrderAtomicRepo,
 } from "../../../hooks/useWorkOrdersRepository";
 import { completeWorkOrderPayment } from "../../../lib/repository/workOrdersRepository";
-import { useCreateCustomerDebtRepo } from "../../../hooks/useDebtsRepository";
+
 import { showToast } from "../../../utils/toast";
 import { supabase } from "../../../supabaseClient";
 import {
@@ -18,6 +18,7 @@ import {
   validateDepositAmount,
 } from "../../../utils/validation";
 import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import { useCreateCustomerDebtRepo } from "../../../hooks/useDebtsRepository";
 
 export interface StoreSettings {
   store_name?: string;
@@ -64,268 +65,87 @@ const WorkOrderModal: React.FC<{
   storeSettings,
   invalidateWorkOrders,
 }) => {
-    // Popular motorcycle models in Vietnam
-    const POPULAR_MOTORCYCLES = [
-      // === HONDA ===
-      // Xe số
-      "Honda Wave Alpha",
-      "Honda Wave RSX",
-      "Honda Wave RSX FI",
-      "Honda Wave 110",
-      "Honda Wave S110",
-      "Honda Super Dream",
-      "Honda Dream",
-      "Honda Blade 110",
-      "Honda Future 125",
-      "Honda Future Neo",
-      // Xe côn tay
-      "Honda Winner X",
-      "Honda Winner 150",
-      "Honda CB150R",
-      "Honda CB150X",
-      "Honda CB300R",
-      "Honda CB500F",
-      "Honda CB650R",
-      "Honda CBR150R",
-      "Honda CBR250RR",
-      "Honda CBR500R",
-      "Honda CBR650R",
-      "Honda Rebel 300",
-      "Honda Rebel 500",
-      "Honda CRF150L",
-      "Honda CRF250L",
-      "Honda CRF300L",
-      "Honda XR150L",
-      // Xe tay ga
-      "Honda Vision",
-      "Honda Air Blade 125",
-      "Honda Air Blade 150",
-      "Honda Air Blade 160",
-      "Honda SH Mode 125",
-      "Honda SH 125i",
-      "Honda SH 150i",
-      "Honda SH 160i",
-      "Honda SH 350i",
-      "Honda Lead 125",
-      "Honda PCX 125",
-      "Honda PCX 160",
-      "Honda Vario 125",
-      "Honda Vario 150",
-      "Honda Vario 160",
-      "Honda ADV 150",
-      "Honda ADV 160",
-      "Honda ADV 350",
-      "Honda Forza 250",
-      "Honda Forza 300",
-      "Honda Forza 350",
-      "Honda Giorno",
-      "Honda Stylo 160",
-      // Xe cũ/ngưng sản xuất
-      "Honda @",
-      "Honda Click",
-      "Honda Dylan",
-      "Honda PS",
-      "Honda Spacy",
-      "Honda SCR",
-      "Honda NSR",
-      "Honda Astrea",
-      "Honda Cub 50",
-      "Honda Cub 70",
-      "Honda Cub 81",
-      "Honda Cub 82",
-      "Honda Cub 86",
-      "Honda Super Cub",
-      "Honda Dream II",
-      "Honda Dream Thái",
+    // Popular electronics devices
+    const POPULAR_DEVICES = [
+      // === APPLE ===
+      "iPhone 15 Pro Max",
+      "iPhone 15 Pro",
+      "iPhone 15 Plus",
+      "iPhone 15",
+      "iPhone 14 Pro Max",
+      "iPhone 14 Pro",
+      "iPhone 13 Pro Max",
+      "iPhone 13 Pro",
+      "iPhone 13",
+      "iPhone 12 Pro Max",
+      "iPhone 12",
+      "iPhone 11 Pro Max",
+      "iPhone 11",
+      "iPhone XS Max",
+      "iPhone X/XS",
+      "iPhone 8 Plus",
+      "iPad Pro 12.9",
+      "iPad Pro 11",
+      "iPad Air 5",
+      "iPad Gen 10",
+      "MacBook Pro 14 M1/M2/M3",
+      "MacBook Pro 16",
+      "MacBook Air M1/M2",
 
-      // === YAMAHA ===
-      // Xe số
-      "Yamaha Sirius",
-      "Yamaha Sirius FI",
-      "Yamaha Sirius RC",
-      "Yamaha Jupiter",
-      "Yamaha Jupiter FI",
-      "Yamaha Jupiter Finn",
-      "Yamaha Jupiter MX",
-      // Xe côn tay
-      "Yamaha Exciter 135",
-      "Yamaha Exciter 150",
-      "Yamaha Exciter 155",
-      "Yamaha FZ150i",
-      "Yamaha FZ155i",
-      "Yamaha MT-03",
-      "Yamaha MT-07",
-      "Yamaha MT-09",
-      "Yamaha MT-10",
-      "Yamaha MT-15",
-      "Yamaha R15",
-      "Yamaha R3",
-      "Yamaha R6",
-      "Yamaha R7",
-      "Yamaha XSR155",
-      "Yamaha XSR700",
-      "Yamaha XSR900",
-      "Yamaha WR155R",
-      "Yamaha TFX 150",
-      // Xe tay ga
-      "Yamaha Grande",
-      "Yamaha Grande Hybrid",
-      "Yamaha Janus",
-      "Yamaha FreeGo",
-      "Yamaha FreeGo S",
-      "Yamaha Latte",
-      "Yamaha NVX 125",
-      "Yamaha NVX 155",
-      "Yamaha NVX 155 VVA",
-      "Yamaha NMAX",
-      "Yamaha NMAX 155",
-      "Yamaha XMAX 300",
-      "Yamaha TMAX 530",
-      "Yamaha TMAX 560",
-      "Yamaha Lexi",
-      "Yamaha Aerox",
-      // Xe cũ/ngưng sản xuất
-      "Yamaha Nouvo",
-      "Yamaha Nouvo LX",
-      "Yamaha Nouvo SX",
-      "Yamaha Mio",
-      "Yamaha Mio Classico",
-      "Yamaha Mio Ultimo",
-      "Yamaha Taurus",
-      "Yamaha Spark",
-      "Yamaha Force",
+      // === SAMSUNG ===
+      "Samsung S24 Ultra",
+      "Samsung S24 Plus",
+      "Samsung S23 Ultra",
+      "Samsung S22 Ultra",
+      "Samsung Z Fold 5",
+      "Samsung Z Flip 5",
+      "Samsung A55",
+      "Samsung A35",
+      "Samsung A25",
+      "Samsung A15",
+      "Samsung A05s",
+      "Samsung Tab S9",
 
-      // === SUZUKI ===
-      // Xe số
-      "Suzuki Axelo",
-      "Suzuki Viva",
-      "Suzuki Best",
-      "Suzuki Smash",
-      "Suzuki Sport",
-      "Suzuki Revo",
-      // Xe côn tay
-      "Suzuki Raider 150",
-      "Suzuki Raider R150",
-      "Suzuki Satria F150",
-      "Suzuki GSX-R150",
-      "Suzuki GSX-S150",
-      "Suzuki GSX-R1000",
-      "Suzuki GSX-S1000",
-      "Suzuki Gixxer 150",
-      "Suzuki Gixxer 250",
-      "Suzuki V-Strom 250",
-      "Suzuki V-Strom 650",
-      "Suzuki V-Strom 1050",
-      "Suzuki Intruder 150",
-      "Suzuki Bandit 150",
-      // Xe tay ga
-      "Suzuki Address",
-      "Suzuki Address 110",
-      "Suzuki Impulse",
-      "Suzuki Burgman Street",
-      "Suzuki Burgman 125",
-      "Suzuki Burgman 200",
-      "Suzuki Burgman 400",
-      "Suzuki Avenis",
-      // Xe cũ
-      "Suzuki GN125",
-      "Suzuki GD110",
-      "Suzuki EN150",
-      "Suzuki Hayate",
-      "Suzuki Sky Drive",
-      "Suzuki Sapphire",
+      // === XIAOMI / OPPO / VIVO ===
+      "Xiaomi 14 Ultra",
+      "Xiaomi 13T",
+      "Redmi Note 13 Pro",
+      "Redmi Note 12",
+      "Oppo Find N3",
+      "Oppo Reno 10",
+      "Vivo X100",
+      "Vivo V29",
 
-      // === SYM ===
-      "SYM Elegant",
-      "SYM Elite 50",
-      "SYM Attila",
-      "SYM Attila Venus",
-      "SYM Attila Elizabeth",
-      "SYM Angela",
-      "SYM Galaxy",
-      "SYM Star SR",
-      "SYM Shark",
-      "SYM Shark Mini",
-      "SYM Passing",
-      "SYM X-Pro",
-      "SYM Abela",
-      "SYM Husky",
+      // === LAPTOPS ===
+      "Dell XPS 13",
+      "Dell XPS 15",
+      "Dell Inspiron",
+      "Dell Latitude",
+      "HP Spectre",
+      "HP Envy",
+      "HP Pavilion",
+      "Asus ROG Strix",
+      "Asus TUF Gaming",
+      "Asus ZenBook",
+      "Asus VivoBook",
+      "Lenovo ThinkPad X1",
+      "Lenovo Legion",
+      "Lenovo IdeaPad",
+      "Acer Nitro 5",
+      "Acer Swift",
+      "MSI Katana",
+      "MSI Modern",
 
-      // === PIAGGIO & VESPA ===
-      "Piaggio Liberty",
-      "Piaggio Liberty 50",
-      "Piaggio Liberty 125",
-      "Piaggio Liberty 150",
-      "Piaggio Medley",
-      "Piaggio Medley 125",
-      "Piaggio Medley 150",
-      "Piaggio Beverly",
-      "Piaggio MP3",
-      "Piaggio Zip",
-      "Vespa Sprint",
-      "Vespa Sprint 125",
-      "Vespa Sprint 150",
-      "Vespa Primavera",
-      "Vespa Primavera 125",
-      "Vespa Primavera 150",
-      "Vespa LX",
-      "Vespa S",
-      "Vespa GTS",
-      "Vespa GTS 125",
-      "Vespa GTS 300",
-      "Vespa GTV",
-      "Vespa Sei Giorni",
-
-      // === KYMCO ===
-      "Kymco Like",
-      "Kymco Like 125",
-      "Kymco Like 150",
-      "Kymco Many",
-      "Kymco Many 50",
-      "Kymco Many 110",
-      "Kymco Many 125",
-      "Kymco Jockey",
-      "Kymco Candy",
-      "Kymco People S",
-      "Kymco AK550",
-      "Kymco X-Town 300",
-      "Kymco Downtown",
-      "Kymco Visar",
-
-      // === VINFAST (Xe điện) ===
-      "VinFast Klara",
-      "VinFast Klara A1",
-      "VinFast Klara A2",
-      "VinFast Klara S",
-      "VinFast Ludo",
-      "VinFast Impes",
-      "VinFast Tempest",
-      "VinFast Vento",
-      "VinFast Evo200",
-      "VinFast Feliz",
-      "VinFast Feliz S",
-      "VinFast Theon",
-      "VinFast Theon S",
-
-      // === YADEA (Xe điện) ===
-      "Yadea Xmen Neo",
-      "Yadea Ulike",
-      "Yadea G5",
-      "Yadea Sunra X7",
-      "Yadea Odora",
-
-      // === PEGA (Xe điện) ===
-      "Pega eSH",
-      "Pega NewTech",
-      "Pega Cap A",
-      "Pega X-Men",
-      "Pega Aura",
-
-      // === Khác ===
-      "Xe điện khác",
-      "Xe 50cc khác",
-      "Xe nhập khẩu khác",
-      "Khác",
+      // === OTHER ===
+      "Apple Watch Series 9",
+      "Apple Watch Ultra",
+      "AirPods Pro 2",
+      "Sony WH-1000XM5",
+      "JBL Speaker",
+      "Máy tính để bàn (PC)",
+      "Màn hình máy tính",
+      "Máy in",
+      "Khác"
     ];
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -360,6 +180,7 @@ const WorkOrderModal: React.FC<{
     });
 
     const [searchPart, setSearchPart] = useState("");
+    const [devicePassword, setDevicePassword] = useState("");
     const [selectedParts, setSelectedParts] = useState<WorkOrderPart[]>([]);
     const [showPartSearch, setShowPartSearch] = useState(false);
     const [partialPayment, setPartialPayment] = useState(0);
@@ -370,12 +191,21 @@ const WorkOrderModal: React.FC<{
     const [depositAmount, setDepositAmount] = useState(0);
     const [showDepositInput, setShowDepositInput] = useState(false);
     const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
-    const [newCustomer, setNewCustomer] = useState({
-      name: "",
-      phone: "",
-      vehicleModel: "",
-      licensePlate: "",
+    const [expandedSections, setExpandedSections] = useState({
+      customer: true,
+      vehicle: true,
+      issue: true,
+      parts: true,
+      services: true,
+      payment: true,
     });
+
+    // Manual parts entry state
+    const [showAddManualPart, setShowAddManualPart] = useState(false);
+    const [newManualPartName, setNewManualPartName] = useState("");
+    const [newManualPartCost, setNewManualPartCost] = useState(0);
+    const [newManualPartPrice, setNewManualPartPrice] = useState(0);
+    const [newManualPartQuantity, setNewManualPartQuantity] = useState(1);
     const [customerSearch, setCustomerSearch] = useState("");
 
     // Server-side search state
@@ -558,6 +388,20 @@ const WorkOrderModal: React.FC<{
         setServerCustomers([]);
       }
     }, [debouncedCustomerSearch]);
+
+    // Effect to parse password from issue description
+    useEffect(() => {
+      if (order?.issueDescription) {
+        const match = order.issueDescription.match(/\[MK: (.+?)\]/);
+        if (match) {
+          setDevicePassword(match[1]);
+        } else {
+          setDevicePassword("");
+        }
+      } else {
+        setDevicePassword("");
+      }
+    }, [order]);
 
     // Handler for Load More button
     const handleLoadMoreCustomers = (e: React.MouseEvent) => {
@@ -1465,6 +1309,14 @@ const WorkOrderModal: React.FC<{
             const orderId = `${storeSettings?.work_order_prefix || "SC"
               }-${Date.now()}`;
 
+            // Prepare issue description with password
+            let finalIssueDescription = formData.issueDescription || "";
+            finalIssueDescription = finalIssueDescription.replace(/\[MK: .+?\]\s*/g, "").trim();
+
+            if (devicePassword && devicePassword.trim()) {
+              finalIssueDescription = `[MK: ${devicePassword.trim()}] ${finalIssueDescription}`;
+            }
+
             const responseData = await createWorkOrderAtomicAsync({
               id: orderId,
               customerName: formData.customerName || "",
@@ -1472,14 +1324,14 @@ const WorkOrderModal: React.FC<{
               vehicleModel: formData.vehicleModel || "",
               licensePlate: formData.licensePlate || "",
               currentKm: formData.currentKm,
-              issueDescription: formData.issueDescription || "",
+              issueDescription: finalIssueDescription, // Use modified description
               technicianName: formData.technicianName || "",
               status: formData.status || "Tiếp nhận",
               laborCost: formData.laborCost || 0,
               discount: discount,
               partsUsed: selectedParts,
               additionalServices:
-                additionalServices.length > 0 ? additionalServices : null,
+                additionalServices.length > 0 ? additionalServices : undefined,
               total: total,
               branchId: currentBranchId,
               paymentStatus: paymentStatus,
@@ -1972,20 +1824,29 @@ const WorkOrderModal: React.FC<{
           );
           try {
             console.log("[handleSave] Calling updateWorkOrderAtomicAsync...");
+
+            // Prepare issue description with password
+            let finalIssueDescription = formData.issueDescription || "";
+            finalIssueDescription = finalIssueDescription.replace(/\[MK: .+?\]\s*/g, "").trim();
+
+            if (devicePassword.trim()) {
+              finalIssueDescription = `[MK: ${devicePassword.trim()}] ${finalIssueDescription}`;
+            }
+
             const responseData = await updateWorkOrderAtomicAsync({
               id: order.id,
               customerName: formData.customerName || "",
               customerPhone: formData.customerPhone || "",
               vehicleModel: formData.vehicleModel || "",
               licensePlate: formData.licensePlate || "",
-              issueDescription: formData.issueDescription || "",
+              issueDescription: finalIssueDescription, // Use modified description
               technicianName: formData.technicianName || "",
               status: formData.status || "Tiếp nhận",
               laborCost: formData.laborCost || 0,
               discount: discount,
               partsUsed: selectedParts,
               additionalServices:
-                additionalServices.length > 0 ? additionalServices : null,
+                additionalServices.length > 0 ? additionalServices : undefined,
               total: total,
               branchId: currentBranchId,
               paymentStatus: paymentStatus,
@@ -2951,21 +2812,14 @@ const WorkOrderModal: React.FC<{
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Số KM hiện tại
+                    Mật khẩu màn hình
                   </label>
                   <input
-                    type="number"
-                    placeholder="15000"
-                    value={formData.currentKm || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        currentKm: e.target.value
-                          ? parseInt(e.target.value)
-                          : undefined,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    type="text"
+                    placeholder="Nhập mật khẩu / Pattern..."
+                    value={devicePassword}
+                    onChange={(e) => setDevicePassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 font-mono text-red-600 dark:text-red-400 font-bold"
                   />
                 </div>
 
@@ -3124,11 +2978,11 @@ const WorkOrderModal: React.FC<{
                     }`}
                   title={
                     canEditPriceAndParts
-                      ? "Thêm phụ tùng"
-                      : "Không thể thêm phụ tùng cho phiếu đã thanh toán"
+                      ? "Thêm linh kiện"
+                      : "Không thể thêm linh kiện cho phiếu đã thanh toán"
                   }
                 >
-                  + Thêm phụ tùng
+                  + Thêm linh kiện
                 </button>
               </div>
 
@@ -3467,7 +3321,7 @@ const WorkOrderModal: React.FC<{
                                 (s) => s.id !== service.id
                               );
                               setAdditionalServices(newServices);
-                              
+
                               // 🔹 FIX: Nếu xóa hết services VÀ đang edit order có sẵn → Update DB ngay
                               if (newServices.length === 0 && order?.id) {
                                 try {
@@ -4086,7 +3940,7 @@ const WorkOrderModal: React.FC<{
                     {/* Vehicle Model Dropdown */}
                     {showVehicleDropdown && (
                       <div className="absolute z-10 w-full mt-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg max-h-[200px] overflow-y-auto">
-                        {POPULAR_MOTORCYCLES.filter((model) =>
+                        {POPULAR_DEVICES.filter((model) =>
                           model
                             .toLowerCase()
                             .includes(newCustomer.vehicleModel.toLowerCase())
@@ -4111,11 +3965,11 @@ const WorkOrderModal: React.FC<{
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Biển số
+                      Serial Number / IMEI
                     </label>
                     <input
                       type="text"
-                      placeholder="VD: 59A1-123.45"
+                      placeholder="VD: SN12345678"
                       value={newCustomer.licensePlate}
                       onChange={(e) =>
                         setNewCustomer({
@@ -4123,7 +3977,7 @@ const WorkOrderModal: React.FC<{
                           licensePlate: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 font-mono"
                     />
                   </div>
                 </div>
@@ -4310,11 +4164,11 @@ const WorkOrderModal: React.FC<{
               <div className="space-y-4 mb-6">
                 <div className="relative">
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Loại xe <span className="text-red-500">*</span>
+                    Tên thiết bị (Model) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    placeholder="VD: Exciter, Vision, Wave..."
+                    placeholder="VD: iPhone 15 Pro, Dell XPS..."
                     value={newVehicle.model}
                     onChange={(e) => {
                       setNewVehicle({ ...newVehicle, model: e.target.value });
@@ -4329,7 +4183,7 @@ const WorkOrderModal: React.FC<{
                   />
                   {showAddVehicleModelDropdown && (
                     <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {POPULAR_MOTORCYCLES.filter((model) =>
+                      {POPULAR_DEVICES.filter((model) =>
                         model
                           .toLowerCase()
                           .includes(newVehicle.model.toLowerCase())
@@ -4348,13 +4202,13 @@ const WorkOrderModal: React.FC<{
                             {model}
                           </button>
                         ))}
-                      {POPULAR_MOTORCYCLES.filter((model) =>
+                      {POPULAR_DEVICES.filter((model) =>
                         model
                           .toLowerCase()
                           .includes(newVehicle.model.toLowerCase())
                       ).length === 0 && (
                           <div className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400 text-center">
-                            Không tìm thấy - nhập tên xe mới
+                            Không tìm thấy - nhập tên thiết bị mới
                           </div>
                         )}
                     </div>
@@ -4363,11 +4217,11 @@ const WorkOrderModal: React.FC<{
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Biển số <span className="text-red-500">*</span>
+                    Serial Number / IMEI <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    placeholder="VD: 29A 12345"
+                    placeholder="VD: 356988..."
                     value={newVehicle.licensePlate}
                     onChange={(e) =>
                       setNewVehicle({
@@ -4375,7 +4229,7 @@ const WorkOrderModal: React.FC<{
                         licensePlate: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 font-mono"
                   />
                 </div>
 

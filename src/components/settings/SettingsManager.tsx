@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
 import { useAuth } from "../../contexts/AuthContext";
 import { showToast } from "../../utils/toast";
-import { safeAudit } from "../../lib/repository/auditLogsRepository";
+// import { safeAudit } from "../../lib/repository/auditLogsRepository";
 import LoadingSpinner from "../common/LoadingSpinner";
 import { MFASetup } from "../auth/MFASetup";
 import {
@@ -237,12 +237,12 @@ export const SettingsManager = () => {
       await loadStaff();
 
       // Audit log
-      void safeAudit(profile?.id || null, {
-        action: "staff.update_role",
-        tableName: "profiles",
-        recordId: staffId,
-        newData: { role: newRole, branch_id: newBranchId },
-      });
+      // safeAudit(profile?.id || null, {
+      //   action: "staff.update_role",
+      //   tableName: "profiles",
+      //   recordId: staffId,
+      //   newData: { role: newRole, branch_id: newBranchId },
+      // });
     } catch (error: any) {
       console.error("Error updating staff role:", error);
       showToast.error(error.message || "Không thể cập nhật quyền");
@@ -294,7 +294,7 @@ export const SettingsManager = () => {
           // Fallback: Just show instructions
           showToast.info(
             `Để thêm nhân viên mới:\n1. Nhân viên đăng ký tài khoản với email: ${newStaffEmail}\n2. Quay lại đây để cập nhật quyền`,
-            { duration: 8000 }
+            { autoClose: 8000 }
           );
           setShowAddStaff(false);
           resetNewStaffForm();
@@ -308,15 +308,15 @@ export const SettingsManager = () => {
       resetNewStaffForm();
       await loadStaff();
 
-      void safeAudit(profile?.id || null, {
-        action: "staff.invite",
-        tableName: "profiles",
-        newData: {
-          email: newStaffEmail,
-          role: newStaffRole,
-          branch_id: newStaffBranch,
-        },
-      });
+      // void safeAudit(profile?.id || null, {
+      //   action: "staff.invite",
+      //   tableName: "profiles",
+      //   newData: {
+      //     email: newStaffEmail,
+      //     role: newStaffRole,
+      //     branch_id: newStaffBranch,
+      //   },
+      // });
     } catch (error: any) {
       console.error("Error inviting staff:", error);
       showToast.error(error.message || "Không thể mời nhân viên");
@@ -400,13 +400,13 @@ export const SettingsManager = () => {
       await loadSettings();
 
       showToast.success("Đã lưu cài đặt thành công!");
-      void safeAudit(profile?.id || null, {
-        action: "settings.update",
-        tableName: "store_settings",
-        recordId: settings.id,
-        oldData: previous,
-        newData: settings,
-      });
+      // void safeAudit(profile?.id || null, {
+      //   action: "settings.update",
+      //   tableName: "store_settings",
+      //   recordId: settings.id,
+      //   oldData: previous,
+      //   newData: settings,
+      // });
     } catch (error: any) {
       console.error("Error saving settings:", error);
       showToast.error(error.message || "Không thể lưu cài đặt");

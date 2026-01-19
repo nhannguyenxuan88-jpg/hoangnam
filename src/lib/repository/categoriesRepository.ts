@@ -1,7 +1,7 @@
 import { supabase } from "../../supabaseClient";
 import type { Category } from "../../types";
 import { RepoResult, success, failure } from "./types";
-import { safeAudit } from "./auditLogsRepository";
+// import { safeAudit } from "./auditLogsRepository";
 
 const CATEGORIES_TABLE = "categories";
 
@@ -59,14 +59,8 @@ export async function createCategory(
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
-    await safeAudit(userId, {
-      action: "category.create",
-      tableName: CATEGORIES_TABLE,
-      recordId: (data as any).id,
-      oldData: null,
-      newData: data,
-    });
+    } catch { }
+    // Audit removed
     return success(data as Category);
   } catch (e: any) {
     return failure({
@@ -90,7 +84,7 @@ export async function updateCategory(
         .eq("id", id)
         .single();
       oldRow = resp?.data ?? null;
-    } catch {}
+    } catch { }
     // Không có oldRow vẫn tiếp tục (audit oldData: null)
     const { data, error } = await supabase
       .from(CATEGORIES_TABLE)
@@ -114,14 +108,8 @@ export async function updateCategory(
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
-    await safeAudit(userId, {
-      action: "category.update",
-      tableName: CATEGORIES_TABLE,
-      recordId: id,
-      oldData: oldRow,
-      newData: data,
-    });
+    } catch { }
+    // Audit removed
     return success(resultRow as Category);
   } catch (e: any) {
     return failure({
@@ -144,7 +132,7 @@ export async function deleteCategoryRecord(
         .eq("id", id)
         .single();
       oldRow = resp?.data ?? null;
-    } catch {}
+    } catch { }
     // Không có oldRow vẫn tiếp tục xóa (audit oldData: null)
     const { error } = await supabase
       .from(CATEGORIES_TABLE)
@@ -161,14 +149,8 @@ export async function deleteCategoryRecord(
     try {
       const { data: userData } = await supabase.auth.getUser();
       userId = userData?.user?.id || null;
-    } catch {}
-    await safeAudit(userId, {
-      action: "category.delete",
-      tableName: CATEGORIES_TABLE,
-      recordId: id,
-      oldData: oldRow,
-      newData: null,
-    });
+    } catch { }
+    // Audit removed
     return success({ id });
   } catch (e: any) {
     return failure({
