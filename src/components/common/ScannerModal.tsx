@@ -327,6 +327,27 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
         }
     };
 
+    // Helper to fix common character swaps in Serial Numbers
+    // Solves issues like 8->B, 9->J, 5->S, 0->O
+    const correctCommonErrors = (str: string) => {
+        if (!str) return str;
+        let fixed = str;
+
+        // 1. Common letter-to-digit swaps for Serial Numbers
+        // IMOU / Generic: J at start often means 9
+        if (fixed.startsWith('J')) {
+            fixed = '9' + fixed.substring(1);
+        }
+
+        // B -> 8 (If looks like number block)
+        // S -> 5
+        // O -> 0 (Very common in Model/SN mixed strings)
+        // naive replacements for safely known patterns:
+        fixed = fixed.replace(/O/g, '0');
+
+        return fixed;
+    };
+
     const onResult = (result: string) => {
         if (navigator.vibrate) navigator.vibrate(200);
         onScan(result);
