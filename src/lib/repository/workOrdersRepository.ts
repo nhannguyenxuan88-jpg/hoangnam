@@ -7,6 +7,16 @@ const WORK_ORDERS_TABLE = "work_orders";
 
 // Helper: Convert snake_case DB response to camelCase TypeScript
 function normalizeWorkOrder(row: any): WorkOrder {
+  // DEBUG LOG
+  if (row.id && (row.notes || row.issuedescription || row.partsused)) {
+    console.log("[normalizeWorkOrder] Row Data:", {
+      id: row.id,
+      notes: row.notes,
+      issueDesc: row.issuedescription,
+      mappedNotes: row.notes || "",
+      mappedIssueDesc: row.issuedescription || row.issueDescription || row.notes || ""
+    });
+  }
   return {
     id: row.id,
     creationDate: row.creationdate || row.creationDate,

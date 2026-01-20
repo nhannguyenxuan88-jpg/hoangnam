@@ -263,11 +263,11 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
       let password = "";
       let description = workOrder.issueDescription || "";
 
-      const pwdMatch = description.match(/\[Mật khẩu\/Pattern\]: (.*)$/);
+      const pwdMatch = description.match(/\[Mật khẩu\/Pattern\]:\s*(.*)/);
       if (pwdMatch) {
         password = pwdMatch[1];
         // Optional: Remove password from displayed description if you want to hide it from the textarea
-        description = description.replace(/\n\n\[Mật khẩu\/Pattern\]: .*$/, "");
+        description = description.replace(/(\n)*\[Mật khẩu\/Pattern\]:.*$/s, "").trim();
         setIssueDescription(description); // Update description state without the password tag
       } else {
         setIssueDescription(description);
@@ -1193,7 +1193,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                 </h3>
                 <div className="bg-white dark:bg-[#1e1e2d] rounded-xl p-3 border border-slate-200 dark:border-transparent">
                   {(() => {
-                    const pwdMatch = workOrder.notes.match(/\[Mật khẩu\/Pattern\]: (.*)$/);
+                    const pwdMatch = workOrder.notes.match(/\[Mật khẩu\/Pattern\]:\s*(.*)/);
                     let displayNotes = workOrder.notes;
                     let pattern = "";
 
