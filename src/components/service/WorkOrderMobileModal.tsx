@@ -2505,26 +2505,35 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                 </p>
 
                 {/* Barcode Scanner Overlay */}
+                {/* Barcode Scanner Overlay - Global for Part/Vehicle/Customer */}
                 <ScannerModal
-                  isOpen={activeScanField === "part"}
+                  isOpen={!!activeScanField}
                   onClose={() => setActiveScanField(null)}
                   onScan={(barcode: string) => {
-                    setPartSearchTerm(barcode);
-                    // Auto-add first matching part if exact SKU found
-                    const exactMatch = filteredParts.find(
-                      (p) => p.sku?.toLowerCase() === barcode.toLowerCase() ||
-                        p.barcode?.toLowerCase() === barcode.toLowerCase()
-                    );
-                    if (exactMatch) {
-                      const stock = exactMatch.stock?.[currentBranchId] || 0;
-                      if (stock <= 0) {
-                        showToast.error("Sản phẩm đã hết hàng!");
-                        return;
+                    if (activeScanField === "part") {
+                      setPartSearchTerm(barcode);
+                      // Auto-add first matching part if exact SKU found
+                      const exactMatch = filteredParts.find(
+                        (p) => p.sku?.toLowerCase() === barcode.toLowerCase() ||
+                          p.barcode?.toLowerCase() === barcode.toLowerCase()
+                      );
+                      if (exactMatch) {
+                        const stock = exactMatch.stock?.[currentBranchId] || 0;
+                        if (stock <= 0) {
+                          showToast.error("Sản phẩm đã hết hàng!");
+                          return;
+                        }
+                        handleAddPart(exactMatch);
                       }
-                      handleAddPart(exactMatch);
+                    } else if (activeScanField === "vehicle") {
+                      setNewVehiclePlate(barcode);
+                      showToast.success("Đã quét S/N thành công!");
+                    } else if (activeScanField === "customer") {
+                      setNewCustomerLicensePlate(barcode);
+                      showToast.success("Đã quét S/N thành công!");
                     }
                   }}
-                  title="Quét mã phụ tùng"
+                  title={activeScanField === "part" ? "Quét mã phụ tùng" : "Quét IMEI/Serial"}
                 />
               </div>
 
