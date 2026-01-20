@@ -277,24 +277,24 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
                 // Priority 1: Explicit Serial Number (User requested high priority)
                 // "S/N: ...", "Serial No.: ..."
                 onResult(strictSnMatch[1]);
+            } else if (imeiMatch) {
+                // Priority 2: IMEI (15 digits) - User explicitly requested high priority for IMEI
+                onResult(imeiMatch[0]);
             } else if (serviceTagMatch) {
-                // Priority 2: Explicit Dell Service Tag
+                // Priority 3: Explicit Dell Service Tag
                 onResult(serviceTagMatch[1]);
             } else if (macMatch) {
-                // Priority 3: Explicit MAC Address
+                // Priority 4: Explicit MAC Address
                 onResult(macMatch[1]);
             } else if (meidMatch) {
-                // Priority 4: Explicit MEID
+                // Priority 5: Explicit MEID
                 onResult(meidMatch[1]);
             } else if (dellMonitorMatch) {
-                // Priority 5: Specific Dell Monitor format
+                // Priority 6: Specific Dell Monitor format
                 onResult(dellMonitorMatch[1]);
             } else if (hardwareSerialMatch) {
-                // Priority 6: Specific Hardware Serial format
+                // Priority 7: Specific Hardware Serial format
                 onResult(hardwareSerialMatch[0]);
-            } else if (imeiMatch) {
-                // Priority 7: IMEI (15 digits) - generic pattern, lower priority than labeled S/N
-                onResult(imeiMatch[0]);
             } else if (pnMatch && pnMatch[1]) {
                 // Priority 8: Part Number / Model (if no S/N found)
                 onResult(pnMatch[1]);
