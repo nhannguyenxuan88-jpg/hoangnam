@@ -269,35 +269,41 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
 
             // Appliance long serials (often just numbers, 12-20 digits, no prefix or far prefix)
             const applianceMatch = cleanText.match(/\b(\d{12,20})\b/);
-
             // Fallback: look for long alphanumeric string
             // Exclude common words
             const rawSerialMatch = cleanText.match(/\b(?!(?:TYPE|MODEL|INPUT|OUTPUT|MADE|CHINA|VIETNAM|NGUON|SOURCE|VOLT|WATT|TOTAL|POWER|HERTZ|FREQ|CLASS|CONSUMER|CAMERA|WARNING|CAUTION|LIMITED|NETWORK|TECHNOLOGY))[A-Z0-9\-\.]{8,25}\b/i);
 
-            if (imeiMatch) {
-                onResult(imeiMatch[0]);
-            } else if (meidMatch) {
-                onResult(meidMatch[1]);
+            if (strictSnMatch && strictSnMatch[1]) {
+                // Priority 1: Explicit Serial Number (User requested high priority)
+                // "S/N: ...", "Serial No.: ..."
+                onResult(strictSnMatch[1]);
             } else if (serviceTagMatch) {
+                // Priority 2: Explicit Dell Service Tag
                 onResult(serviceTagMatch[1]);
             } else if (macMatch) {
+                // Priority 3: Explicit MAC Address
                 onResult(macMatch[1]);
+            } else if (meidMatch) {
+                // Priority 4: Explicit MEID
+                onResult(meidMatch[1]);
             } else if (dellMonitorMatch) {
+                // Priority 5: Specific Dell Monitor format
                 onResult(dellMonitorMatch[1]);
             } else if (hardwareSerialMatch) {
+                // Priority 6: Specific Hardware Serial format
                 onResult(hardwareSerialMatch[0]);
-            } else if (strictSnMatch && strictSnMatch[1]) {
-                // Priority 1: Explicit Serial Number
-                onResult(strictSnMatch[1]);
+            } else if (imeiMatch) {
+                // Priority 7: IMEI (15 digits) - generic pattern, lower priority than labeled S/N
+                onResult(imeiMatch[0]);
             } else if (pnMatch && pnMatch[1]) {
-                // Priority 2: Part Number / Model (if no S/N found)
+                // Priority 8: Part Number / Model (if no S/N found)
                 onResult(pnMatch[1]);
             } else if (expressCodeMatch) {
                 onResult(expressCodeMatch[1]);
             } else if (applianceMatch) {
-                // For pure numbers, be careful. If it's very long (12+), likely a serial.
                 onResult(applianceMatch[1]);
             } else if (rawSerialMatch) {
+                // Heuristic: If it matched the regex, it already contains at least one digit and excluded common words.
                 const val = rawSerialMatch[0];
                 // Double check: Must contain at least one digit to be a valid non-strict serial
                 // This filters out pure text words like "CONSUMER" if they somehow slipped through regex
