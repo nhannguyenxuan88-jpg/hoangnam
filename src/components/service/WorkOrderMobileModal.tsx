@@ -758,7 +758,11 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   };
 
   const handleAddNewCustomer = () => {
-    if (!newCustomerName || !newCustomerPhone) return;
+    // Validate required fields (Name, Phone, and Device Name are mandatory for Work Order)
+    if (!newCustomerName || !newCustomerPhone || !newCustomerVehicleModel) {
+      alert("Vui lòng nhập Tên khách hàng, Số điện thoại và Tên thiết bị");
+      return;
+    }
 
     const customerId = `CUST-${Date.now()}`;
     const vehicleId = `VEH-${Date.now()}`;
@@ -3065,7 +3069,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
 
                 <div className="space-y-1.5 relative">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">
-                    Tên thiết bị / Model
+                    Tên thiết bị / Model <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
@@ -3152,7 +3156,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                 </button>
                 <button
                   onClick={handleAddNewCustomer}
-                  disabled={!newCustomerName || !newCustomerPhone}
+                  disabled={!newCustomerName || !newCustomerPhone || !newCustomerVehicleModel}
                   className="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold text-xs shadow-lg shadow-green-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Lưu khách hàng
