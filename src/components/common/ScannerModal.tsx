@@ -78,7 +78,14 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
             // @ts-ignore - non-standard zoom property
             if (capabilities.zoom) {
                 // @ts-ignore
-                setMaxZoom(capabilities.zoom.max);
+                const z = capabilities.zoom;
+                console.log("Zoom capabilities:", z);
+                setMaxZoom(z.max || 3);
+                // Also set initial zoom
+                // @ts-ignore
+                const settings = track.getSettings();
+                // @ts-ignore
+                if (settings.zoom) setZoom(settings.zoom);
             }
         } catch (err: any) {
             console.error("Camera error:", err);
@@ -107,7 +114,9 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
                     advanced: [{ zoom: newZoom } as any]
                 });
             } catch (e) {
-                console.warn("Zoom not supported:", e);
+                console.warn("Zoom constraint failed, retry with standard constraints:", e);
+                // Fallback: try applying without "advanced" if browser supports it directly or different structure
+                // But mostly, failure here means the device rejected the specific value or is busy.
             }
         }
     };
@@ -169,47 +178,90 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
             const canvas = canvasRef.current;
             const ctx = canvas.getContext('2d');
 
-            // Draw current frame to canvas
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx?.drawImage(video, 0, 0);
+            // 1. Define Region of Interest (ROI) - Center 60% of frame
+            // This matches the visual guide box in the UI
+            const boxWidth = video.videoWidth * 0.8; // 80% width
+            const boxHeight = video.videoWidth * 0.8 * (2 / 3); // Aspect ratio 3:2
 
-            // Enhance image for OCR (Simple grayscaling)
+            const startX = (video.videoWidth - boxWidth) / 2;
+            const startY = (video.videoHeight - boxHeight) / 2;
+
+            canvas.width = boxWidth;
+            canvas.height = boxHeight;
+
+            // 2. Crop Image to ROI
+            ctx?.drawImage(
+                video,
+                startX, startY, boxWidth, boxHeight, // Source
+                0, 0, boxWidth, boxHeight // Destination
+            );
+
+            // 3. Image Pre-processing (Grayscale + Contrast)
             const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
             if (imageData) {
-                // ... potentially adding filters here
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    // Grayscale
+                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+
+                    // Contrast enhancement
+                    // Simple thresholding/binarization can help OCR
+                    const contrast = avg > 128 ? 255 : 0;
+
+                    data[i] = contrast;     // R
+                    data[i + 1] = contrast; // G
+                    data[i + 2] = contrast; // B
+                }
                 ctx?.putImageData(imageData, 0, 0);
             }
 
-            // Run Tesseract
-            const dataUrl = canvas.toDataURL('image/jpeg');
+            // 4. Run Tesseract with Whitelist
+            const dataUrl = canvas.toDataURL('image/jpeg', 1.0); // High quality
             const { data: { text } } = await Tesseract.recognize(
                 dataUrl,
-                'eng', // English is best for alphanumeric codes like IMEI
+                'eng',
                 {
-                    logger: m => console.log(m)
+                    logger: m => {
+                        // Optional: progress logging
+                    }
                 }
             );
 
             // Parse result for IMEI/Serial patterns
-            const cleanText = text.toUpperCase().replace(/[^A-Z0-9\n]/g, " "); // Allow newlines
+            // Allow alphanumeric + common separators, but filter garbage
+            const cleanText = text.toUpperCase().replace(/[^A-Z0-9\n\-\.]/g, " ");
             console.log("OCR Result:", cleanText);
 
             // Regex for IMEI (15 digits) or general long alphanumeric sequences
             const imeiMatch = cleanText.match(/\b\d{15}\b/);
-            const snMatch = cleanText.match(/(S\/N|SN|SERIAL)[\s\.:]*([A-Z0-9]{8,})/i);
+            // S/N usually has strict patterns, but we'll be flexible
+            const snMatch = cleanText.match(/(?:S\/N|SN|SERIAL)[:\.\s]*([A-Z0-9\-\.]{4,})/i);
+
+            // Fallback: look for any long alphanumeric string (e.g. 10+ chars) that looks like a serial
+            const rawSerialMatch = cleanText.match(/\b[A-Z0-9]{8,20}\b/);
 
             if (imeiMatch) {
                 onResult(imeiMatch[0]);
-            } else if (snMatch && snMatch[2]) {
-                onResult(snMatch[2]);
+            } else if (snMatch && snMatch[1]) {
+                onResult(snMatch[1]);
+            } else if (rawSerialMatch) {
+                // Heuristic: If it has both numbers and letters, it's likely a serial
+                const val = rawSerialMatch[0];
+                if (/\d/.test(val) && /[A-Z]/.test(val)) {
+                    onResult(val);
+                } else if (/^\d{8,}$/.test(val)) {
+                    // Just numbers, could be SN
+                    onResult(val);
+                } else {
+                    showToast.info("Chưa rõ số serial. Xin thử lại.");
+                }
             } else {
-                showToast.info("No clear IMEI/Serial found. Try getting closer.");
+                showToast.info("Không nhận diện được mã. Hãy giữ chắc tay.");
             }
 
         } catch (err) {
             console.error(err);
-            showToast.error("OCR failed. Try again.");
+            showToast.error("Lỗi nhận diện. Vui lòng thử lại.");
         } finally {
             setIsProcessing(false);
         }
