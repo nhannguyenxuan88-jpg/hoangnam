@@ -248,27 +248,42 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
             // MEID (14 hex chars mostly, or 18 digits)
             const meidMatch = cleanText.match(/(?:MEID|MEIDDEC|MEIDHEX)[:\.\s]*([A-F0-9]{14,18})/i);
 
+            // Dell Service Tag (7 alphanumeric) or Express Service Code (10-11 digits)
+            const serviceTagMatch = cleanText.match(/(?:SERVICE TAG|ST|S\/T|SVC TAG)[:\.\s]*([A-Z0-9]{7})\b/i);
+            const expressCodeMatch = cleanText.match(/(?:EXPRESS SERVICE CODE|EXPRESS SVC)[:\.\s]*(\d{10,11})\b/i);
+
+            // MAC Address (e.g. 00:1A:2B:3C:4D:5E or 00-1A...)
+            // Matches 6 groups of 2 hex chars separated by : or -
+            const macMatch = cleanText.match(/(?:MAC|MAC ADD|MAC ADDRESS)[:\.\s]*([A-F0-9]{2}[:-][A-F0-9]{2}[:-][A-F0-9]{2}[:-][A-F0-9]{2}[:-][A-F0-9]{2}[:-][A-F0-9]{2})/i);
+
             // S/N regex: Expanded based on user images (S/N, P/N, Model, etc.)
             // Matches: "S/N: ...", "Serial No.: ...", "P/N: ...", "Model: ...", "SPS#", "ASSY#" 
             // Also handles "S/No." from LG image and "SERIAL No." from Mitsubishi, "Serial No." from Toshiba
             // We explicitly allow optional "NO" or "NUMBER" after SERIAL/PART to avoid capturing "NO" as part of the value
-            const snMatch = cleanText.match(/(?:S\/N|SN|S\.N\.|SERIAL(?:\s+(?:NO\.?|NUMBER|NUM))?|P\/N|PN|PART(?:\s+(?:NO\.?|NUMBER|NUM))?|MODEL|SPS#|ASSY#|FCC ID|IC)[:\.\_\-\s]*([A-Z0-9\-\.]{5,})/i);
+            // Added "SER. NO." for Sony style
+            const snMatch = cleanText.match(/(?:S\/N|SN|S\.N\.|SER\.?\s*NO\.?|SERIAL(?:\s+(?:NO\.?|NUMBER|NUM))?|P\/N|PN|PART(?:\s+(?:NO\.?|NUMBER|NUM))?|MODEL|SPS#|ASSY#|FCC ID|IC)[:\.\_\-\s]*([A-Z0-9\-\.]{5,})/i);
 
             // Specific Hardware Serial format (e.g., QQQQQ-QQQQQ-...)
             const hardwareSerialMatch = cleanText.match(/\b([A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5})\b/);
 
             // Fallback: look for any long alphanumeric string (e.g. 10+ chars) that looks like a serial
-            // Exclude common words to reduce noise
-            const rawSerialMatch = cleanText.match(/\b(?!(?:TYPE|MODEL|INPUT|OUTPUT|MADE|CHINA|VIETNAM|NGUON|SOURCE|VOLT|WATT))[A-Z0-9\-\.]{8,25}\b/i);
+            // Exclude common words and date-like strings to reduce noise
+            const rawSerialMatch = cleanText.match(/\b(?!(?:TYPE|MODEL|INPUT|OUTPUT|MADE|CHINA|VIETNAM|NGUON|SOURCE|VOLT|WATT|TOTAL|POWER))[A-Z0-9\-\.]{8,25}\b/i);
 
             if (imeiMatch) {
                 onResult(imeiMatch[0]);
             } else if (meidMatch) {
                 onResult(meidMatch[1]);
+            } else if (serviceTagMatch) {
+                onResult(serviceTagMatch[1]);
+            } else if (macMatch) {
+                onResult(macMatch[1]);
             } else if (hardwareSerialMatch) {
                 onResult(hardwareSerialMatch[0]);
             } else if (snMatch && snMatch[1]) {
                 onResult(snMatch[1]);
+            } else if (expressCodeMatch) {
+                onResult(expressCodeMatch[1]);
             } else if (rawSerialMatch) {
                 // Heuristic: If it has both numbers and letters, it's likely a serial
                 const val = rawSerialMatch[0];
