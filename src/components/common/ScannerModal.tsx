@@ -212,14 +212,14 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
                     // Grayscale (Luminosity method)
                     let gray = 0.21 * data[i] + 0.72 * data[i + 1] + 0.07 * data[i + 2];
 
-                    // Aggressive Contrast & Binarization
-                    // Improve separation of text from background (fix 8 vs B, 5 vs S)
-                    // 1. Contrast stretch
-                    gray = (gray - 128) * 2.0 + 128;
+                    // Aggressive Contrast (Softened Binarization)
+                    // Hard thresholding (145) caused character breakage (9->J, 8->B).
+                    // We revert to a smoother contrast curve which preserves edge details better.
+                    gray = (gray - 128) * 2.5 + 128; // Increase contrast range
 
-                    // 2. Thresholding (Binarize) - make it crisp Black/White
-                    // using a fixed threshold of 145 seems to work well for label paper
-                    gray = gray > 145 ? 255 : 0;
+                    // Clamp values explicitly instead of binary 0/255
+                    if (gray < 20) gray = 0;   // Crush blacks
+                    if (gray > 250) gray = 255; // Blow out whites
 
                     data[i] = gray;     // R
                     data[i + 1] = gray; // G
@@ -279,7 +279,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
             if (strictSnMatch && strictSnMatch[1]) {
                 // Priority 1: Explicit Serial Number (User requested high priority)
                 // "S/N: ...", "Serial No.: ..."
-                onResult(strictSnMatch[1]);
+                onResult(correctCommonErrors(strictSnMatch[1]));
             } else if (imeiMatch) {
                 // Priority 2: IMEI (15 digits) - User explicitly requested high priority for IMEI
                 onResult(imeiMatch[0]);
