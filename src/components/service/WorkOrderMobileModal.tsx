@@ -30,6 +30,7 @@ import {
   Upload,
   Camera,
   ArrowLeft,
+  Lock,
 } from "lucide-react";
 import { useCheckWarranty } from "../../hooks/useWarrantyRepository";
 import { WarrantyCardModal } from "../warranty/WarrantyCardModal";
@@ -1665,52 +1666,16 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                     Mật khẩu màn hình
                   </label>
                   <div className="relative">
-                    <TrendingUp className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <input
-                      type="number"
+                      type="text"
                       value={currentKm}
                       onChange={(e) => setCurrentKm(e.target.value)}
-                      placeholder="Nhập mật khẩu..."
-                      inputMode="numeric"
-                      className="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white text-sm focus:border-blue-500 transition-all"
+                      placeholder="Mật khẩu (nếu có)..."
+                      className="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white text-sm focus:border-blue-500 transition-all font-mono"
                     />
                   </div>
                 </div>
-
-                {/* Maintenance Warnings */}
-                {maintenanceWarnings.length > 0 && (
-                  <div className="p-4 bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-2xl space-y-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400">
-                        <AlertTriangle className="w-4 h-4" />
-                      </div>
-                      <span className="text-xs font-bold text-orange-400 uppercase tracking-tight">
-                        Cần bảo dưỡng định kỳ
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2">
-                      {maintenanceWarnings.map((warning) => (
-                        <div
-                          key={warning.type}
-                          className={`flex items-center justify-between p-3 rounded-xl border ${warning.isOverdue
-                            ? "bg-red-500/10 border-red-500/20 text-red-300"
-                            : "bg-orange-500/5 border-orange-500/10 text-orange-300"
-                            }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-base">{warning.icon}</span>
-                            <span className="text-xs font-bold">{warning.name}</span>
-                          </div>
-                          <div className="text-[10px] font-mono font-bold bg-black/20 px-2 py-1 rounded">
-                            {warning.isOverdue
-                              ? `QUÁ ${formatKm(Math.abs(warning.kmUntilDue))}`
-                              : `CÒN ${formatKm(warning.kmUntilDue)}`}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
