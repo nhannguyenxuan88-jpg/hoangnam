@@ -191,6 +191,12 @@ const WorkOrderModal: React.FC<{
     const [depositAmount, setDepositAmount] = useState(0);
     const [showDepositInput, setShowDepositInput] = useState(false);
     const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
+    const [newCustomer, setNewCustomer] = useState({
+      name: "",
+      phone: "",
+      vehicleModel: "",
+      licensePlate: "",
+    });
     const [expandedSections, setExpandedSections] = useState({
       customer: true,
       vehicle: true,

@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { useCheckWarranty } from "../../hooks/useWarrantyRepository";
 import { WarrantyCardModal } from "../warranty/WarrantyCardModal";
-import BarcodeScannerModal from "../common/BarcodeScannerModal";
+import { ScannerModal } from "../common/ScannerModal";
 import { formatCurrency, formatWorkOrderId, normalizeSearchText } from "../../utils/format";
 import { getCategoryColor } from "../../utils/categoryColors";
 import type { WorkOrder, Part, Customer, Vehicle, Employee } from "../../types";
@@ -161,8 +161,8 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
           ? [
             {
               id: `temp-veh-${Date.now()}`,
-              licensePlate: workOrder.licensePlate,
-              model: workOrder.vehicleModel || "",
+              licensePlate: workOrder.licensePlate, // Will be displayed as Serial/IMEI
+              model: workOrder.vehicleModel || "", // Will be displayed as Device Name
             },
           ]
           : [],
@@ -357,7 +357,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
   const CUSTOMER_PAGE_SIZE = 20;
   const [showPartSearch, setShowPartSearch] = useState(false);
   const [partSearchTerm, setPartSearchTerm] = useState("");
-  const [isScanning, setIsScanning] = useState(false);
+  const [activeScanField, setActiveScanField] = useState<"part" | "vehicle" | "customer" | null>(null);
 
   // Ref for part search results scrolling
   const partResultsRef = useRef<HTMLDivElement>(null);
@@ -999,7 +999,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
               <div className="flex items-center justify-between">
                 <span
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold ${getStatusColor(
-                    workOrder.status
+                    workOrder.status as any
                   )}`}
                 >
                   {workOrder.status}
@@ -2493,7 +2493,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                     />
                   </div>
                   <button
-                    onClick={() => setIsScanning(true)}
+                    onClick={() => setActiveScanField("part")}
                     className="p-3 bg-blue-600 hover:bg-blue-700 rounded-xl text-white flex items-center justify-center transition-colors"
                     title="Quét bằng camera"
                   >
@@ -2505,9 +2505,9 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                 </p>
 
                 {/* Barcode Scanner Overlay */}
-                <BarcodeScannerModal
-                  isOpen={isScanning}
-                  onClose={() => setIsScanning(false)}
+                <ScannerModal
+                  isOpen={activeScanField === "part"}
+                  onClose={() => setActiveScanField(null)}
                   onScan={(barcode: string) => {
                     setPartSearchTerm(barcode);
                     // Auto-add first matching part if exact SKU found
@@ -2928,13 +2928,21 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">
                   IMEI / SERIAL NUMBER
                 </label>
-                <input
-                  type="text"
-                  value={newVehiclePlate}
-                  onChange={(e) => setNewVehiclePlate(e.target.value)}
-                  placeholder="VD: 123456789012345"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm focus:border-blue-500 transition-all"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newVehiclePlate}
+                    onChange={(e) => setNewVehiclePlate(e.target.value)}
+                    placeholder="VD: 123456789012345"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm focus:border-blue-500 transition-all font-mono uppercase"
+                  />
+                  <button
+                    onClick={() => setActiveScanField("vehicle")}
+                    className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl active:scale-95 transition-all"
+                  >
+                    <ScanBarcode className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-1.5 relative">
@@ -3071,13 +3079,13 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                 <div className="flex items-center gap-2 ml-1">
                   <div className="w-1 h-3 bg-green-500 rounded-full"></div>
                   <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    Thông tin xe
+                    Thông tin thiết bị
                   </h4>
                 </div>
 
                 <div className="space-y-1.5 relative">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">
-                    Loại xe
+                    Tên thiết bị / Model
                   </label>
                   <input
                     type="text"
@@ -3087,7 +3095,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                       setShowCustomerVehicleDropdown(true);
                     }}
                     onFocus={() => setShowCustomerVehicleDropdown(true)}
-                    placeholder="Chọn hoặc nhập dòng xe..."
+                    placeholder="Chọn hoặc nhập tên thiết bị..."
                     className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm focus:border-blue-500 transition-all"
                   />
                   {/* Vehicle Model Dropdown for New Customer */}
@@ -3118,7 +3126,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                           .includes(newCustomerVehicleModel.toLowerCase())
                       ).length === 0 && (
                           <div className="px-4 py-3 text-xs text-slate-500 text-center italic">
-                            Không tìm thấy - nhập tên xe mới
+                            Không tìm thấy - nhập tên thiết bị mới
                           </div>
                         )}
                     </div>
@@ -3127,17 +3135,25 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
 
                 <div className="space-y-1.5">
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">
-                    Biển số xe
+                    Serial / IMEI
                   </label>
-                  <input
-                    type="text"
-                    value={newCustomerLicensePlate}
-                    onChange={(e) =>
-                      setNewCustomerLicensePlate(e.target.value.toUpperCase())
-                    }
-                    placeholder="59G1-12345"
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm font-bold uppercase focus:border-blue-500 transition-all"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newCustomerLicensePlate}
+                      onChange={(e) =>
+                        setNewCustomerLicensePlate(e.target.value.toUpperCase())
+                      }
+                      placeholder="VD: 123456789012345"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white text-sm font-bold uppercase focus:border-blue-500 transition-all font-mono"
+                    />
+                    <button
+                      onClick={() => setActiveScanField("customer")}
+                      className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl active:scale-95 transition-all"
+                    >
+                      <ScanBarcode className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
