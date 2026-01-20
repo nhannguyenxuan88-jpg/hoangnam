@@ -256,12 +256,13 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
             // Matches 6 groups of 2 hex chars separated by : or -
             const macMatch = cleanText.match(/(?:MAC|MAC ADD|MAC ADDRESS)[:\.\s]*([A-F0-9]{2}[:-][A-F0-9]{2}[:-][A-F0-9]{2}[:-][A-F0-9]{2}[:-][A-F0-9]{2}[:-][A-F0-9]{2})/i);
 
-            // S/N regex: Expanded based on user images (S/N, P/N, Model, etc.)
-            // Matches: "S/N: ...", "Serial No.: ...", "P/N: ...", "Model: ...", "SPS#", "ASSY#" 
-            // Also handles "S/No." from LG image and "SERIAL No." from Mitsubishi, "Serial No." from Toshiba
-            // We explicitly allow optional "NO" or "NUMBER" after SERIAL/PART to avoid capturing "NO" as part of the value
-            // Added "SER. NO." for Sony style, and "MANUFACTURED|DATE" for appliances
-            const snMatch = cleanText.match(/(?:S\/N|SN|S\.N\.|SER\.?\s*NO\.?|SERIAL(?:\s+(?:NO\.?|NUMBER|NUM))?|P\/N|PN|PART(?:\s+(?:NO\.?|NUMBER|NUM))?|MODEL|SPS#|ASSY#|FCC ID|IC|MANUFACTURED|DATE)[:\.\_\-\s]*([A-Z0-9\-\.]{5,})/i);
+            // S/N regex: Strict Serial Number (Highest Priority)
+            // Matches: "S/N: ...", "Serial No.: ...", "SPS#", "ASSY#" 
+            const strictSnMatch = cleanText.match(/(?:S\/N|SN|S\.N\.|SER\.?\s*NO\.?|SERIAL(?:\s+(?:NO\.?|NUMBER|NUM))?|SPS#|ASSY#|FCC ID|IC|MANUFACTURED|DATE)[:\.\_\-\s]*([A-Z0-9\-\.]{5,})/i);
+
+            // P/N regex: Part Number or Model (Lower Priority)
+            // Matches: "P/N: ...", "Model: ..."
+            const pnMatch = cleanText.match(/(?:P\/N|PN|PART(?:\s+(?:NO\.?|NUMBER|NUM))?|MODEL)[:\.\_\-\s]*([A-Z0-9\-\.]{5,})/i);
 
             // Specific Hardware Serial format (e.g., QQQQQ-QQQQQ-...) and Dell Monitor (CN-...)
             const hardwareSerialMatch = cleanText.match(/\b([A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5})\b/);
@@ -272,7 +273,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
 
             // Fallback: look for any long alphanumeric string (e.g. 10+ chars) that looks like a serial
             // Exclude common words and date-like strings to reduce noise
-            const rawSerialMatch = cleanText.match(/\b(?!(?:TYPE|MODEL|INPUT|OUTPUT|MADE|CHINA|VIETNAM|NGUON|SOURCE|VOLT|WATT|TOTAL|POWER|HERTZ|FREQ|CLASS))[A-Z0-9\-\.]{8,25}\b/i);
+            const rawSerialMatch = cleanText.match(/\b(?!(?:TYPE|MODEL|INPUT|OUTPUT|MADE|CHINA|VIETNAM|NGUON|SOURCE|VOLT|WATT|TOTAL|POWER|HERTZ|FREQ|CLASS|CONSUMER|CAMERA))[A-Z0-9\-\.]{8,25}\b/i);
 
             if (imeiMatch) {
                 onResult(imeiMatch[0]);
@@ -286,8 +287,12 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
                 onResult(dellMonitorMatch[1]);
             } else if (hardwareSerialMatch) {
                 onResult(hardwareSerialMatch[0]);
-            } else if (snMatch && snMatch[1]) {
-                onResult(snMatch[1]);
+            } else if (strictSnMatch && strictSnMatch[1]) {
+                // Priority 1: Explicit Serial Number
+                onResult(strictSnMatch[1]);
+            } else if (pnMatch && pnMatch[1]) {
+                // Priority 2: Part Number / Model (if no S/N found)
+                onResult(pnMatch[1]);
             } else if (expressCodeMatch) {
                 onResult(expressCodeMatch[1]);
             } else if (applianceMatch) {
