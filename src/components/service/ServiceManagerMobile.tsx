@@ -442,250 +442,252 @@ export function ServiceManagerMobile({
   return (
     <div className="md:hidden flex flex-col h-screen bg-slate-50 dark:bg-[#151521]">
       {/* CONTENT BASED ON TAB */}
-      <div className="flex-1 overflow-y-auto pb-24 scrollbar-hide">
+      <div className="flex-1 overflow-hidden relative">
         {activeTab === "orders" && (
           <>
-            {/* KPI CARDS */}
-            <div className="bg-white dark:bg-[#1e1e2d] border-b border-slate-200 dark:border-gray-800 p-2">
-              <div className="grid grid-cols-4 gap-1.5">
-                {/* Tiếp nhận */}
-                <button
-                  onClick={() =>
-                    setStatusFilter(
-                      statusFilter === "Tiếp nhận" ? "all" : "Tiếp nhận"
-                    )
-                  }
-                  className={`p-2 rounded-lg text-center transition-all ${statusFilter === "Tiếp nhận"
-                    ? "bg-gradient-to-br from-[#009ef7]/20 to-[#009ef7]/10 border-2 border-[#009ef7]"
-                    : "bg-slate-100 dark:bg-[#2b2b40] border border-slate-300 dark:border-gray-700"
-                    }`}
-                >
-                  <FileText className="w-4 h-4 text-[#009ef7] mx-auto mb-0.5" />
-                  <div className="text-lg font-bold text-slate-900 dark:text-white">{kpis.tiepNhan}</div>
-                  <span className="text-[8px] text-slate-600 dark:text-gray-400">Tiếp nhận</span>
-                </button>
-
-                {/* Đang sửa */}
-                <button
-                  onClick={() =>
-                    setStatusFilter(statusFilter === "Đang sửa" ? "all" : "Đang sửa")
-                  }
-                  className={`p-2 rounded-lg text-center transition-all ${statusFilter === "Đang sửa"
-                    ? "bg-gradient-to-br from-[#f1416c]/20 to-[#f1416c]/10 border-2 border-[#f1416c]"
-                    : "bg-slate-100 dark:bg-[#2b2b40] border border-slate-300 dark:border-gray-700"
-                    }`}
-                >
-                  <Wrench className="w-4 h-4 text-[#f1416c] mx-auto mb-0.5" />
-                  <div className="text-lg font-bold text-slate-900 dark:text-white">{kpis.dangSua}</div>
-                  <span className="text-[8px] text-slate-600 dark:text-gray-400">Đang sửa</span>
-                </button>
-
-                {/* Đã sửa xong */}
-                <button
-                  onClick={() =>
-                    setStatusFilter(
-                      statusFilter === "Đã sửa xong" ? "all" : "Đã sửa xong"
-                    )
-                  }
-                  className={`p-2 rounded-lg text-center transition-all ${statusFilter === "Đã sửa xong"
-                    ? "bg-gradient-to-br from-[#50cd89]/20 to-[#50cd89]/10 border-2 border-[#50cd89]"
-                    : "bg-slate-100 dark:bg-[#2b2b40] border border-slate-300 dark:border-gray-700"
-                    }`}
-                >
-                  <Check className="w-4 h-4 text-[#50cd89] mx-auto mb-0.5" />
-                  <div className="text-lg font-bold text-slate-900 dark:text-white">
-                    {kpis.daHoanThanh}
-                  </div>
-                  <span className="text-[8px] text-slate-600 dark:text-gray-400">Đã sửa</span>
-                </button>
-
-                {/* Trả máy */}
-                <button
-                  onClick={() =>
-                    setStatusFilter(statusFilter === "Trả máy" ? "all" : "Trả máy")
-                  }
-                  className={`p-2 rounded-lg text-center transition-all ${statusFilter === "Trả máy"
-                    ? "bg-gradient-to-br from-purple-500/20 to-purple-500/10 border-2 border-purple-500"
-                    : "bg-slate-100 dark:bg-[#2b2b40] border border-slate-300 dark:border-gray-700"
-                    }`}
-                >
-                  <Key className="w-4 h-4 text-purple-500 mx-auto mb-0.5" />
-                  <div className="text-lg font-bold text-slate-900 dark:text-white">{kpis.traMay}</div>
-                  <span className="text-[8px] text-slate-600 dark:text-gray-400">Trả máy</span>
-                </button>
-              </div>
-
-              {/* Doanh thu & Lợi nhuận */}
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 shadow-lg shadow-emerald-500/20 text-white">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold text-emerald-50 opacity-90">
-                      Doanh thu {getDateLabel()}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {isOwner && (
-                        <button
-                          onClick={() => setShowFinancials(!showFinancials)}
-                          className="p-1 hover:bg-white/20 rounded transition-colors"
-                          aria-label="Toggle revenue visibility"
-                        >
-                          {showFinancials ? (
-                            <Eye className="w-3.5 h-3.5 text-white" />
-                          ) : (
-                            <EyeOff className="w-3.5 h-3.5 text-white" />
-                          )}
-                        </button>
-                      )}
-                      <DollarSign className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                  <div className="text-base font-black text-white">
-                    {showFinancials ? formatCurrency(kpis.doanhThu) : "•••••••"}
-                  </div>
-                </div>
-                <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 shadow-lg shadow-blue-500/20 text-white">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold text-blue-50 opacity-90">
-                      Lợi nhuận {getDateLabel()}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {isOwner && (
-                        <button
-                          onClick={() => setShowFinancials(!showFinancials)}
-                          className="p-1 hover:bg-white/20 rounded transition-colors"
-                          aria-label="Toggle profit visibility"
-                        >
-                          {showFinancials ? (
-                            <Eye className="w-3.5 h-3.5 text-white" />
-                          ) : (
-                            <EyeOff className="w-3.5 h-3.5 text-white" />
-                          )}
-                        </button>
-                      )}
-                      <TrendingUp className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                  <div className="text-base font-black text-white">
-                    {showFinancials ? formatCurrency(kpis.loiNhuan) : "•••••••"}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* SEARCH BAR & DATE FILTER */}
-            <div className="bg-white dark:bg-[#1e1e2d] border-b border-slate-200 dark:border-gray-800 px-2 py-2 space-y-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Tìm tên, SĐT, IMEI..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2.5 bg-slate-100 dark:bg-[#2b2b40] border border-slate-300 dark:border-gray-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-gray-500 text-sm focus:outline-none focus:border-[#009ef7]"
-                />
-              </div>
-
-              {/* Date Filter Segmented Control */}
-              <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
-                {[
-                  { label: "Hôm nay", value: "today" },
-                  { label: "7 ngày", value: "week" },
-                  { label: "Tháng", value: "month" },
-                  { label: "Tất cả", value: "all" },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => setDateFilter(option.value)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${dateFilter === option.value
-                      ? "bg-[#009ef7]/20 text-[#009ef7] border border-[#009ef7]/50"
-                      : "bg-slate-100 dark:bg-[#2b2b40] text-slate-700 dark:text-gray-400 border border-slate-300 dark:border-gray-700"
-                      }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* DANH SÁCH PHIẾU SỬA CHỮA */}
             <PullToRefresh onRefresh={onRefresh || (async () => { })}>
-              <div className="space-y-2 px-2 pb-4 min-h-[50vh]">
-                {isLoading ? (
-                  // Loading Skeletons using shared Skeleton component
-                  Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="bg-white dark:bg-[#1e1e2d] rounded-lg border border-slate-200 dark:border-gray-800 p-4 space-y-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex gap-2">
-                          <Skeleton width={60} height={20} className="bg-slate-700/50" />
-                          <Skeleton width={80} height={20} className="bg-slate-700/50" />
-                        </div>
-                        <Skeleton width={70} height={24} className="rounded-full bg-slate-700/50" />
-                      </div>
-                      <div className="space-y-2 mb-3">
-                        <div className="flex items-center gap-2">
-                          <Skeleton variant="circle" width={16} height={16} className="bg-slate-700/50" />
-                          <Skeleton width="60%" height={16} className="bg-slate-300 dark:bg-slate-700/50" />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Skeleton variant="circle" width={16} height={16} className="bg-slate-700/50" />
-                          <Skeleton width="40%" height={16} className="bg-slate-700/50" />
-                        </div>
-                      </div>
-                      <div className="flex justify-between pt-3 border-t border-slate-200 dark:border-gray-800 items-end">
-                        <div className="flex gap-2">
-                          <Skeleton width={24} height={24} className="rounded-md bg-slate-700/50" />
-                          <Skeleton width={24} height={24} className="rounded-md bg-slate-700/50" />
-                        </div>
-                        <Skeleton width={90} height={20} className="bg-slate-700/50" />
-                      </div>
-                    </div>
-                  ))
-                ) : filteredWorkOrders.length === 0 ? (
-                  /* Empty State */
-                  <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
-                    <div className="w-32 h-32 mb-6 flex items-center justify-center">
-                      <svg
-                        className="w-full h-full text-gray-600"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-semibold text-slate-700 dark:text-gray-300 mb-2">
-                      Chưa có phiếu sửa chữa nào!
-                    </h3>
-                    <p className="text-slate-600 dark:text-gray-500 mb-6">
-                      Hãy tạo phiếu đầu tiên để quản lý dịch vụ sửa chữa
-                    </p>
+              <div className="pb-24">
+                {/* KPI CARDS */}
+                <div className="bg-white dark:bg-[#1e1e2d] border-b border-slate-200 dark:border-gray-800 p-2">
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {/* Tiếp nhận */}
                     <button
-                      onClick={handleCreateWorkOrder}
-                      disabled={isCreating}
-                      className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() =>
+                        setStatusFilter(
+                          statusFilter === "Tiếp nhận" ? "all" : "Tiếp nhận"
+                        )
+                      }
+                      className={`p-2 rounded-lg text-center transition-all ${statusFilter === "Tiếp nhận"
+                        ? "bg-gradient-to-br from-[#009ef7]/20 to-[#009ef7]/10 border-2 border-[#009ef7]"
+                        : "bg-slate-100 dark:bg-[#2b2b40] border border-slate-300 dark:border-gray-700"
+                        }`}
                     >
-                      + Tạo phiếu mới
+                      <FileText className="w-4 h-4 text-[#009ef7] mx-auto mb-0.5" />
+                      <div className="text-lg font-bold text-slate-900 dark:text-white">{kpis.tiepNhan}</div>
+                      <span className="text-[8px] text-slate-600 dark:text-gray-400">Tiếp nhận</span>
+                    </button>
+
+                    {/* Đang sửa */}
+                    <button
+                      onClick={() =>
+                        setStatusFilter(statusFilter === "Đang sửa" ? "all" : "Đang sửa")
+                      }
+                      className={`p-2 rounded-lg text-center transition-all ${statusFilter === "Đang sửa"
+                        ? "bg-gradient-to-br from-[#f1416c]/20 to-[#f1416c]/10 border-2 border-[#f1416c]"
+                        : "bg-slate-100 dark:bg-[#2b2b40] border border-slate-300 dark:border-gray-700"
+                        }`}
+                    >
+                      <Wrench className="w-4 h-4 text-[#f1416c] mx-auto mb-0.5" />
+                      <div className="text-lg font-bold text-slate-900 dark:text-white">{kpis.dangSua}</div>
+                      <span className="text-[8px] text-slate-600 dark:text-gray-400">Đang sửa</span>
+                    </button>
+
+                    {/* Đã sửa xong */}
+                    <button
+                      onClick={() =>
+                        setStatusFilter(
+                          statusFilter === "Đã sửa xong" ? "all" : "Đã sửa xong"
+                        )
+                      }
+                      className={`p-2 rounded-lg text-center transition-all ${statusFilter === "Đã sửa xong"
+                        ? "bg-gradient-to-br from-[#50cd89]/20 to-[#50cd89]/10 border-2 border-[#50cd89]"
+                        : "bg-slate-100 dark:bg-[#2b2b40] border border-slate-300 dark:border-gray-700"
+                        }`}
+                    >
+                      <Check className="w-4 h-4 text-[#50cd89] mx-auto mb-0.5" />
+                      <div className="text-lg font-bold text-slate-900 dark:text-white">
+                        {kpis.daHoanThanh}
+                      </div>
+                      <span className="text-[8px] text-slate-600 dark:text-gray-400">Đã sửa</span>
+                    </button>
+
+                    {/* Trả máy */}
+                    <button
+                      onClick={() =>
+                        setStatusFilter(statusFilter === "Trả máy" ? "all" : "Trả máy")
+                      }
+                      className={`p-2 rounded-lg text-center transition-all ${statusFilter === "Trả máy"
+                        ? "bg-gradient-to-br from-purple-500/20 to-purple-500/10 border-2 border-purple-500"
+                        : "bg-slate-100 dark:bg-[#2b2b40] border border-slate-300 dark:border-gray-700"
+                        }`}
+                    >
+                      <Key className="w-4 h-4 text-purple-500 mx-auto mb-0.5" />
+                      <div className="text-lg font-bold text-slate-900 dark:text-white">{kpis.traMay}</div>
+                      <span className="text-[8px] text-slate-600 dark:text-gray-400">Trả máy</span>
                     </button>
                   </div>
-                ) : (
-                  /* Work Order Cards - Compact for Mobile */
-                  filteredWorkOrders.map((workOrder) => (
-                    <WorkOrderCard
-                      key={workOrder.id}
-                      workOrder={workOrder}
-                      onEdit={onEditWorkOrder}
-                      onCall={onCallCustomer}
-                      onPrint={onPrintWorkOrder}
-                      onDelete={onDeleteWorkOrder}
-                      canDelete={canDeleteWorkOrder}
+
+                  {/* Doanh thu & Lợi nhuận */}
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 shadow-lg shadow-emerald-500/20 text-white">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-bold text-emerald-50 opacity-90">
+                          Doanh thu {getDateLabel()}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {isOwner && (
+                            <button
+                              onClick={() => setShowFinancials(!showFinancials)}
+                              className="p-1 hover:bg-white/20 rounded transition-colors"
+                              aria-label="Toggle revenue visibility"
+                            >
+                              {showFinancials ? (
+                                <Eye className="w-3.5 h-3.5 text-white" />
+                              ) : (
+                                <EyeOff className="w-3.5 h-3.5 text-white" />
+                              )}
+                            </button>
+                          )}
+                          <DollarSign className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      <div className="text-base font-black text-white">
+                        {showFinancials ? formatCurrency(kpis.doanhThu) : "•••••••"}
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 shadow-lg shadow-blue-500/20 text-white">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-bold text-blue-50 opacity-90">
+                          Lợi nhuận {getDateLabel()}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {isOwner && (
+                            <button
+                              onClick={() => setShowFinancials(!showFinancials)}
+                              className="p-1 hover:bg-white/20 rounded transition-colors"
+                              aria-label="Toggle profit visibility"
+                            >
+                              {showFinancials ? (
+                                <Eye className="w-3.5 h-3.5 text-white" />
+                              ) : (
+                                <EyeOff className="w-3.5 h-3.5 text-white" />
+                              )}
+                            </button>
+                          )}
+                          <TrendingUp className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      <div className="text-base font-black text-white">
+                        {showFinancials ? formatCurrency(kpis.loiNhuan) : "•••••••"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SEARCH BAR & DATE FILTER */}
+                <div className="bg-white dark:bg-[#1e1e2d] border-b border-slate-200 dark:border-gray-800 px-2 py-2 space-y-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder="Tìm tên, SĐT, IMEI..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-100 dark:bg-[#2b2b40] border border-slate-300 dark:border-gray-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-gray-500 text-sm focus:outline-none focus:border-[#009ef7]"
                     />
-                  ))
-                )}
+                  </div>
+
+                  {/* Date Filter Segmented Control */}
+                  <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+                    {[
+                      { label: "Hôm nay", value: "today" },
+                      { label: "7 ngày", value: "week" },
+                      { label: "Tháng", value: "month" },
+                      { label: "Tất cả", value: "all" },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setDateFilter(option.value)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${dateFilter === option.value
+                          ? "bg-[#009ef7]/20 text-[#009ef7] border border-[#009ef7]/50"
+                          : "bg-slate-100 dark:bg-[#2b2b40] text-slate-700 dark:text-gray-400 border border-slate-300 dark:border-gray-700"
+                          }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* DANH SÁCH PHIẾU SỬA CHỮA */}
+                <div className="space-y-2 px-2 pb-4 min-h-[50vh]">
+                  {isLoading ? (
+                    // Loading Skeletons using shared Skeleton component
+                    Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="bg-white dark:bg-[#1e1e2d] rounded-lg border border-slate-200 dark:border-gray-800 p-4 space-y-3">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex gap-2">
+                            <Skeleton width={60} height={20} className="bg-slate-700/50" />
+                            <Skeleton width={80} height={20} className="bg-slate-700/50" />
+                          </div>
+                          <Skeleton width={70} height={24} className="rounded-full bg-slate-700/50" />
+                        </div>
+                        <div className="space-y-2 mb-3">
+                          <div className="flex items-center gap-2">
+                            <Skeleton variant="circle" width={16} height={16} className="bg-slate-700/50" />
+                            <Skeleton width="60%" height={16} className="bg-slate-300 dark:bg-slate-700/50" />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Skeleton variant="circle" width={16} height={16} className="bg-slate-700/50" />
+                            <Skeleton width="40%" height={16} className="bg-slate-700/50" />
+                          </div>
+                        </div>
+                        <div className="flex justify-between pt-3 border-t border-slate-200 dark:border-gray-800 items-end">
+                          <div className="flex gap-2">
+                            <Skeleton width={24} height={24} className="rounded-md bg-slate-700/50" />
+                            <Skeleton width={24} height={24} className="rounded-md bg-slate-700/50" />
+                          </div>
+                          <Skeleton width={90} height={20} className="bg-slate-700/50" />
+                        </div>
+                      </div>
+                    ))
+                  ) : filteredWorkOrders.length === 0 ? (
+                    /* Empty State */
+                    <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
+                      <div className="w-32 h-32 mb-6 flex items-center justify-center">
+                        <svg
+                          className="w-full h-full text-gray-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-semibold text-slate-700 dark:text-gray-300 mb-2">
+                        Chưa có phiếu sửa chữa nào!
+                      </h3>
+                      <p className="text-slate-600 dark:text-gray-500 mb-6">
+                        Hãy tạo phiếu đầu tiên để quản lý dịch vụ sửa chữa
+                      </p>
+                      <button
+                        onClick={handleCreateWorkOrder}
+                        disabled={isCreating}
+                        className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        + Tạo phiếu mới
+                      </button>
+                    </div>
+                  ) : (
+                    /* Work Order Cards - Compact for Mobile */
+                    filteredWorkOrders.map((workOrder) => (
+                      <WorkOrderCard
+                        key={workOrder.id}
+                        workOrder={workOrder}
+                        onEdit={onEditWorkOrder}
+                        onCall={onCallCustomer}
+                        onPrint={onPrintWorkOrder}
+                        onDelete={onDeleteWorkOrder}
+                        canDelete={canDeleteWorkOrder}
+                      />
+                    ))
+                  )}
+                </div>
               </div>
             </PullToRefresh>
 
@@ -702,16 +704,15 @@ export function ServiceManagerMobile({
         )}
 
         {/* HISTORY TAB */}
-        {/* HISTORY TAB */}
         {activeTab === "history" && (
-          <div className="pb-20">
+          <div className="h-full overflow-y-auto pb-24 scrollbar-hide">
             <ServiceHistory currentBranchId={currentBranchId} />
           </div>
         )}
 
         {/* TEMPLATES TAB */}
         {activeTab === "templates" && (
-          <div className="p-3">
+          <div className="h-full overflow-y-auto pb-24 scrollbar-hide p-3">
             <div className="space-y-3">
               {templates?.map((template) => (
                 <div
