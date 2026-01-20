@@ -1755,6 +1755,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                     <div className="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700/50 rounded-xl p-4 flex flex-col items-center">
                       <div className="mb-2 text-xs font-bold text-slate-500">Vẽ mật khẩu mở khóa</div>
                       <AndroidPatternLock
+                        initialValue={currentKm.startsWith("Pattern:") ? currentKm.replace("Pattern:", "").trim() : ""}
                         onPatternComplete={(pattern) => {
                           if (pattern) {
                             setCurrentKm(`Pattern: ${pattern}`);
