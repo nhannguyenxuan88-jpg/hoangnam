@@ -250,8 +250,9 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
 
             // S/N regex: Expanded based on user images (S/N, P/N, Model, etc.)
             // Matches: "S/N: ...", "Serial No.: ...", "P/N: ...", "Model: ...", "SPS#", "ASSY#" 
-            // Also handles "S/No." from LG image and "SERIAL No." from Mitsubishi
-            const snMatch = cleanText.match(/(?:S\/N|SN|SERIAL|NO\.|P\/N|PN|PART|MODEL|SPS#|ASSY#|FCC ID|IC)[:\.\_\s]*([A-Z0-9\-\.]{5,})/i);
+            // Also handles "S/No." from LG image and "SERIAL No." from Mitsubishi, "Serial No." from Toshiba
+            // We explicitly allow optional "NO" or "NUMBER" after SERIAL/PART to avoid capturing "NO" as part of the value
+            const snMatch = cleanText.match(/(?:S\/N|SN|S\.N\.|SERIAL(?:\s+(?:NO\.?|NUMBER|NUM))?|P\/N|PN|PART(?:\s+(?:NO\.?|NUMBER|NUM))?|MODEL|SPS#|ASSY#|FCC ID|IC)[:\.\_\-\s]*([A-Z0-9\-\.]{5,})/i);
 
             // Specific Hardware Serial format (e.g., QQQQQ-QQQQQ-...)
             const hardwareSerialMatch = cleanText.match(/\b([A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5})\b/);
