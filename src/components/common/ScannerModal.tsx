@@ -245,16 +245,27 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
             // Regex for IMEI (15 digits) or general long alphanumeric sequences
             const imeiMatch = cleanText.match(/\b\d{15}\b/);
 
+            // MEID (14 hex chars mostly, or 18 digits)
+            const meidMatch = cleanText.match(/(?:MEID|MEIDDEC|MEIDHEX)[:\.\s]*([A-F0-9]{14,18})/i);
+
             // S/N regex: Expanded based on user images (S/N, P/N, Model, etc.)
-            // Matches: "S/N: ...", "Serial No.: ...", "P/N: ...", "Model: ..." 
-            const snMatch = cleanText.match(/(?:S\/N|SN|SERIAL|NO\.|P\/N|PN|PART|MODEL)[^A-Z0-9]*([A-Z0-9\-\.]{5,})/i);
+            // Matches: "S/N: ...", "Serial No.: ...", "P/N: ...", "Model: ...", "SPS#", "ASSY#" 
+            // Also handles "S/No." from LG image and "SERIAL No." from Mitsubishi
+            const snMatch = cleanText.match(/(?:S\/N|SN|SERIAL|NO\.|P\/N|PN|PART|MODEL|SPS#|ASSY#|FCC ID|IC)[:\.\_\s]*([A-Z0-9\-\.]{5,})/i);
+
+            // Specific Hardware Serial format (e.g., QQQQQ-QQQQQ-...)
+            const hardwareSerialMatch = cleanText.match(/\b([A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5})\b/);
 
             // Fallback: look for any long alphanumeric string (e.g. 10+ chars) that looks like a serial
             // Exclude common words to reduce noise
-            const rawSerialMatch = cleanText.match(/\b(?!(?:TYPE|MODEL|INPUT|OUTPUT|MADE|CHINA|VIETNAM|NGUON|SOURCE))[A-Z0-9\-\.]{8,20}\b/i);
+            const rawSerialMatch = cleanText.match(/\b(?!(?:TYPE|MODEL|INPUT|OUTPUT|MADE|CHINA|VIETNAM|NGUON|SOURCE|VOLT|WATT))[A-Z0-9\-\.]{8,25}\b/i);
 
             if (imeiMatch) {
                 onResult(imeiMatch[0]);
+            } else if (meidMatch) {
+                onResult(meidMatch[1]);
+            } else if (hardwareSerialMatch) {
+                onResult(hardwareSerialMatch[0]);
             } else if (snMatch && snMatch[1]) {
                 onResult(snMatch[1]);
             } else if (rawSerialMatch) {
