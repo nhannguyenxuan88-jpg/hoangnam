@@ -1675,28 +1675,58 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                     </label>
                     <button
                       onClick={() => {
-                        // Toggle mode: If currently has "Pattern:..." clear it when switching? 
-                        // Or better, just switch input method.
                         if (currentKm.startsWith("Pattern:")) {
-                          setCurrentKm(""); // Clear pattern when switching to text
+                          setCurrentKm("");
                         }
-                        // Use a local state for mode, or infer from currentKm content?
-                        // Let's toggle a boolean state. We need to find where to put the state setter.
-                        // Since we are inside a map or conditional, we can't add hooks here easily without refactoring the whole component.
-                        // BUT wait, this is inside render. We need a state variable `isPatternMode`.
-                        // I'll assume I added `const [isPatternMode, setIsPatternMode] = useState(false);` at the top.
-                        // I will do that in a separate edit step. For now, I'll use a local temp hack or just rely on the toggle button which I need to add state for.
+                        setIsPatternMode(!isPatternMode);
                       }}
-                      // Actually, I must add the state first. 
-                      // I will define the JSX structure here assuming `isPatternMode` exists.
                       className="text-[10px] font-bold text-blue-500 flex items-center gap-1 active:scale-95 transition-transform"
                     >
-                      {/* This button logic needs the state. I will use a specialized edit for state first. */}
+                      {isPatternMode ? (
+                        <>
+                          <Lock className="w-3 h-3" /> Nhập số/chữ
+                        </>
+                      ) : (
+                        <>
+                          <Grid3x3 className="w-3 h-3" /> Vẽ hình (Android)
+                        </>
+                      )}
                     </button>
                   </div>
 
-                  {/* Placeholder for integration step. I should pause and add state first. */}
-                  {/* ABORTING REPLACEMENT TO ADD STATE FIRST */}
+                  {isPatternMode ? (
+                    <div className="bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700/50 rounded-xl p-4 flex flex-col items-center">
+                      <div className="mb-2 text-xs font-bold text-slate-500">Vẽ mật khẩu mở khóa</div>
+                      <AndroidPatternLock
+                        onPatternComplete={(pattern) => {
+                          if (pattern) {
+                            setCurrentKm(`Pattern: ${pattern}`);
+                            if (navigator.vibrate) navigator.vibrate(50);
+                          }
+                        }}
+                      />
+                      {currentKm.startsWith("Pattern:") ? (
+                        <div className="mt-2 text-xs font-mono text-emerald-500 font-bold flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> Đã lưu hình vẽ
+                        </div>
+                      ) : (
+                        <div className="mt-2 text-[10px] text-slate-400 italic">
+                          Vẽ hình để lưu mật khẩu
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <input
+                        type="text"
+                        value={currentKm}
+                        onChange={(e) => setCurrentKm(e.target.value)}
+                        placeholder="Mật khẩu (nếu có)..."
+                        className="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white text-sm focus:border-blue-500 transition-all font-mono"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
