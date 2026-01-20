@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import Tesseract from 'tesseract.js';
+import { BrowserMultiFormatReader } from '@zxing/library';
 import {
     X,
     Maximize,
@@ -167,11 +168,39 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
             }
         }
 
-        // 2. Fallback to html5-qrcode (handled via separate dedicated running instance logic if desired, 
-        // implies 'scanBarcodeFrame' is mostly for custom or native logic. 
-        // For simplicity, we assume native is primary. If native fails, we rely on user manually triggering OCR 
-        // or we could integrate html5-qrcode frame loop here.
-        // Let's rely on Native for now, if not available, show warning or fallback.)
+        // 2. Fallback: Use ZXing for broad compatibility
+        try {
+            const codeReader = new BrowserMultiFormatReader();
+            // We use 'decodeFromImage' if we can pass the video element or canvas
+            // But ZXing mostly wants a stream or deviceId. 
+            // For single frame, we can use decodeFromImageElement if we draw to canvas first, or try decodeFromVideoElement (but that takes control).
+            // Better: Draw to hidden canvas and scan that.
+
+            if (canvasRef.current && videoRef.current) {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    canvas.width = videoRef.current.videoWidth;
+                    canvas.height = videoRef.current.videoHeight;
+                    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+
+                    // Simple decode from current frame
+                    // Note: ZXing is a bit heavy to instantiate every frame. 
+                    // Ideally should be instantiated once outside. But for now, let's test if this simple fallback works.
+                    // If performance is bad, we move instantiation to useRef.
+                    const result = await codeReader.decodeFromImage(undefined, canvas.toDataURL());
+                    if (result) {
+                        onResult(result.getText());
+                        return;
+                    }
+                }
+            }
+        } catch (e) {
+            // Check if it's just "No MultiFormat Readers were able to detect the code"
+            if (e instanceof Error && !e.message.includes('No MultiFormat Readers')) {
+                // console.error(e);
+            }
+        }
     };
 
     // --- OCR DETECTION (Tesseract) ---
