@@ -48,7 +48,7 @@ export async function fetchWorkOrders(): Promise<RepoResult<WorkOrder[]>> {
     const { data, error } = await supabase
       .from(WORK_ORDERS_TABLE)
       .select("*")
-      .order("creationdate", { ascending: false })
+      .order("creationDate", { ascending: false }) // Fixed casing
       .limit(100); // Only load 100 most recent orders
 
     console.log("[fetchWorkOrders] Raw data from DB:", data);
@@ -91,14 +91,14 @@ export async function fetchWorkOrdersFiltered(options?: {
     let query = supabase
       .from(WORK_ORDERS_TABLE)
       .select("*")
-      .order("creationdate", { ascending: false })
+      .order("creationDate", { ascending: false }) // Fixed casing
       .limit(limit);
 
     // Filter by date (last N days) - if daysBack is 0, load all
     if (daysBack > 0) {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - daysBack);
-      query = query.gte("creationdate", startDate.toISOString());
+      query = query.gte("creationDate", startDate.toISOString()); // Fixed casing
     }
 
     // Filter by status
@@ -108,7 +108,7 @@ export async function fetchWorkOrdersFiltered(options?: {
 
     // Filter by branch
     if (branchId && branchId !== "all") {
-      query = query.eq("branchid", branchId);
+      query = query.eq("branchId", branchId); // Fixed casing
     }
 
     const { data, error } = await query;
