@@ -1158,7 +1158,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
               <div className="p-3 border-b border-slate-200 dark:border-slate-700">
                 <h3 className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-1.5">
                   <Package className="w-3.5 h-3.5" />
-                  PHỤ TÙNG ({workOrder.partsUsed.length})
+                  LINH KIỆN ({workOrder.partsUsed.length})
                 </h3>
                 <div className="space-y-2">
                   {workOrder.partsUsed.map((part, idx) => (
@@ -1166,7 +1166,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0 pr-2">
                           <div className="text-sm text-slate-900 dark:text-white font-medium truncate">
-                            {part.partName || "Phụ tùng"}
+                            {part.partName || "Linh kiện"}
                           </div>
                           <div className="text-xs text-slate-500 dark:text-slate-400">
                             SL: {part.quantity} {part.sku && `• ${part.sku}`}
@@ -1238,7 +1238,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
             <div className="p-3">
               <div className="bg-white dark:bg-[#1e1e2d] rounded-xl p-4 border border-slate-200 dark:border-slate-700/50 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-slate-500 dark:text-slate-400 text-xs">Tổng phụ tùng</span>
+                  <span className="text-slate-500 dark:text-slate-400 text-xs">Tổng linh kiện</span>
                   <span className="text-slate-900 dark:text-white font-medium text-sm">
                     {formatCurrency(
                       workOrder.partsUsed?.reduce(
