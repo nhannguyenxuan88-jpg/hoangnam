@@ -186,31 +186,35 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
             const startX = (video.videoWidth - boxWidth) / 2;
             const startY = (video.videoHeight - boxHeight) / 2;
 
-            canvas.width = boxWidth;
-            canvas.height = boxHeight;
+            // UPSCALE for better OCR (Critical for small text)
+            const scale = 2; // 2x upscale
+            canvas.width = boxWidth * scale;
+            canvas.height = boxHeight * scale;
 
-            // 2. Crop Image to ROI
+            // 2. Crop Image to ROI & Scale Up
             ctx?.drawImage(
                 video,
                 startX, startY, boxWidth, boxHeight, // Source
-                0, 0, boxWidth, boxHeight // Destination
+                0, 0, canvas.width, canvas.height // Destination (Scaled)
             );
 
-            // 3. Image Pre-processing (Grayscale + Contrast)
+            // 3. Image Pre-processing (Grayscale + Contrast Boost)
             const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
             if (imageData) {
                 const data = imageData.data;
                 for (let i = 0; i < data.length; i += 4) {
-                    // Grayscale
-                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                    // Grayscale (Luminosity method)
+                    let gray = 0.21 * data[i] + 0.72 * data[i + 1] + 0.07 * data[i + 2];
 
-                    // Contrast enhancement
-                    // Simple thresholding/binarization can help OCR
-                    const contrast = avg > 128 ? 255 : 0;
+                    // Simple Contrast stretch (instead of fragile binary threshold)
+                    // Push darks down, lights up
+                    gray = (gray - 128) * 1.5 + 128;
+                    if (gray < 0) gray = 0;
+                    if (gray > 255) gray = 255;
 
-                    data[i] = contrast;     // R
-                    data[i + 1] = contrast; // G
-                    data[i + 2] = contrast; // B
+                    data[i] = gray;     // R
+                    data[i + 1] = gray; // G
+                    data[i + 2] = gray; // B
                 }
                 ctx?.putImageData(imageData, 0, 0);
             }
@@ -234,11 +238,13 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
 
             // Regex for IMEI (15 digits) or general long alphanumeric sequences
             const imeiMatch = cleanText.match(/\b\d{15}\b/);
-            // S/N usually has strict patterns, but we'll be flexible
-            const snMatch = cleanText.match(/(?:S\/N|SN|SERIAL)[:\.\s]*([A-Z0-9\-\.]{4,})/i);
+            // S/N regex: Flexible separator, allow common label headers
+            // Matches: "S/N: PF-1L..." or "SERIAL ...", or just "PF-..." if labelled
+            const snMatch = cleanText.match(/(?:S\/N|SN|SERIAL|NO\.)[^A-Z0-9]*([A-Z0-9\-\.]{5,})/i);
 
             // Fallback: look for any long alphanumeric string (e.g. 10+ chars) that looks like a serial
-            const rawSerialMatch = cleanText.match(/\b[A-Z0-9]{8,20}\b/);
+            // Exclude common words to reduce noise
+            const rawSerialMatch = cleanText.match(/\b(?!(?:TYPE|MODEL|INPUT|OUTPUT|MADE|CHINA|VIETNAM))[A-Z0-9\-\.]{8,20}\b/i);
 
             if (imeiMatch) {
                 onResult(imeiMatch[0]);
@@ -248,12 +254,12 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
                 // Heuristic: If it has both numbers and letters, it's likely a serial
                 const val = rawSerialMatch[0];
                 if (/\d/.test(val) && /[A-Z]/.test(val)) {
-                    onResult(val);
+                    onResult(val.toUpperCase());
                 } else if (/^\d{8,}$/.test(val)) {
                     // Just numbers, could be SN
                     onResult(val);
                 } else {
-                    showToast.info("Chưa rõ số serial. Xin thử lại.");
+                    showToast.info("Chưa rõ số serial (" + val + "). Xin thử lại.");
                 }
             } else {
                 showToast.info("Không nhận diện được mã. Hãy giữ chắc tay.");
