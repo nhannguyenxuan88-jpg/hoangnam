@@ -260,15 +260,19 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
             // Matches: "S/N: ...", "Serial No.: ...", "P/N: ...", "Model: ...", "SPS#", "ASSY#" 
             // Also handles "S/No." from LG image and "SERIAL No." from Mitsubishi, "Serial No." from Toshiba
             // We explicitly allow optional "NO" or "NUMBER" after SERIAL/PART to avoid capturing "NO" as part of the value
-            // Added "SER. NO." for Sony style
-            const snMatch = cleanText.match(/(?:S\/N|SN|S\.N\.|SER\.?\s*NO\.?|SERIAL(?:\s+(?:NO\.?|NUMBER|NUM))?|P\/N|PN|PART(?:\s+(?:NO\.?|NUMBER|NUM))?|MODEL|SPS#|ASSY#|FCC ID|IC)[:\.\_\-\s]*([A-Z0-9\-\.]{5,})/i);
+            // Added "SER. NO." for Sony style, and "MANUFACTURED|DATE" for appliances
+            const snMatch = cleanText.match(/(?:S\/N|SN|S\.N\.|SER\.?\s*NO\.?|SERIAL(?:\s+(?:NO\.?|NUMBER|NUM))?|P\/N|PN|PART(?:\s+(?:NO\.?|NUMBER|NUM))?|MODEL|SPS#|ASSY#|FCC ID|IC|MANUFACTURED|DATE)[:\.\_\-\s]*([A-Z0-9\-\.]{5,})/i);
 
-            // Specific Hardware Serial format (e.g., QQQQQ-QQQQQ-...)
+            // Specific Hardware Serial format (e.g., QQQQQ-QQQQQ-...) and Dell Monitor (CN-...)
             const hardwareSerialMatch = cleanText.match(/\b([A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5})\b/);
+            const dellMonitorMatch = cleanText.match(/\b(CN-[A-Z0-9]{5,})\b/);
+
+            // Appliance long serials (often just numbers, 12-20 digits, no prefix or far prefix)
+            const applianceMatch = cleanText.match(/\b(\d{12,20})\b/);
 
             // Fallback: look for any long alphanumeric string (e.g. 10+ chars) that looks like a serial
             // Exclude common words and date-like strings to reduce noise
-            const rawSerialMatch = cleanText.match(/\b(?!(?:TYPE|MODEL|INPUT|OUTPUT|MADE|CHINA|VIETNAM|NGUON|SOURCE|VOLT|WATT|TOTAL|POWER))[A-Z0-9\-\.]{8,25}\b/i);
+            const rawSerialMatch = cleanText.match(/\b(?!(?:TYPE|MODEL|INPUT|OUTPUT|MADE|CHINA|VIETNAM|NGUON|SOURCE|VOLT|WATT|TOTAL|POWER|HERTZ|FREQ|CLASS))[A-Z0-9\-\.]{8,25}\b/i);
 
             if (imeiMatch) {
                 onResult(imeiMatch[0]);
@@ -278,12 +282,17 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
                 onResult(serviceTagMatch[1]);
             } else if (macMatch) {
                 onResult(macMatch[1]);
+            } else if (dellMonitorMatch) {
+                onResult(dellMonitorMatch[1]);
             } else if (hardwareSerialMatch) {
                 onResult(hardwareSerialMatch[0]);
             } else if (snMatch && snMatch[1]) {
                 onResult(snMatch[1]);
             } else if (expressCodeMatch) {
                 onResult(expressCodeMatch[1]);
+            } else if (applianceMatch) {
+                // For pure numbers, be careful. If it's very long (12+), likely a serial.
+                onResult(applianceMatch[1]);
             } else if (rawSerialMatch) {
                 // Heuristic: If it has both numbers and letters, it's likely a serial
                 const val = rawSerialMatch[0];
