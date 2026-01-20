@@ -162,20 +162,20 @@ export async function createWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
       p_license_plate: input.licensePlate || "",
       // p_vehicle_id: input.vehicleId || null, // 🔹 TEMPORARY FIX: Backyard API mismatch
       // p_current_km: input.currentKm || null, // 🔹 TEMPORARY FIX: Backyard API mismatch
-      p_issue_description: input.issueDescription || "",
-      p_technician_name: input.technicianName || "",
+      p_notes: input.issueDescription || "", // Renamed from p_issue_description to match 'notes' column
+      // p_technician_name: input.technicianName || "", // Removed: Not in schema
       p_status: input.status || "Tiếp nhận",
       p_labor_cost: input.laborCost || 0,
       p_discount: input.discount || 0,
       p_parts_used: input.partsUsed || [],
-      p_additional_services: input.additionalServices || null,
+      // p_additional_services: input.additionalServices || null, // Removed: Not in schema
       p_total: input.total || 0,
       p_branch_id: input.branchId || "CN1",
       p_payment_status: input.paymentStatus || "unpaid",
       p_payment_method: input.paymentMethod || null,
       p_deposit_amount: input.depositAmount || 0,
       p_additional_payment: input.additionalPayment || 0,
-      p_user_id: null, // For audit log only
+      // p_user_id: null, // For audit log only - REMOVED: potentially causing RPC signature mismatch
     } as any;
 
     console.log(
@@ -391,7 +391,7 @@ export async function updateWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
       p_payment_method: input.paymentMethod || null,
       p_deposit_amount: input.depositAmount || 0,
       p_additional_payment: input.additionalPayment || 0,
-      p_user_id: null, // For audit log only
+      // p_user_id: null, // For audit log only - REMOVED: potentially causing RPC signature mismatch
     } as any;
 
     const { data, error } = await supabase.rpc(
