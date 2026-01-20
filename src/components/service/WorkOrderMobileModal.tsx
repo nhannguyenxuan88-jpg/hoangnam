@@ -31,10 +31,12 @@ import {
   Camera,
   ArrowLeft,
   Lock,
+  Grid3x3,
 } from "lucide-react";
 import { useCheckWarranty } from "../../hooks/useWarrantyRepository";
 import { WarrantyCardModal } from "../warranty/WarrantyCardModal";
 import { ScannerModal } from "../common/ScannerModal";
+import { AndroidPatternLock } from "../common/AndroidPatternLock";
 import { formatCurrency, formatWorkOrderId, normalizeSearchText } from "../../utils/format";
 import { getCategoryColor } from "../../utils/categoryColors";
 import type { WorkOrder, Part, Customer, Vehicle, Employee } from "../../types";
@@ -143,6 +145,8 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     "Máy ảnh Sony",
     "Thiết bị khác",
   ];
+
+  const [isPatternMode, setIsPatternMode] = useState(false);
 
   // Find customer and vehicle from workOrder data
   const initialCustomer = useMemo(() => {
@@ -1662,19 +1666,34 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
             {selectedVehicle && (
               <div className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
-                    Mật khẩu màn hình
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      type="text"
-                      value={currentKm}
-                      onChange={(e) => setCurrentKm(e.target.value)}
-                      placeholder="Mật khẩu (nếu có)..."
-                      className="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#1e1e2d] border border-slate-200 dark:border-slate-700/50 rounded-xl text-slate-900 dark:text-white text-sm focus:border-blue-500 transition-all font-mono"
-                    />
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
+                      Mật khẩu màn hình
+                    </label>
+                    <button
+                      onClick={() => {
+                        // Toggle mode: If currently has "Pattern:..." clear it when switching? 
+                        // Or better, just switch input method.
+                        if (currentKm.startsWith("Pattern:")) {
+                          setCurrentKm(""); // Clear pattern when switching to text
+                        }
+                        // Use a local state for mode, or infer from currentKm content?
+                        // Let's toggle a boolean state. We need to find where to put the state setter.
+                        // Since we are inside a map or conditional, we can't add hooks here easily without refactoring the whole component.
+                        // BUT wait, this is inside render. We need a state variable `isPatternMode`.
+                        // I'll assume I added `const [isPatternMode, setIsPatternMode] = useState(false);` at the top.
+                        // I will do that in a separate edit step. For now, I'll use a local temp hack or just rely on the toggle button which I need to add state for.
+                      }}
+                      // Actually, I must add the state first. 
+                      // I will define the JSX structure here assuming `isPatternMode` exists.
+                      className="text-[10px] font-bold text-blue-500 flex items-center gap-1 active:scale-95 transition-transform"
+                    >
+                      {/* This button logic needs the state. I will use a specialized edit for state first. */}
+                    </button>
                   </div>
+
+                  {/* Placeholder for integration step. I should pause and add state first. */}
+                  {/* ABORTING REPLACEMENT TO ADD STATE FIRST */}
                 </div>
 
                 <div className="space-y-2">
