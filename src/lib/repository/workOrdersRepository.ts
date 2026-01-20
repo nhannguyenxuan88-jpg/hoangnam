@@ -160,8 +160,8 @@ export async function createWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
       p_customer_phone: input.customerPhone || "",
       p_vehicle_model: input.vehicleModel || "",
       p_license_plate: input.licensePlate || "",
-      p_vehicle_id: input.vehicleId || null, // 🔹 FIX: Thêm vehicleId
-      p_current_km: input.currentKm || null, // 🔹 FIX: Thêm currentKm
+      // p_vehicle_id: input.vehicleId || null, // 🔹 TEMPORARY FIX: Backyard API mismatch
+      // p_current_km: input.currentKm || null, // 🔹 TEMPORARY FIX: Backyard API mismatch
       p_issue_description: input.issueDescription || "",
       p_technician_name: input.technicianName || "",
       p_status: input.status || "Tiếp nhận",
@@ -377,8 +377,8 @@ export async function updateWorkOrderAtomic(input: Partial<WorkOrder>): Promise<
       p_customer_phone: input.customerPhone || "",
       p_vehicle_model: input.vehicleModel || "",
       p_license_plate: input.licensePlate || "",
-      p_vehicle_id: input.vehicleId || null, // 🔹 FIX: Thêm vehicleId
-      p_current_km: input.currentKm || null, // 🔹 FIX: Thêm currentKm
+      // p_vehicle_id: input.vehicleId || null, // 🔹 TEMPORARY FIX: Backyard API mismatch
+      // p_current_km: input.currentKm || null, // 🔹 TEMPORARY FIX: Backyard API mismatch
       p_issue_description: input.issueDescription || "",
       p_technician_name: input.technicianName || "",
       p_status: input.status || "Tiếp nhận",

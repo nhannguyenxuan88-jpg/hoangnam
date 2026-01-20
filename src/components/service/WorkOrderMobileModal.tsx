@@ -864,9 +864,12 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
       technicianId: selectedTechnicianId,
       customer: selectedCustomer,
       vehicle: selectedVehicle,
-      currentKm:
-        currentKm && parseInt(currentKm) > 0 ? parseInt(currentKm) : undefined,
-      issueDescription,
+      // FIX: 'currentKm' stores Password/Pattern (string), but DB expects Integer for Odometer.
+      // Solution: Do not save to currentKm (pass undefined), instead append to issueDescription.
+      currentKm: undefined,
+      issueDescription: currentKm
+        ? issueDescription + `\n\n[Mật khẩu/Pattern]: ${currentKm}`
+        : issueDescription,
       parts: transformedParts,
       additionalServices: transformedServices,
       laborCost,
