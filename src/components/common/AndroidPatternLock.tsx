@@ -2,12 +2,31 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { RefreshCcw } from 'lucide-react';
 
 interface AndroidPatternLockProps {
-    onPatternComplete: (pattern: string) => void;
+    onPatternComplete?: (pattern: string) => void;
     className?: string;
+    initialValue?: string; // Format "1-2-3-4"
+    readOnly?: boolean;
 }
 
-export const AndroidPatternLock: React.FC<AndroidPatternLockProps> = ({ onPatternComplete, className = '' }) => {
-    const [pattern, setPattern] = useState<number[]>([]);
+export const AndroidPatternLock: React.FC<AndroidPatternLockProps> = ({
+    onPatternComplete,
+    className = '',
+    initialValue = '',
+    readOnly = false
+}) => {
+    // Initialize state from initialValue if present
+    const [pattern, setPattern] = useState<number[]>(() => {
+        if (!initialValue) return [];
+        return initialValue.split('-').map(Number).filter(n => !isNaN(n));
+    });
+
+    // Update pattern when initialValue changes matches
+    useEffect(() => {
+        if (initialValue) {
+            setPattern(initialValue.split('-').map(Number).filter(n => !isNaN(n)));
+        }
+    }, [initialValue]);
+
     const [isDragging, setIsDragging] = useState(false);
     const svgRef = useRef<SVGSVGElement>(null);
 
@@ -39,6 +58,7 @@ export const AndroidPatternLock: React.FC<AndroidPatternLockProps> = ({ onPatter
     };
 
     const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
+        if (readOnly) return; // Disable interaction if readOnly
         e.preventDefault(); // Prevent scrolling on touch
         setIsDragging(true);
         setPattern([]);
@@ -54,7 +74,7 @@ export const AndroidPatternLock: React.FC<AndroidPatternLockProps> = ({ onPatter
     };
 
     const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
-        if (!isDragging) return;
+        if (!isDragging || readOnly) return;
         e.preventDefault();
 
         const clientX = 'touches' in e ? (e as TouchEvent).touches[0].clientX : (e as MouseEvent).clientX;
@@ -79,12 +99,12 @@ export const AndroidPatternLock: React.FC<AndroidPatternLockProps> = ({ onPatter
             }
             setPattern(prev => [...prev, dot.id]);
         }
-    }, [isDragging, pattern]);
+    }, [isDragging, pattern, readOnly]);
 
     const handleEnd = useCallback(() => {
         if (isDragging) {
             setIsDragging(false);
-            if (pattern.length > 0) {
+            if (pattern.length > 0 && onPatternComplete) {
                 onPatternComplete(pattern.join('-'));
             }
         }
@@ -106,66 +126,78 @@ export const AndroidPatternLock: React.FC<AndroidPatternLockProps> = ({ onPatter
         };
     }, [isDragging, handleMove, handleEnd]);
 
+    const containerSize = GAP * 2 + OFFSET * 2;
+    // Scale down if readOnly to make it smaller
+    const scale = readOnly ? 0.6 : 1;
+    const size = containerSize * scale;
+
     return (
         <div className={`flex flex-col items-center ${className}`}>
-            {/* Helper text or reset */}
             <div className="relative mb-2 select-none touch-none"
+                style={{
+                    width: size,
+                    height: size,
+                }}
                 onMouseDown={handleStart}
                 onTouchStart={handleStart}
             >
-                <svg
-                    ref={svgRef}
-                    width={GAP * 2 + OFFSET * 2}
-                    height={GAP * 2 + OFFSET * 2}
-                    className="bg-slate-100 dark:bg-slate-800 rounded-3xl cursor-pointer shadow-inner block"
-                    style={{ touchAction: 'none' }}
-                >
-                    {/* Connection Lines */}
-                    <polyline
-                        points={pattern.map(id => {
-                            const d = dots.find(d => d.id === id);
-                            return `${d?.x},${d?.y}`;
-                        }).join(' ')}
-                        fill="none"
-                        stroke="#3b82f6" // blue-500
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="opacity-80"
-                    />
+                <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+                    <svg
+                        ref={svgRef}
+                        width={containerSize}
+                        height={containerSize}
+                        className={`rounded-3xl shadow-inner block ${readOnly ? 'bg-transparent border border-slate-200 dark:border-slate-700' : 'bg-slate-100 dark:bg-slate-800 cursor-pointer'}`}
+                        style={{ touchAction: 'none' }}
+                    >
+                        {/* Connection Lines */}
+                        <polyline
+                            points={pattern.map(id => {
+                                const d = dots.find(d => d.id === id);
+                                return `${d?.x},${d?.y}`;
+                            }).join(' ')}
+                            fill="none"
+                            stroke={readOnly ? "#10b981" : "#3b82f6"} // Emerald for readonly (view), Blue for edit
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="opacity-80"
+                        />
 
-                    {/* Dots */}
-                    {dots.map(dot => {
-                        const isActive = pattern.includes(dot.id);
-                        return (
-                            <g key={dot.id}>
-                                {/* Hit area (invisible) */}
-                                <circle cx={dot.x} cy={dot.y} r={HIT_RADIUS} fill="transparent" />
-                                {/* Outer Glow for active */}
-                                <circle
-                                    cx={dot.x}
-                                    cy={dot.y}
-                                    r={isActive ? ACTIVE_DOT_RADIUS : 0}
-                                    fill="rgba(59, 130, 246, 0.2)"
-                                    className="transition-all duration-300"
-                                />
-                                {/* Core Dot */}
-                                <circle
-                                    cx={dot.x}
-                                    cy={dot.y}
-                                    r={DOT_RADIUS}
-                                    fill={isActive ? "#3b82f6" : "#94a3b8"} // blue-500 vs slate-400
-                                    className="transition-colors duration-200"
-                                />
-                            </g>
-                        );
-                    })}
-                </svg>
+                        {/* Dots */}
+                        {dots.map(dot => {
+                            const isActive = pattern.includes(dot.id);
+                            return (
+                                <g key={dot.id}>
+                                    {/* Hit area (invisible) */}
+                                    <circle cx={dot.x} cy={dot.y} r={HIT_RADIUS} fill="transparent" />
+                                    {/* Outer Glow for active */}
+                                    {!readOnly && (
+                                        <circle
+                                            cx={dot.x}
+                                            cy={dot.y}
+                                            r={isActive ? ACTIVE_DOT_RADIUS : 0}
+                                            fill="rgba(59, 130, 246, 0.2)"
+                                            className="transition-all duration-300"
+                                        />
+                                    )}
+                                    {/* Core Dot */}
+                                    <circle
+                                        cx={dot.x}
+                                        cy={dot.y}
+                                        r={DOT_RADIUS}
+                                        fill={isActive ? (readOnly ? "#10b981" : "#3b82f6") : "#94a3b8"}
+                                        className="transition-colors duration-200"
+                                    />
+                                </g>
+                            );
+                        })}
+                    </svg>
+                </div>
             </div>
 
-            {pattern.length > 0 && (
+            {!readOnly && pattern.length > 0 && (
                 <button
-                    onClick={() => { setPattern([]); onPatternComplete(""); }}
+                    onClick={() => { setPattern([]); if (onPatternComplete) onPatternComplete(""); }}
                     className="text-xs flex items-center gap-1 text-slate-500 hover:text-red-500 transition-colors mt-2"
                 >
                     <RefreshCcw className="w-3 h-3" /> Vẽ lại

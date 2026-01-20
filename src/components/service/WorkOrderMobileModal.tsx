@@ -1183,15 +1183,65 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                 </div>
               )}
 
-            {/* Ghi chú */}
+            {/* Ghi chú & Mật khẩu */}
             {workOrder.notes && (
               <div className="p-3 border-b border-slate-200 dark:border-slate-700">
                 <h3 className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1.5">
                   <MessageSquare className="w-3.5 h-3.5" />
                   GHI CHÚ
                 </h3>
-                <div className="bg-white dark:bg-[#1e1e2d] rounded-xl p-3 text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap border border-slate-200 dark:border-transparent">
-                  {workOrder.notes}
+                <div className="bg-white dark:bg-[#1e1e2d] rounded-xl p-3 border border-slate-200 dark:border-transparent">
+                  {(() => {
+                    const pwdMatch = workOrder.notes.match(/\[Mật khẩu\/Pattern\]: (.*)$/);
+                    let displayNotes = workOrder.notes;
+                    let pattern = "";
+
+                    if (pwdMatch) {
+                      const fullMatch = pwdMatch[0];
+                      const pwdValue = pwdMatch[1];
+                      // Hide the tag from text
+                      displayNotes = workOrder.notes.replace(fullMatch, "").trim();
+
+                      if (pwdValue.startsWith("Pattern:")) {
+                        pattern = pwdValue.replace("Pattern:", "").trim();
+                      } else {
+                        // If text password, maybe specific display?
+                        // For now just keep it in text if not pattern
+                      }
+                    }
+
+                    return (
+                      <>
+                        {/* Display text notes */}
+                        {displayNotes && (
+                          <div className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap mb-3">
+                            {displayNotes}
+                          </div>
+                        )}
+
+                        {/* Display Visual Pattern if available */}
+                        {pattern && (
+                          <div className="flex flex-col items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-700">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                              Mô phỏng hình vẽ mở khóa
+                            </div>
+                            <AndroidPatternLock
+                              initialValue={pattern}
+                              readOnly={true}
+                              className="pointer-events-none" // Extra safety
+                            />
+                          </div>
+                        )}
+
+                        {/* Display Text Password if matched but not pattern */}
+                        {pwdMatch && !pattern && (
+                          <div className="mt-2 p-2 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono text-slate-600 dark:text-slate-400">
+                            <strong>Mật khẩu:</strong> {pwdMatch[1]}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             )}
