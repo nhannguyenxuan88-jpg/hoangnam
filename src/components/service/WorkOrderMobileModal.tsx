@@ -258,8 +258,27 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     if (workOrder) {
       setSelectedCustomer(initialCustomer);
       setSelectedVehicle(initialVehicle);
-      // Load currentKm: ưu tiên từ workOrder, nếu không có thì từ vehicle
-      if (workOrder.currentKm) {
+
+      // Load Password/Pattern from issueDescription/notes
+      let password = "";
+      let description = workOrder.issueDescription || "";
+
+      const pwdMatch = description.match(/\[Mật khẩu\/Pattern\]: (.*)$/);
+      if (pwdMatch) {
+        password = pwdMatch[1];
+        // Optional: Remove password from displayed description if you want to hide it from the textarea
+        description = description.replace(/\n\n\[Mật khẩu\/Pattern\]: .*$/, "");
+        setIssueDescription(description); // Update description state without the password tag
+      } else {
+        setIssueDescription(description);
+      }
+
+      if (password) {
+        setCurrentKm(password);
+        if (password.startsWith("Pattern:")) {
+          setIsPatternMode(true);
+        }
+      } else if (workOrder.currentKm) {
         setCurrentKm(workOrder.currentKm.toString());
       } else if (initialVehicle?.currentKm) {
         setCurrentKm(initialVehicle.currentKm.toString());
