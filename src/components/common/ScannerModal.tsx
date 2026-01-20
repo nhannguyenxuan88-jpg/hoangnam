@@ -193,7 +193,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
             const startY = (video.videoHeight - boxHeight) / 2;
 
             // UPSCALE for better OCR (Critical for small text)
-            const scale = 2; // 2x upscale
+            const scale = 3; // 3x upscale to improve edge definition
             canvas.width = boxWidth * scale;
             canvas.height = boxHeight * scale;
 
@@ -204,7 +204,7 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
                 0, 0, canvas.width, canvas.height // Destination (Scaled)
             );
 
-            // 3. Image Pre-processing (Grayscale + Contrast Boost)
+            // 3. Image Pre-processing (Grayscale + Binarization)
             const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
             if (imageData) {
                 const data = imageData.data;
@@ -212,11 +212,14 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
                     // Grayscale (Luminosity method)
                     let gray = 0.21 * data[i] + 0.72 * data[i + 1] + 0.07 * data[i + 2];
 
-                    // Simple Contrast stretch (instead of fragile binary threshold)
-                    // Push darks down, lights up
-                    gray = (gray - 128) * 1.5 + 128;
-                    if (gray < 0) gray = 0;
-                    if (gray > 255) gray = 255;
+                    // Aggressive Contrast & Binarization
+                    // Improve separation of text from background (fix 8 vs B, 5 vs S)
+                    // 1. Contrast stretch
+                    gray = (gray - 128) * 2.0 + 128;
+
+                    // 2. Thresholding (Binarize) - make it crisp Black/White
+                    // using a fixed threshold of 145 seems to work well for label paper
+                    gray = gray > 145 ? 255 : 0;
 
                     data[i] = gray;     // R
                     data[i + 1] = gray; // G
