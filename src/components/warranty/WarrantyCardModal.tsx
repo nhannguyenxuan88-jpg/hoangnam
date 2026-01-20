@@ -144,7 +144,7 @@ export const WarrantyCardModal: React.FC<WarrantyCardModalProps> = ({
                                 className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
                                 required
                             />
-                            <div className="relative">
+                            <div className="flex gap-2">
                                 <input
                                     type="text"
                                     value={formData.imeiSerial}
@@ -152,15 +152,15 @@ export const WarrantyCardModal: React.FC<WarrantyCardModalProps> = ({
                                         setFormData({ ...formData, imeiSerial: e.target.value })
                                     }
                                     placeholder="IMEI / Serial Number"
-                                    className="w-full pl-3 pr-10 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm uppercase font-mono"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowScanner(true)}
-                                    className="absolute right-1 top-1 p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                                    className="p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg active:scale-95 transition-all"
                                     title="Quét mã vạch"
                                 >
-                                    <Scan className="w-4 h-4" />
+                                    <Scan className="w-5 h-5" />
                                 </button>
                             </div>
                         </div>
