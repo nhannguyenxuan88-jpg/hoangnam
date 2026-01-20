@@ -225,22 +225,20 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
                 ctx?.putImageData(imageData, 0, 0);
             }
 
-            // 4. Run Tesseract with Whitelist
+            // 4. Run Tesseract with Whitelist (Alphanumeric + common separators)
             const dataUrl = canvas.toDataURL('image/jpeg', 1.0); // High quality
             const { data: { text } } = await Tesseract.recognize(
                 dataUrl,
                 'eng',
                 {
-                    logger: m => {
-                        // Optional: progress logging
-                    }
+                    logger: m => { }, // Quiet
                 }
             );
 
             // Parse result for IMEI/Serial patterns
-            // Allow alphanumeric + common separators, but filter garbage
-            const cleanText = text.toUpperCase().replace(/[^A-Z0-9\n\-\.]/g, " ");
-            console.log("OCR Result:", cleanText);
+            // CRITICAL FIX: Must allow '/' and ':' so that "S/N:" doesn't become "S N "
+            const cleanText = text.toUpperCase().replace(/[^A-Z0-9\n\-\.\:\/]/g, " ");
+            console.log("OCR Cleaned:", cleanText);
 
             // Regex for IMEI (15 digits) or general long alphanumeric sequences
             const imeiMatch = cleanText.match(/\b\d{15}\b/);
