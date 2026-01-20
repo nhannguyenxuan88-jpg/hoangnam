@@ -322,7 +322,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     }>
   >(
     workOrder?.partsUsed?.map((p) => ({
-      partId: p.partId || "",
+      partId: p.partId || `manual-loaded-${Math.random().toString(36).substr(2, 9)}`,
       partName: p.partName,
       quantity: p.quantity,
       sellingPrice: p.price || 0,
@@ -860,7 +860,8 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
 
     // Transform parts to use 'price' field (as expected by SQL/types)
     const transformedParts = selectedParts.map((p) => ({
-      partId: p.partId,
+      // If partId is a manual/temp one, send null/undefined to DB to avoid UUID errors if triggered
+      partId: p.partId.startsWith("manual-") ? undefined : p.partId,
       partName: p.partName,
       quantity: p.quantity,
       price: p.sellingPrice, // Map sellingPrice to price for SQL
