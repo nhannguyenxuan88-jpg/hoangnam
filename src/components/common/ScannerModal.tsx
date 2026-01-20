@@ -258,8 +258,8 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
 
             // S/N regex: Strict Serial Number (Highest Priority)
             // Matches: "S/N: ...", "Serial No.: ...", "SPS#", "ASSY#" 
-            // Added handling for common OCR typos: "5/N" (S look like 5), "S/M" (N looks like M)
-            const strictSnMatch = cleanText.match(/(?:S\/N|SN|S\.N\.|5\/N|S\/M|SER\.?\s*NO\.?|SERIAL(?:\s+(?:NO\.?|NUMBER|NUM))?|SPS#|ASSY#|FCC ID|IC|MANUFACTURED|DATE)[:\.\_\-\s]*([A-Z0-9\-\.]{5,})/i);
+            // REMOVED "DATE" and "MANUFACTURED" to avoid capturing dates like "2023-09" as Serial Numbers
+            const strictSnMatch = cleanText.match(/(?:S\/N|SN|S\.N\.|5\/N|S\/M|SER\.?\s*NO\.?|SERIAL(?:\s+(?:NO\.?|NUMBER|NUM))?|SPS#|ASSY#|FCC ID|IC)[:\.\_\-\s]*([A-Z0-9\-\.]{5,})/i);
 
             // P/N regex: Part Number or Model (Lower Priority)
             // Matches: "P/N: ...", "Model: ..."
@@ -272,10 +272,9 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
             // Appliance long serials (often just numbers, 12-20 digits, no prefix or far prefix)
             const applianceMatch = cleanText.match(/\b(\d{12,20})\b/);
 
-            // Fallback: look for long alphanumeric string that MUST contain at least one digit
-            // This prevents capturing words like "CONSUMER", "CAMERA", "WARNING"
-            // \b(?=\w*\d)(?!(?:TYPE|...)) ...
-            const rawSerialMatch = cleanText.match(/\b(?=\w*\d)(?!(?:TYPE|MODEL|INPUT|OUTPUT|MADE|CHINA|VIETNAM|NGUON|SOURCE|VOLT|WATT|TOTAL|POWER|HERTZ|FREQ|CLASS|CONSUMER|CAMERA|WARNING|CAUTION|LIMITED|NETWORK|TECHNOLOGY))[A-Z0-9\-\.]{8,25}\b/i);
+            // Fallback: look for long alphanumeric string
+            // Exclude common words
+            const rawSerialMatch = cleanText.match(/\b(?!(?:TYPE|MODEL|INPUT|OUTPUT|MADE|CHINA|VIETNAM|NGUON|SOURCE|VOLT|WATT|TOTAL|POWER|HERTZ|FREQ|CLASS|CONSUMER|CAMERA|WARNING|CAUTION|LIMITED|NETWORK|TECHNOLOGY))[A-Z0-9\-\.]{8,25}\b/i);
 
             if (imeiMatch) {
                 onResult(imeiMatch[0]);
@@ -301,9 +300,14 @@ export const ScannerModal: React.FC<ScannerModalProps> = ({
                 // For pure numbers, be careful. If it's very long (12+), likely a serial.
                 onResult(applianceMatch[1]);
             } else if (rawSerialMatch) {
-                // Heuristic: If it matched the regex, it already contains at least one digit and excluded common words.
                 const val = rawSerialMatch[0];
-                onResult(val.toUpperCase());
+                // Double check: Must contain at least one digit to be a valid non-strict serial
+                // This filters out pure text words like "CONSUMER" if they somehow slipped through regex
+                if (/\d/.test(val)) {
+                    onResult(val.toUpperCase());
+                } else {
+                    // console.log("Ignored non-numeric fallback:", val);
+                }
             } else {
                 showToast.info("Không nhận diện được mã. Hãy giữ chắc tay.");
             }
