@@ -474,7 +474,7 @@ const WorkOrderModal: React.FC<{
     const handleAddVehicle = () => {
       if (!currentCustomer) return;
       if (!newVehicle.model.trim() || !newVehicle.licensePlate.trim()) {
-        showToast.error("Vui lòng nhập đầy đủ loại xe và biển số");
+        showToast.error("Vui lòng nhập đầy đủ tên thiết bị và Serial/IMEI");
         return;
       }
 
@@ -548,7 +548,7 @@ const WorkOrderModal: React.FC<{
     const handleSaveEditedVehicle = async () => {
       if (!currentCustomer || !editingVehicleId) return;
       if (!editVehicleModel.trim() && !editVehicleLicensePlate.trim()) {
-        showToast.error("Vui lòng nhập ít nhất dòng xe hoặc biển số");
+        showToast.error("Vui lòng nhập ít nhất tên thiết bị hoặc Serial/IMEI");
         return;
       }
 
@@ -2680,7 +2680,7 @@ const WorkOrderModal: React.FC<{
                                   <div className="p-3 space-y-2">
                                     <div>
                                       <label className="text-xs text-slate-500 dark:text-slate-400">
-                                        Dòng xe
+                                        Tên thiết bị
                                       </label>
                                       <input
                                         type="text"
@@ -2689,12 +2689,12 @@ const WorkOrderModal: React.FC<{
                                           setEditVehicleModel(e.target.value)
                                         }
                                         className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                                        placeholder="Nhập dòng xe"
+                                        placeholder="Nhập tên thiết bị (VD: iPhone 13...)"
                                       />
                                     </div>
                                     <div>
                                       <label className="text-xs text-slate-500 dark:text-slate-400">
-                                        Biển số
+                                        Serial/IMEI
                                       </label>
                                       <input
                                         type="text"
@@ -2705,7 +2705,7 @@ const WorkOrderModal: React.FC<{
                                           )
                                         }
                                         className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                                        placeholder="Nhập biển số"
+                                        placeholder="Nhập Serial/IMEI"
                                       />
                                     </div>
                                     <div className="flex gap-2 justify-end pt-1">

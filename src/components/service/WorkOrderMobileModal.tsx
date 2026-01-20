@@ -845,7 +845,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
     if (isSubmitting) return;
 
     if (!selectedCustomer || !selectedVehicle) {
-      alert("Vui lòng chọn khách hàng và xe");
+      alert("Vui lòng chọn khách hàng và thiết bị");
       return;
     }
 
@@ -1083,12 +1083,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                     {workOrder.licensePlate || "—"}
                   </span>
                 </div>
-                {workOrder.currentKm && (
-                  <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    Số km hiện tại: {formatKm(workOrder.currentKm)} km
-                  </div>
-                )}
+                {/* Số km removed/hidden for electronics */}
               </div>
             </div>
 
@@ -1438,7 +1433,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
             </div>
           </div>
 
-          {/* KHỐI 2: KHÁCH HÀNG & XE */}
+          {/* KHỐI 2: KHÁCH HÀNG & THIẾT BỊ */}
           <div className="px-4 pb-4 space-y-3">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
               Thông tin khách hàng
@@ -2189,7 +2184,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                           <span className="text-lg">✅</span>
                         </div>
                         <span className="text-slate-900 dark:text-white font-medium text-sm">
-                          Thanh toán khi trả xe
+                          Thanh toán khi trả thiết bị
                         </span>
                       </div>
                       <button
@@ -2280,7 +2275,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                     </div>
                     <p className="text-blue-300 text-xs leading-relaxed">
                       <span className="font-semibold">Lưu ý:</span> Khi tạo phiếu mới, chọn trạng thái "Tiếp nhận" hoặc "Đang sửa".
-                      Thanh toán khi trả xe chỉ khả dụng khi chỉnh sửa phiếu đã có sẵn.
+                      Thanh toán khi trả thiết bị chỉ khả dụng khi chỉnh sửa phiếu đã có sẵn.
                     </p>
                   </div>
                 )}
@@ -3043,7 +3038,7 @@ export const WorkOrderMobileModal: React.FC<WorkOrderMobileModalProps> = ({
                       model.toLowerCase().includes(newVehicleName.toLowerCase())
                     ).length === 0 && (
                         <div className="px-4 py-3 text-xs text-slate-500 text-center italic">
-                          Không tìm thấy - nhập tên xe mới
+                          Không tìm thấy - nhập tên thiết bị mới
                         </div>
                       )}
                   </div>

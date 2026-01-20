@@ -2904,11 +2904,11 @@ export default function ServiceManager() {
                       </div>
                       <div style={{ display: "flex", gap: "4mm" }}>
                         <div style={{ flex: 1 }}>
-                          <span style={{ fontWeight: "bold" }}>Loại xe:</span>{" "}
+                          <span style={{ fontWeight: "bold" }}>Tên thiết bị:</span>{" "}
                           {printOrder.vehicleModel}
                         </div>
                         <div style={{ flex: "0 0 auto" }}>
-                          <span style={{ fontWeight: "bold" }}>Biển số:</span>{" "}
+                          <span style={{ fontWeight: "bold" }}>Serial/IMEI:</span>{" "}
                           {printOrder.licensePlate}
                         </div>
                       </div>
@@ -3457,7 +3457,7 @@ export default function ServiceManager() {
                           color: "#000",
                         }}
                       >
-                        Vui lòng giữ phiếu này để đối chiếu khi nhận xe
+                        Vui lòng giữ phiếu này để đối chiếu khi nhận máy
                       </p>
                     </div>
 
@@ -3487,8 +3487,8 @@ export default function ServiceManager() {
                           do thợ
                         </li>
                         <li>
-                          Không bảo hành đối với va chạm, ngã xe, ngập nước sau
-                          khi nhận xe
+                          Không bảo hành đối với rơi vỡ, vào nước sau
+                          khi nhận máy
                         </li>
                         <li>
                           Mang theo phiếu này khi đến bảo hành. Liên hệ hotline
@@ -3810,7 +3810,7 @@ export default function ServiceManager() {
                         paddingBottom: "2mm",
                       }}
                     >
-                      Loại xe:
+                      Tên thiết bị:
                     </td>
                     <td style={{ paddingBottom: "2mm" }}>
                       {printOrder.vehicleModel}
@@ -3822,7 +3822,7 @@ export default function ServiceManager() {
                         paddingLeft: "3mm",
                       }}
                     >
-                      Biển số:
+                      Serial/IMEI:
                     </td>
                     <td style={{ paddingBottom: "2mm" }}>
                       {printOrder.licensePlate}
@@ -4303,7 +4303,7 @@ export default function ServiceManager() {
                 Cảm ơn quý khách đã sử dụng dịch vụ!
               </p>
               <p style={{ margin: "1mm 0 0 0", fontStyle: "italic" }}>
-                Vui lòng giữ phiếu này để đối chiếu khi nhận xe
+                Vui lòng giữ phiếu này để đối chiếu khi nhận máy
               </p>
             </div>
 
@@ -4332,8 +4332,8 @@ export default function ServiceManager() {
                   Bảo hành áp dụng cho phụ tùng chính hãng và lỗi kỹ thuật do thợ
                 </li>
                 <li>
-                  Không bảo hành đối với va chạm, ngã xe, ngập nước sau khi nhận
-                  xe
+                  Không bảo hành đối với rơi vỡ, vào nước sau khi nhận
+                  máy
                 </li>
                 <li>
                   Mang theo phiếu này khi đến bảo hành. Liên hệ hotline nếu có
