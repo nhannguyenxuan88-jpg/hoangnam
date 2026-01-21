@@ -68,7 +68,7 @@ export function Nav() {
   } as const;
 
   return (
-    <nav className="bg-gradient-to-r from-red-600 via-red-500 to-yellow-500 border-b border-red-800/20 sticky top-0 z-50">
+    <nav className="hidden md:block bg-gradient-to-r from-red-600 via-red-500 to-yellow-500 border-b border-red-800/20 sticky top-0 z-50">
       <div className="max-w-[1600px] mx-auto px-2 md:px-4 py-1 md:py-1.5">
         <div className="flex items-center justify-between">
           {/* Left: Brand and Branch Selector */}

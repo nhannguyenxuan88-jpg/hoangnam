@@ -24,6 +24,8 @@ import {
   Package,
   Eye,
   EyeOff,
+  X,
+  MessageSquare,
 } from "lucide-react";
 import type { WorkOrder } from "../../types";
 import {
@@ -65,7 +67,138 @@ type StatusFilter =
   | "Trả máy";
 
 // Memoized WorkOrder Card Component
+// Redesigned WorkOrder Card with inline quick actions
 const WorkOrderCard = React.memo(({
+  workOrder,
+  onEdit,
+  onCall,
+  onPrint
+}: {
+  workOrder: WorkOrder;
+  onEdit: (wo: WorkOrder) => void;
+  onCall: (phone: string) => void;
+  onPrint: (wo: WorkOrder) => void;
+}) => {
+  // Get status details
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Tiếp nhận": return "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800";
+      case "Đang sửa": return "bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800";
+      case "Đã sửa xong": return "bg-green-50 text-green-600 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800";
+      case "Trả máy": return "bg-purple-50 text-purple-600 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800";
+      default: return "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
+    }
+  };
+
+  return (
+    <div
+      onClick={() => onEdit(workOrder)}
+      className="bg-white dark:bg-[#1e1e2d] rounded-xl border border-slate-200 dark:border-gray-800 shadow-sm active:scale-[0.99] transition-transform relative overflow-hidden"
+    >
+      <div className="p-3 space-y-2">
+        {/* Header: ID & Date & Status */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-bold text-blue-600 dark:text-blue-400 text-xs bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded">
+              {formatWorkOrderId(workOrder.id)}
+            </span>
+            <span className="text-[10px] text-slate-500">{formatDate(workOrder.creationDate)}</span>
+          </div>
+          <div className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getStatusColor(workOrder.status)}`}>
+            {workOrder.status}
+          </div>
+        </div>
+
+        {/* Customer & Device */}
+        <div className="flex justify-between items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="font-bold text-sm text-slate-900 dark:text-white truncate">
+              {workOrder.customerName}
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <Phone className="w-3 h-3" />
+              {workOrder.customerPhone}
+            </div>
+          </div>
+          <div className="text-right min-w-0 flex-1">
+            <div className="font-medium text-sm text-slate-800 dark:text-slate-200 truncate">
+              {workOrder.vehicleModel}
+            </div>
+            <div className="text-xs text-slate-500 font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded inline-block">
+              {workOrder.licensePlate}
+            </div>
+          </div>
+        </div>
+
+        {/* Issue (if any) */}
+        {workOrder.issueDescription && (
+          <div className="text-xs text-slate-500 italic truncate border-t border-dashed border-slate-100 dark:border-slate-800 pt-1 mt-1">
+            "{workOrder.issueDescription}"
+          </div>
+        )}
+
+        {/* Footer: Tech & Money & Quick Actions */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 mt-1">
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-slate-300">
+              {workOrder.technicianName?.[0] || "?"}
+            </div>
+            <span className="text-xs text-slate-600 dark:text-slate-400 max-w-[60px] truncate">
+              {workOrder.technicianName || "Chưa phân"}
+            </span>
+          </div>
+
+          {/* Inline Quick Actions */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onCall(workOrder.customerPhone || "");
+              }}
+              className="w-7 h-7 rounded-lg bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors active:scale-95"
+              title="Gọi điện"
+            >
+              <Phone className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPrint(workOrder);
+              }}
+              className="w-7 h-7 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors active:scale-95"
+              title="In phiếu"
+            >
+              <Printer className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="flex flex-col items-end">
+            <span className="font-black text-sm text-blue-600 dark:text-blue-400">
+              {formatCurrency(workOrder.total || 0)}
+            </span>
+            {/* Payment Status Indicator */}
+            {workOrder.paymentStatus === "paid" && (
+              <span className="text-[9px] text-green-500 font-bold flex items-center gap-0.5">
+                <Check className="w-2.5 h-2.5" /> Đã trả
+              </span>
+            )}
+            {workOrder.paymentStatus !== "paid" && (workOrder.remainingAmount || 0) > 0 && (
+              <span className="text-[9px] text-red-500 font-bold">
+                Nợ {formatCurrency(workOrder.remainingAmount || 0)}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+
+// Action Drawer Component
+const WorkOrderActionDrawer = ({
+  isOpen,
+  onClose,
   workOrder,
   onEdit,
   onCall,
@@ -73,193 +206,87 @@ const WorkOrderCard = React.memo(({
   onDelete,
   canDelete
 }: {
-  workOrder: WorkOrder;
+  isOpen: boolean;
+  onClose: () => void;
+  workOrder: WorkOrder | null;
   onEdit: (wo: WorkOrder) => void;
   onCall: (phone: string) => void;
   onPrint: (wo: WorkOrder) => void;
   onDelete: (wo: WorkOrder) => void;
   canDelete: boolean;
 }) => {
-  // Get status badge color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Tiếp nhận":
-        return "bg-[#009ef7]/10 text-[#009ef7] border-[#009ef7]/30";
-      case "Đang sửa":
-        return "bg-[#f1416c]/10 text-[#f1416c] border-[#f1416c]/30";
-      case "Đã sửa xong":
-        return "bg-[#50cd89]/10 text-[#50cd89] border-[#50cd89]/30";
-      case "Trả máy":
-        return "bg-purple-500/10 text-purple-500 border-purple-500/30";
-      default:
-        return "bg-gray-500/10 text-gray-500 border-gray-500/30";
-    }
-  };
-
-  // Get status icon
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Tiếp nhận":
-        return <FileText className="w-4 h-4" />;
-      case "Đang sửa":
-        return <Wrench className="w-4 h-4" />;
-      case "Đã sửa xong":
-        return <Check className="w-4 h-4" />;
-      case "Trả máy":
-        return <Key className="w-4 h-4" />;
-      default:
-        return <FileText className="w-4 h-4" />;
-    }
-  };
+  if (!isOpen || !workOrder) return null;
 
   return (
-    <div
-      onClick={() => onEdit(workOrder)}
-      className="bg-white dark:bg-[#1e1e2d] rounded-lg border border-slate-200 dark:border-gray-800 overflow-hidden active:scale-[0.99] transition-transform shadow-sm"
-    >
-      {/* Card Content */}
-      <div className="p-2.5">
-        {/* Header - Single row: ID + Date + Status */}
-        <div className="flex items-center justify-between mb-1.5">
-          <div className="flex items-center gap-2">
-            <span className="text-[#009ef7] font-mono text-xs font-semibold">
-              {formatWorkOrderId(workOrder.id)}
-            </span>
-            <span className="text-[10px] text-slate-500 dark:text-gray-500">
-              {formatDate(workOrder.creationDate)}
-            </span>
-          </div>
-          <div
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-semibold ${getStatusColor(
-              workOrder.status
-            )}`}
-          >
-            {getStatusIcon(workOrder.status)}
-            {workOrder.status}
-          </div>
-        </div>
+    <div className="fixed inset-0 z-[110] flex items-end justify-center sm:items-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
-        {/* Customer & Vehicle - Single row */}
-        <div className="flex items-center gap-2 mb-1.5 text-sm">
-          <span className="text-xs">👤</span>
-          <span className="text-slate-900 dark:text-white font-medium flex-1 min-w-0 truncate">
-            {workOrder.customerName}
-          </span>
-          <span className="text-slate-600 dark:text-gray-500 text-xs shrink-0">
-            {workOrder.customerPhone}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 mb-1.5 text-sm">
-          <span className="text-xs">📱</span>
-          <span className="text-slate-700 dark:text-gray-300 flex-1 min-w-0 truncate">
-            {workOrder.vehicleModel}
-          </span>
-          <span className="text-[#009ef7] text-xs font-mono shrink-0">
-            {workOrder.licensePlate}
-          </span>
-        </div>
-        {/* Issue Description - More compact */}
-        {workOrder.issueDescription && (
-          <div className="flex items-center gap-1.5 text-slate-400 text-xs mb-1.5 truncate">
-            <span>🔧</span>
-            <span className="truncate">
-              {workOrder.issueDescription}
-            </span>
+      <div className="bg-white dark:bg-[#1e1e2d] w-full max-w-sm rounded-t-2xl sm:rounded-2xl p-4 z-10 animate-slide-up space-y-4">
+        {/* Header */}
+        <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-blue-600" />
           </div>
-        )}
-
-        {/* Footer - Compact single row */}
-        <div className="pt-1.5 border-t border-slate-200 dark:border-gray-800 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs flex-1 min-w-0">
-            <span className="text-slate-600 dark:text-gray-500 shrink-0">KTV:</span>
-            <span className="text-slate-700 dark:text-gray-300 truncate">
-              {workOrder.technicianName || "Chưa phân"}
-            </span>
-            {/* Payment badge */}
-            {workOrder.paymentStatus === "paid" &&
-              workOrder.remainingAmount === 0 && (
-                <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px]">
-                  ✓ Đủ
-                </span>
-              )}
-            {((workOrder.depositAmount &&
-              workOrder.depositAmount > 0) ||
-              workOrder.paymentStatus === "partial") &&
-              (workOrder.remainingAmount ?? 0) > 0 && (
-                <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded text-[10px]">
-                  Nợ {formatCurrency(workOrder.remainingAmount || 0)}
-                </span>
-              )}
-            {workOrder.paymentStatus === "unpaid" &&
-              (!workOrder.depositAmount ||
-                workOrder.depositAmount === 0) && (
-                <span className="px-1.5 py-0.5 bg-slate-700 text-slate-400 rounded text-[10px]">
-                  Chưa TT
-                </span>
-              )}
+          <div className="flex-1">
+            <h3 className="font-bold text-slate-900 dark:text-white">
+              {workOrder.customerName}
+            </h3>
+            <div className="text-xs text-slate-500 flex items-center gap-2">
+              <span className="font-mono">{formatWorkOrderId(workOrder.id)}</span>
+              <span>•</span>
+              <span>{workOrder.vehicleModel}</span>
+            </div>
           </div>
-          <div className="text-slate-900 dark:text-white font-bold text-sm">
-            {formatCurrency(workOrder.total || 0)}
-          </div>
-        </div>
-      </div>
-
-      {/* Action Buttons Row */}
-      <div className="grid grid-cols-4 border-t border-slate-200 dark:border-gray-800">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onCall(workOrder.customerPhone || "");
-          }}
-          className="flex items-center justify-center gap-1 py-3 bg-green-500/10 hover:bg-green-500/20 transition-colors border-r border-slate-200 dark:border-gray-800"
-        >
-          <Phone className="w-4 h-4 text-green-500" />
-          <span className="text-[11px] font-semibold text-green-500">
-            Gọi
-          </span>
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onPrint(workOrder);
-          }}
-          className="flex items-center justify-center gap-1 py-3 bg-purple-500/10 hover:bg-purple-500/20 transition-colors border-r border-slate-200 dark:border-gray-800"
-        >
-          <Printer className="w-4 h-4 text-purple-500" />
-          <span className="text-[11px] font-semibold text-purple-500">
-            In
-          </span>
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(workOrder);
-          }}
-          className="flex items-center justify-center gap-1 py-3 bg-[#009ef7]/10 hover:bg-[#009ef7]/20 transition-colors border-r border-slate-200 dark:border-gray-800"
-        >
-          <Edit2 className="w-4 h-4 text-[#009ef7]" />
-          <span className="text-[11px] font-semibold text-[#009ef7]">
-            Sửa
-          </span>
-        </button>
-        {canDelete && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(workOrder);
-            }}
-            className="flex items-center justify-center gap-1 py-3 bg-[#f1416c]/10 hover:bg-[#f1416c]/20 transition-colors"
-          >
-            <Trash2 className="w-4 h-4 text-[#f1416c]" />
-            <span className="text-[11px] font-semibold text-[#f1416c]">
-              Xóa
-            </span>
+          <button onClick={onClose} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full">
+            <X className="w-4 h-4" />
           </button>
-        )}
+        </div>
+
+        {/* Primary Actions Grid */}
+        <div className="grid grid-cols-4 gap-3">
+          <button onClick={() => { onCall(workOrder.customerPhone || ""); onClose(); }} className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-2xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600">
+              <Phone className="w-6 h-6" />
+            </div>
+            <span className="text-xs font-medium">Gọi điện</span>
+          </button>
+          <button onClick={() => { onEdit(workOrder); onClose(); }} className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
+              <Edit2 className="w-6 h-6" />
+            </div>
+            <span className="text-xs font-medium">Sửa phiếu</span>
+          </button>
+          <button onClick={() => { onPrint(workOrder); onClose(); }} className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-2xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600">
+              <Printer className="w-6 h-6" />
+            </div>
+            <span className="text-xs font-medium">In phiếu</span>
+          </button>
+          {/* Placeholder for more actions like SMS */}
+          <button className="flex flex-col items-center gap-2 opacity-50">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+              <MessageSquare className="w-6 h-6" />
+            </div>
+            <span className="text-xs font-medium">Nhắn tin</span>
+          </button>
+        </div>
+
+        {/* Secondary Actions List */}
+        <div className="space-y-1 pt-2">
+          {canDelete && (
+            <button
+              onClick={() => { onDelete(workOrder); onClose(); }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 text-red-600 transition-colors"
+            >
+              <Trash2 className="w-5 h-5" />
+              <span className="font-medium">Xóa phiếu sửa chữa này</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
-});
+};
 
 export function ServiceManagerMobile({
   workOrders,
@@ -299,6 +326,7 @@ export function ServiceManagerMobile({
   const { data: templates } = useRepairTemplates();
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [actionOrder, setActionOrder] = useState<WorkOrder | null>(null);
 
   // Debounced create work order handler to prevent duplicate creation
   const handleCreateWorkOrder = useCallback(() => {
@@ -587,26 +615,41 @@ export function ServiceManagerMobile({
                     />
                   </div>
 
-                  {/* Date Filter Segmented Control */}
-                  <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
-                    {[
-                      { label: "Hôm nay", value: "today" },
-                      { label: "7 ngày", value: "week" },
-                      { label: "Tháng", value: "month" },
-                      { label: "Tất cả", value: "all" },
-                    ].map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => setDateFilter(option.value)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${dateFilter === option.value
-                          ? "bg-[#009ef7]/20 text-[#009ef7] border border-[#009ef7]/50"
-                          : "bg-slate-100 dark:bg-[#2b2b40] text-slate-700 dark:text-gray-400 border border-slate-300 dark:border-gray-700"
-                          }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
+                  {/* Segmented Control for Mode: Orders | History | Templates */}
+                  <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl mb-2">
+                    <button onClick={() => setActiveTab('orders')} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'orders' ? 'bg-white dark:bg-slate-700 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}>
+                      Phiếu SC
+                    </button>
+                    <button onClick={() => setActiveTab('history')} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'history' ? 'bg-white dark:bg-slate-700 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}>
+                      Lịch sử
+                    </button>
+                    <button onClick={() => setActiveTab('templates')} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'templates' ? 'bg-white dark:bg-slate-700 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}>
+                      Mẫu SC
+                    </button>
                   </div>
+
+                  {/* Date Filter Segmented Control (Only for Orders & History?) */}
+                  {activeTab !== 'templates' && (
+                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+                      {[
+                        { label: "Hôm nay", value: "today" },
+                        { label: "7 ngày", value: "week" },
+                        { label: "Tháng", value: "month" },
+                        { label: "Tất cả", value: "all" },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => setDateFilter(option.value)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${dateFilter === option.value
+                            ? "bg-[#009ef7]/20 text-[#009ef7] border border-[#009ef7]/50"
+                            : "bg-slate-100 dark:bg-[#2b2b40] text-slate-700 dark:text-gray-400 border border-slate-300 dark:border-gray-700"
+                            }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* DANH SÁCH PHIẾU SỬA CHỮA */}
@@ -674,7 +717,6 @@ export function ServiceManagerMobile({
                       </button>
                     </div>
                   ) : (
-                    /* Work Order Cards - Compact for Mobile */
                     filteredWorkOrders.map((workOrder) => (
                       <WorkOrderCard
                         key={workOrder.id}
@@ -682,8 +724,6 @@ export function ServiceManagerMobile({
                         onEdit={onEditWorkOrder}
                         onCall={onCallCustomer}
                         onPrint={onPrintWorkOrder}
-                        onDelete={onDeleteWorkOrder}
-                        canDelete={canDeleteWorkOrder}
                       />
                     ))
                   )}
@@ -816,36 +856,6 @@ export function ServiceManagerMobile({
           animation: slide-up 0.3s ease-out;
         }
       `}</style>
-      </div>
-
-      {/* BOTTOM NAVIGATION BAR */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-[#1e1e2d] border-t border-slate-200 dark:border-gray-800 px-6 py-2 z-[100] flex justify-between items-center pb-safe">
-        <button
-          onClick={() => setActiveTab("orders")}
-          className={`flex flex-col items-center gap-1 transition-colors ${activeTab === "orders" ? "text-[#009ef7]" : "text-slate-600 dark:text-gray-500 hover:text-slate-900 dark:hover:text-gray-300"
-            }`}
-        >
-          <ClipboardList className={`w-6 h-6 ${activeTab === "orders" ? "fill-current/20" : ""}`} />
-          <span className="text-[10px] font-medium">Tổng quan</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("history")}
-          className={`flex flex-col items-center gap-1 transition-colors ${activeTab === "history" ? "text-[#009ef7]" : "text-slate-600 dark:text-gray-500 hover:text-slate-900 dark:hover:text-gray-300"
-            }`}
-        >
-          <History className={`w-6 h-6 ${activeTab === "history" ? "fill-current/20" : ""}`} />
-          <span className="text-[10px] font-medium">Lịch sử</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("templates")}
-          className={`flex flex-col items-center gap-1 transition-colors ${activeTab === "templates" ? "text-[#009ef7]" : "text-gray-500 hover:text-gray-300"
-            }`}
-        >
-          <FileText className={`w-6 h-6 ${activeTab === "templates" ? "fill-current/20" : ""}`} />
-          <span className="text-[10px] font-medium">Mẫu SC</span>
-        </button>
       </div>
     </div>
   );
