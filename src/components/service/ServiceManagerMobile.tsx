@@ -469,6 +469,33 @@ export function ServiceManagerMobile({
 
   return (
     <div className="md:hidden flex flex-col h-screen bg-slate-50 dark:bg-[#151521]">
+      {/* SEARCH BAR & TAB NAVIGATION - Always visible */}
+      <div className="bg-white dark:bg-[#1e1e2d] border-b border-slate-200 dark:border-gray-800 px-2 py-2 space-y-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-gray-500" />
+          <input
+            type="text"
+            placeholder="Tìm tên, SĐT, IMEI..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-3 py-2.5 bg-slate-100 dark:bg-[#2b2b40] border border-slate-300 dark:border-gray-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-gray-500 text-sm focus:outline-none focus:border-[#009ef7]"
+          />
+        </div>
+
+        {/* Segmented Control for Mode: Orders | History | Templates */}
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+          <button onClick={() => setActiveTab('orders')} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'orders' ? 'bg-white dark:bg-slate-700 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}>
+            Phiếu SC
+          </button>
+          <button onClick={() => setActiveTab('history')} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'history' ? 'bg-white dark:bg-slate-700 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}>
+            Lịch sử
+          </button>
+          <button onClick={() => setActiveTab('templates')} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'templates' ? 'bg-white dark:bg-slate-700 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}>
+            Mẫu SC
+          </button>
+        </div>
+      </div>
+
       {/* CONTENT BASED ON TAB */}
       <div className="flex-1 overflow-hidden relative">
         {activeTab === "orders" && (
@@ -602,54 +629,27 @@ export function ServiceManagerMobile({
                   </div>
                 </div>
 
-                {/* SEARCH BAR & DATE FILTER */}
-                <div className="bg-white dark:bg-[#1e1e2d] border-b border-slate-200 dark:border-gray-800 px-2 py-2 space-y-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-gray-500" />
-                    <input
-                      type="text"
-                      placeholder="Tìm tên, SĐT, IMEI..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-100 dark:bg-[#2b2b40] border border-slate-300 dark:border-gray-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-gray-500 text-sm focus:outline-none focus:border-[#009ef7]"
-                    />
+                {/* DATE FILTER - Only for Orders tab */}
+                <div className="bg-white dark:bg-[#1e1e2d] border-b border-slate-200 dark:border-gray-800 px-2 py-2">
+                  <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+                    {[
+                      { label: "Hôm nay", value: "today" },
+                      { label: "7 ngày", value: "week" },
+                      { label: "Tháng", value: "month" },
+                      { label: "Tất cả", value: "all" },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setDateFilter(option.value)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${dateFilter === option.value
+                          ? "bg-[#009ef7]/20 text-[#009ef7] border border-[#009ef7]/50"
+                          : "bg-slate-100 dark:bg-[#2b2b40] text-slate-700 dark:text-gray-400 border border-slate-300 dark:border-gray-700"
+                          }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
                   </div>
-
-                  {/* Segmented Control for Mode: Orders | History | Templates */}
-                  <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl mb-2">
-                    <button onClick={() => setActiveTab('orders')} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'orders' ? 'bg-white dark:bg-slate-700 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}>
-                      Phiếu SC
-                    </button>
-                    <button onClick={() => setActiveTab('history')} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'history' ? 'bg-white dark:bg-slate-700 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}>
-                      Lịch sử
-                    </button>
-                    <button onClick={() => setActiveTab('templates')} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${activeTab === 'templates' ? 'bg-white dark:bg-slate-700 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500'}`}>
-                      Mẫu SC
-                    </button>
-                  </div>
-
-                  {/* Date Filter Segmented Control (Only for Orders & History?) */}
-                  {activeTab !== 'templates' && (
-                    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
-                      {[
-                        { label: "Hôm nay", value: "today" },
-                        { label: "7 ngày", value: "week" },
-                        { label: "Tháng", value: "month" },
-                        { label: "Tất cả", value: "all" },
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setDateFilter(option.value)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${dateFilter === option.value
-                            ? "bg-[#009ef7]/20 text-[#009ef7] border border-[#009ef7]/50"
-                            : "bg-slate-100 dark:bg-[#2b2b40] text-slate-700 dark:text-gray-400 border border-slate-300 dark:border-gray-700"
-                            }`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 {/* DANH SÁCH PHIẾU SỬA CHỮA */}
